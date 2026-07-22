@@ -32,7 +32,6 @@ const emptyFichaV2 = {
   condicionEstetica: { exterior: '', pantalla: '', carcasaInferior: '', teclado: '', touchpad: '', bisagras: '', puertos: '', camara: '', bocinas: '', microfono: '' },
   bateriaDetalle: { porcentaje: '', ciclos: '', condicion: '' },
   checklistPruebas: {},
-  garantia: { tipo: '', vigencia: '', proveedor: '' },
   fechaRevision: '',
 };
 
@@ -170,7 +169,6 @@ export default function Inventario() {
         condicionEstetica: { ...emptyFichaV2.condicionEstetica, ...item.condicionEstetica },
         bateriaDetalle: item.bateriaDetalle || emptyFichaV2.bateriaDetalle,
         checklistPruebas: item.checklistPruebas || {},
-        garantia: item.garantia || emptyFichaV2.garantia,
         fechaRevision: item.fechaRevision || '',
       },
     });
@@ -234,8 +232,7 @@ export default function Inventario() {
     if (fv.sistemaOperativo || fv.color || fv.pantalla || fv.modeloComercial || fv.fechaRevision ||
         Object.values(fv.condicionEstetica).some(Boolean) ||
         Object.values(fv.bateriaDetalle).some(Boolean) ||
-        Object.keys(fv.checklistPruebas).length > 0 ||
-        Object.values(fv.garantia).some(Boolean)) {
+        Object.keys(fv.checklistPruebas).length > 0) {
       payload.sistemaOperativo = fv.sistemaOperativo.toUpperCase().trim() || undefined;
       payload.color = fv.color.toUpperCase().trim() || undefined;
       payload.pantalla = fv.pantalla.toUpperCase().trim() || undefined;
@@ -243,7 +240,6 @@ export default function Inventario() {
       payload.condicionEstetica = fv.condicionEstetica;
       payload.bateriaDetalle = fv.bateriaDetalle;
       payload.checklistPruebas = fv.checklistPruebas;
-      payload.garantia = fv.garantia;
       payload.fechaRevision = fv.fechaRevision || undefined;
     }
 
@@ -529,23 +525,7 @@ export default function Inventario() {
               </div>
             )}
 
-            <div className="border-t border-slate-200 pt-5">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Garantía</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><label className="form-label">Tipo</label>
-                  <select className="form-input" value={form.fichaV2.garantia.tipo} onChange={e => markFichaV2('garantia.tipo', e.target.value)}>
-                    <option value="">—</option>
-                    <option value="PROVEEDOR">PROVEEDOR</option>
-                    <option value="FABRICA">FÁBRICA</option>
-                    <option value="TIENDA">TIENDA</option>
-                    <option value="SIN GARANTIA">SIN GARANTÍA</option>
-                  </select></div>
-                <div><label className="form-label">Vigencia</label>
-                  <input className="form-input uppercase" value={form.fichaV2.garantia.vigencia} onChange={e => markFichaV2('garantia.vigencia', e.target.value)} placeholder="Ej: 12 MESES / 2026-12-31" /></div>
-                <div><label className="form-label">Proveedor</label>
-                  <input className="form-input uppercase" value={form.fichaV2.garantia.proveedor} onChange={e => markFichaV2('garantia.proveedor', e.target.value)} placeholder="Nombre del proveedor" /></div>
-              </div>
-            </div>
+
           </div>
         )}
 
