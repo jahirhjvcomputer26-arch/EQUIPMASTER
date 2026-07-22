@@ -620,15 +620,18 @@ export default function Inventario() {
               {editing && (
                 <SectionHeader icon="fa-camera" title="Fotos del Equipo" color="bg-pink-50 text-pink-600">
                   <span className="text-[10px] font-bold text-slate-400">
-                    {Object.keys(form.fotos).length}/6
+                    {Object.keys(form.fotos).length}/9
                   </span>
                   <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-1">
                     {[
                       { key: 'frente', label: 'Frente', icon: 'fa-laptop' },
                       { key: 'posterior', label: 'Posterior', icon: 'fa-rotate-left' },
+                      { key: 'laterales', label: 'Laterales', icon: 'fa-arrows-left-right' },
                       { key: 'pantalla', label: 'Pantalla', icon: 'fa-desktop' },
                       { key: 'teclado', label: 'Teclado', icon: 'fa-keyboard' },
                       { key: 'bios', label: 'BIOS', icon: 'fa-microchip' },
+                      { key: 'crystalDiskInfo', label: 'CrystalDiskInfo', icon: 'fa-hard-drive' },
+                      { key: 'bateria', label: 'Batería', icon: 'fa-battery-three-quarters' },
                       { key: 'etiquetas', label: 'Etiquetas', icon: 'fa-tag' },
                     ].map(({ key, label, icon }) => (
                       <label key={key} className={`relative group flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
