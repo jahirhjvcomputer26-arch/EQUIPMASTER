@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import usuariosRouter from './routes/usuarios.js';
@@ -14,14 +15,16 @@ import backupRouter from './routes/backup.js';
 import configuracionRouter from './routes/configuracion.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const publicDir = path.join(__dirname, '..', 'public');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(express.static(publicDir));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, app: 'EquipMaster API' }));
 
@@ -35,9 +38,12 @@ app.use('/api/reparaciones', reparacionesRouter);
 app.use('/api/backup', backupRouter);
 app.use('/api/configuracion', configuracionRouter);
 
-app.get('*', (_req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-});
+const indexPath = path.join(publicDir, 'index.html');
+if (fs.existsSync(indexPath)) {
+  app.get('*', (_req, res) => {
+    res.sendFile(indexPath);
+  });
+}
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`EquipMaster API → http://0.0.0.0:${PORT} (LAN)`);
