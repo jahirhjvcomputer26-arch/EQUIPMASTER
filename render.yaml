@@ -3,7 +3,7 @@ services:
     name: equipmaster
     runtime: node
     plan: free
-    buildCommand: npm install --prefix frontend && npm run build --prefix frontend && rm -rf backend/public && cp -r frontend/dist backend/public && npm install --prefix backend
+    buildCommand: cd frontend && npm install && npm run build && cp -r dist ../backend/public
     startCommand: node backend/src/index.js
     envVars:
       - key: NODE_ENV
