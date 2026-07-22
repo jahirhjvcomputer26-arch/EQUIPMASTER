@@ -180,13 +180,21 @@ export default function Inventario() {
     if (!files?.length) return;
     try {
       const base64 = await resizeImage(files[0]);
+      let url;
+      try {
+        const result = await api.uploadFile({ codigo: form.codigo, categoria, archivo: base64, esDocumento: false });
+        url = result.url;
+      } catch { url = base64; }
       setDirty(true);
-      setForm(prev => ({ ...prev, fotos: { ...prev.fotos, [categoria]: base64 } }));
+      setForm(prev => ({ ...prev, fotos: { ...prev.fotos, [categoria]: url } }));
       notify('Foto lista', `${categoria} guardada.`, 'success');
     } catch (err) { notify('Error', err.message, 'error'); }
   };
 
   const handleFormPhotoDelete = async (categoria) => {
+    if (form.fotos[categoria]?.includes('storage.googleapis.com') || form.fotos[categoria]?.includes('firebasestorage')) {
+      try { await api.deleteFile(`fotos/${form.codigo}/${categoria}.jpg`); } catch {}
+    }
     setDirty(true);
     setForm(prev => { const f = { ...prev.fotos }; delete f[categoria]; return { ...prev, fotos: f }; });
   };

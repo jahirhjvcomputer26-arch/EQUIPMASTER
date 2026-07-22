@@ -72,7 +72,12 @@ export default function Galeria() {
     setUploading(true);
     try {
       const base64 = await resizeImage(files[0]);
-      const newFotos = { ...fotos, [categoria]: base64 };
+      let url;
+      try {
+        const result = await api.uploadFile({ codigo: codigo.toUpperCase(), categoria, archivo: base64, esDocumento: false });
+        url = result.url;
+      } catch { url = base64; }
+      const newFotos = { ...fotos, [categoria]: url };
       setFotos(newFotos);
       await api.saveEquipo(codigo.toUpperCase(), { ...item, fotos: newFotos });
       toast('Foto guardada', `${categoria.toUpperCase()} guardada.`, 'success');
@@ -85,6 +90,12 @@ export default function Galeria() {
   const handleDelete = async (categoria) => {
     if (!window.confirm(`¿Eliminar foto de ${categoria}?`)) return;
     try {
+      if (fotos[categoria]?.includes('storage.googleapis.com') || fotos[categoria]?.includes('firebasestorage')) {
+        try {
+          const ext = (fotos[categoria].split('.').pop()?.split('?')[0]) || 'jpg';
+          await api.deleteFile(`fotos/${codigo.toUpperCase()}/${categoria}.${ext}`);
+        } catch {}
+      }
       const newFotos = { ...fotos };
       delete newFotos[categoria];
       setFotos(newFotos);
@@ -183,7 +194,7 @@ export default function Galeria() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in">
           <div className="bg-white rounded-2xl p-6 shadow-2xl text-center">
             <div className="animate-spin w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full mx-auto mb-3" />
-            <p className="text-sm font-bold text-slate-700">Procesando imagen...</p>
+            <p className="text-sm font-bold text-slate-700">Subiendo imagen...</p>
           </div>
         </div>
       )}
