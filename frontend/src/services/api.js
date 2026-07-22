@@ -65,6 +65,14 @@ export const api = {
   uploadFile: (body) => request('/storage/upload', { method: 'POST', body: JSON.stringify(body) }),
   deleteFile: (path) => request(`/storage/delete?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),
   cleanupStorage: () => request('/storage/cleanup', { method: 'POST' }),
+  getTickets: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/tickets${qs ? '?' + qs : ''}`);
+  },
+  crearTicket: (body) => request('/tickets', { method: 'POST', body: JSON.stringify(body) }),
+  actualizarTicket: (id, body) => request(`/tickets/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  agregarNotaTicket: (id, texto) => request(`/tickets/${id}/nota`, { method: 'POST', body: JSON.stringify({ texto }) }),
+  eliminarTicket: (id) => request(`/tickets/${id}`, { method: 'DELETE' }),
   downloadExcel: async () => {
     const token = localStorage.getItem('equipmaster_token');
     const res = await fetch(`${API}/reportes/excel`, { headers: { Authorization: `Bearer ${token}` } });

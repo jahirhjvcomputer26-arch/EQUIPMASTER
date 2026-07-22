@@ -14,6 +14,7 @@ import reparacionesRouter from './routes/reparaciones.js';
 import backupRouter from './routes/backup.js';
 import configuracionRouter from './routes/configuracion.js';
 import storageRouter from './routes/storage.js';
+import ticketsRouter from './routes/tickets.js';
 import { initStorage } from './storage.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -40,6 +41,7 @@ app.use('/api/reparaciones', reparacionesRouter);
 app.use('/api/backup', backupRouter);
 app.use('/api/configuracion', configuracionRouter);
 app.use('/api/storage', storageRouter);
+app.use('/api/tickets', ticketsRouter);
 
 initStorage();
 

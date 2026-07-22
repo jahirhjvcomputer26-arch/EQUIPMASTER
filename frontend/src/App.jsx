@@ -26,6 +26,7 @@ import Usuarios from './pages/Usuarios';
 import CentroDocumentacion from './pages/CentroDocumentacion';
 import Configuracion from './pages/Configuracion';
 import AlertasPanel from './pages/AlertasPanel';
+import Tickets from './pages/Tickets';
 import LoadingScreen from './componentes/LoadingScreen';
 
 function PrivateRoute({ children }) {
@@ -59,6 +60,7 @@ export default function App() {
                 <Route path="reparaciones" element={<Reparaciones />} />
                 <Route path="usuarios" element={<Usuarios />} />
                 <Route path="configuracion" element={<Configuracion />} />
+                <Route path="tickets" element={<Tickets />} />
               </Route>
               <Route path="consulta" element={<ConsultaPublica />} />
               <Route path="ficha/:codigo" element={<FichaEquipo />} />

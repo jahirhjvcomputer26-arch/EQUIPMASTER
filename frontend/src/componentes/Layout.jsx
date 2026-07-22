@@ -21,6 +21,7 @@ const links = [
   { to: '/devoluciones', icon: 'fa-rotate-left', label: 'Devoluciones' },
   { to: '/prestamos', icon: 'fa-hand-holding', label: 'Préstamos' },
   { to: '/reparaciones', icon: 'fa-toolbox', label: 'Reparaciones' },
+  { to: '/tickets', icon: 'fa-ticket', label: 'Tickets' },
   { to: '/etiquetas', icon: 'fa-tag', label: 'Etiquetas' },
   { to: '/reportes', icon: 'fa-chart-simple', label: 'Reportes' },
   { to: '/alertas', icon: 'fa-triangle-exclamation', label: 'Alertas' },
