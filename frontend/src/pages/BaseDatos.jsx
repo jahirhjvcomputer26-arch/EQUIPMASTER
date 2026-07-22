@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useRef, useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useInventario } from '../context/InventarioContext';
 import { useNotify } from '../componentes/Notification';
@@ -61,7 +61,8 @@ export default function BaseDatos() {
   useDocumentTitle('Base de Datos');
   const { inventario, loading } = useInventario();
   const { notify } = useNotify();
-  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get('search') || '');
   const [sortKey, setSortKey] = useState('codigo');
   const [sortDir, setSortDir] = useState('desc');
   const [page, setPage] = useState(1);

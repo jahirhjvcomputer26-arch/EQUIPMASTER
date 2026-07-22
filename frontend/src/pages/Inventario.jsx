@@ -468,6 +468,31 @@ export default function Inventario() {
 
           {step === 2 && (
             <div className="p-6 md:p-8 space-y-5">
+              <button type="button" onClick={async () => {
+                try {
+                  notify('Detectando...', 'Escaneando hardware del equipo local...', 'info');
+                  const hw = await api.detectHardware();
+                  setForm(f => ({
+                    ...f,
+                    procesador: hw.procesador || f.procesador,
+                    generacion: hw.generacion || f.generacion,
+                    ram: hw.ram || f.ram,
+                    tipoRam: hw.tipoRam || f.tipoRam,
+                    almacenamiento: hw.almacenamiento || f.almacenamiento,
+                    tipoDisco: hw.tipoDisco || f.tipoDisco,
+                    grafica: hw.grafica || f.grafica,
+                    marca: hw.marca || f.marca,
+                    modelo: hw.modelo || f.modelo,
+                    serie: hw.serie || f.serie,
+                    sistemaOperativo: hw.sistemaOperativo || f.sistemaOperativo,
+                  }));
+                  notify('Hardware detectado', 'Campos auto-rellenados con el hardware local', 'success');
+                } catch (err) {
+                  notify('Error', err.message, 'error');
+                }
+              }} className="w-full py-3 rounded-xl border-2 border-dashed border-brand-300 bg-brand-50 text-brand-700 font-bold text-sm hover:bg-brand-100 hover:border-brand-500 transition flex items-center justify-center gap-2">
+                <i className="fa-solid fa-microchip" /> Detectar Hardware Automáticamente
+              </button>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {tmpl.step2.includes('procesador') && <div className="md:col-span-2"><label className="form-label">Procesador *</label><input className="form-input uppercase" value={form.procesador} onChange={e => markDirty('procesador', e.target.value)} required placeholder="INTEL CORE I5-12400F..." /></div>}
                 {tmpl.step2.includes('generacion') && <div><label className="form-label">Generación</label>

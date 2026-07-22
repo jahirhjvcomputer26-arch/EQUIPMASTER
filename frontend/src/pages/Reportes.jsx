@@ -94,6 +94,9 @@ export default function Reportes() {
   const [reparacionesData, setReparacionesData] = useState(null);
   const [metricasData, setMetricasData] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailPara, setEmailPara] = useState('');
+  const [emailAsunto, setEmailAsunto] = useState('Reporte de Inventario');
 
   const filtros = useMemo(() => {
     const marcas = new Set(); const modelos = new Set(); const tecnicos = new Set(); const categorias = new Set(); const estados = new Set();
@@ -309,6 +312,35 @@ export default function Reportes() {
         >
           <i className="fa-solid fa-file-excel" /> Descargar Excel
         </button>
+      </div>
+
+      <div className="panel p-5 animate-slide-up" style={{ animationDelay: '75ms' }}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+            <i className="fa-solid fa-envelope text-brand-500" /> Enviar reporte por correo
+          </div>
+          <div className="flex-1 flex flex-col sm:flex-row gap-2 w-full">
+            <input type="email" className="form-input text-sm flex-1" value={emailPara} onChange={e => setEmailPara(e.target.value)} placeholder="destinatario@correo.com" />
+            <input className="form-input text-sm flex-1" value={emailAsunto} onChange={e => setEmailAsunto(e.target.value)} placeholder="Asunto del reporte" />
+            <button onClick={async () => {
+              if (!emailPara) return notify('Campo requerido', 'Ingresa el correo del destinatario', 'error');
+              setEmailSending(true);
+              try {
+                const filtros = {};
+                if (sel.estado) filtros.estado = sel.estado;
+                if (sel.tecnico) filtros.tecnico = sel.tecnico;
+                if (sel.categoria) filtros.categoria = sel.categoria;
+                if (sel.marca) filtros.marca = sel.marca;
+                const res = await api.sendReportEmail({ para: emailPara, asunto: emailAsunto, tipo: 'inventario', filtros: Object.keys(filtros).length ? filtros : undefined });
+                notify('Enviado', res.message, 'success');
+              } catch (err) {
+                notify('Error', err.message, 'error');
+              } finally { setEmailSending(false); }
+            }} disabled={emailSending} className="px-5 py-2 rounded-xl bg-brand-600 text-white text-sm font-bold hover:bg-brand-700 disabled:opacity-50 transition whitespace-nowrap">
+              {emailSending ? <><i className="fa-solid fa-spinner animate-spin mr-1" /> Enviando...</> : <><i className="fa-solid fa-paper-plane mr-1" /> Enviar</>}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-1 p-1 bg-slate-100 rounded-xl animate-slide-up" style={{ animationDelay: '50ms' }}>

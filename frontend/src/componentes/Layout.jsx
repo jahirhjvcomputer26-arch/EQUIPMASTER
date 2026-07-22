@@ -9,6 +9,7 @@ import { useNotify } from './Notification';
 import { useInventario } from '../context/InventarioContext';
 import OfflineBanner from './OfflineBanner';
 import SearchModal from './SearchModal';
+import QRScanner from './QRScanner';
 import ScrollToTop from './ScrollToTop';
 import useBrowserNotifications from '../utils/useBrowserNotifications';
 
@@ -295,6 +296,7 @@ export default function Layout() {
         </div>
       </aside>
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <QRScanner />
       <ScrollToTop />
 
       <div className={`flex-1 flex flex-col min-w-0 ${mlW} transition-all duration-300`}>

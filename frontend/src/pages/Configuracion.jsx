@@ -17,6 +17,7 @@ const DEFAULTS = {
   moneda: 'MXN',
   iva: 16,
   notasPie: 'Gracias por su preferencia',
+  smtp: { host: '', port: '587', user: '', pass: '' },
 };
 
 function resizeLogo(file) {
@@ -188,6 +189,35 @@ export default function Configuracion() {
       </div>
 
       <div className="panel p-6 space-y-6 animate-slide-up" style={{ animationDelay: '150ms' }}>
+        <h3 className="font-bold text-slate-900 flex items-center gap-2">
+          <i className="fa-solid fa-envelope text-brand-500" /> Correo Electrónico (SMTP)
+        </h3>
+        <p className="text-xs text-slate-400">Configura el servidor de correo para enviar reportes automáticos por email.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="form-label">Servidor SMTP</label>
+            <input className="form-input" value={config.smtp?.host || ''} onChange={e => handleChange('smtp', { ...config.smtp, host: e.target.value })} placeholder="smtp.gmail.com" />
+          </div>
+          <div>
+            <label className="form-label">Puerto</label>
+            <select className="form-input" value={config.smtp?.port || '587'} onChange={e => handleChange('smtp', { ...config.smtp, port: e.target.value })}>
+              <option value="587">587 (TLS)</option>
+              <option value="465">465 (SSL)</option>
+              <option value="25">25 (sin cifrar)</option>
+            </select>
+          </div>
+          <div>
+            <label className="form-label">Usuario / Email</label>
+            <input className="form-input" value={config.smtp?.user || ''} onChange={e => handleChange('smtp', { ...config.smtp, user: e.target.value })} placeholder="correo@gmail.com" />
+          </div>
+          <div>
+            <label className="form-label">Contraseña / App Password</label>
+            <input type="password" className="form-input" value={config.smtp?.pass || ''} onChange={e => handleChange('smtp', { ...config.smtp, pass: e.target.value })} placeholder="••••••••" />
+          </div>
+        </div>
+      </div>
+
+      <div className="panel p-6 space-y-6 animate-slide-up" style={{ animationDelay: '200ms' }}>
         <h3 className="font-bold text-slate-900 flex items-center gap-2">
           <i className="fa-solid fa-sliders text-brand-500" /> Parámetros del Sistema
         </h3>

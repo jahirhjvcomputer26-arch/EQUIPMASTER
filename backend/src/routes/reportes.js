@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as XLSX from 'xlsx';
+import nodemailer from 'nodemailer';
 import { authMiddleware } from '../middleware/auth.js';
 import { firebaseGet } from '../firebase.js';
 
@@ -239,6 +240,101 @@ router.get('/excel', async (_req, res) => {
     res.send(buffer);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/email', async (req, res) => {
+  try {
+    const { para, asunto, tipo, filtros } = req.body;
+    if (!para) return res.status(400).json({ error: 'El campo "para" (email destino) es requerido' });
+
+    const config = (await firebaseGet('configuracion')) || {};
+    const smtp = config.smtp || {};
+
+    if (!smtp.host || !smtp.user || !smtp.pass) {
+      return res.status(400).json({ error: 'Configura el SMTP en Configuración > Correo antes de enviar reportes' });
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: smtp.host,
+      port: parseInt(smtp.port) || 587,
+      secure: smtp.port === '465',
+      auth: { user: smtp.user, pass: smtp.pass },
+    });
+
+    const data = await firebaseGet('inventario');
+    let items = Object.values(data || {});
+
+    if (filtros) {
+      if (filtros.estado) items = items.filter(i => i.estado === filtros.estado);
+      if (filtros.tecnico) items = items.filter(i => i.tecnico === filtros.tecnico);
+      if (filtros.categoria) items = items.filter(i => i.categoria === filtros.categoria);
+      if (filtros.marca) items = items.filter(i => i.marca === filtros.marca);
+    }
+
+    const total = items.length;
+    const porEstado = {};
+    items.forEach(i => { porEstado[i.estado] = (porEstado[i.estado] || 0) + 1; });
+
+    const empresa = config.nombreEmpresa || 'JV Computer';
+    const fecha = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    let tablaHtml = items.slice(0, 200).map(i => `
+      <tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-family:monospace;font-size:12px;color:#0018B0;font-weight:bold">${i.codigo || ''}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px">${i.marca || ''} ${i.modelo || ''}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px">${i.procesador || ''}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px">${i.ram || ''} / ${i.almacenamiento || ''}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px">${i.estado || ''}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;font-size:12px">${i.tecnico || '—'}</td>
+      </tr>
+    `).join('');
+
+    const resumenHtml = Object.entries(porEstado).map(([e, c]) => `<li style="margin:4px 0"><strong>${e}:</strong> ${c}</li>`).join('');
+
+    const html = `
+      <div style="font-family:Arial,Helvetica,sans-serif;max-width:800px;margin:0 auto">
+        <div style="background:#0018B0;color:white;padding:24px;border-radius:12px 12px 0 0;text-align:center">
+          <h1 style="margin:0;font-size:22px">${empresa}</h1>
+          <p style="margin:8px 0 0;opacity:0.8;font-size:14px">${asunto || 'Reporte de Inventario'}</p>
+          <p style="margin:4px 0 0;opacity:0.6;font-size:12px">${fecha}</p>
+        </div>
+        <div style="padding:24px;background:#f8fafc;border:1px solid #e2e8f0">
+          <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px">Resumen</h2>
+          <p style="font-size:14px;color:#475569;margin:0 0 8px"><strong>${total}</strong> equipo${total !== 1 ? 's' : ''} en inventario</p>
+          <ul style="list-style:none;padding:0;margin:0 0 16px">${resumenHtml}</ul>
+          <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0" />
+          <h2 style="font-size:16px;color:#1e293b;margin:0 0 12px">Detalle (máx. 200)</h2>
+          <table style="width:100%;border-collapse:collapse;background:white;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
+            <thead><tr style="background:#f1f5f9">
+              <th style="padding:8px 10px;text-align:left;font-size:11px;color:#64748b;text-transform:uppercase">Código</th>
+              <th style="padding:8px 10px;text-align:left;font-size:11px;color:#64748b;text-transform:uppercase">Equipo</th>
+              <th style="padding:8px 10px;text-align:left;font-size:11px;color:#64748b;text-transform:uppercase">Procesador</th>
+              <th style="padding:8px 10px;text-align:left;font-size:11px;color:#64748b;text-transform:uppercase">RAM / Disco</th>
+              <th style="padding:8px 10px;text-align:left;font-size:11px;color:#64748b;text-transform:uppercase">Estado</th>
+              <th style="padding:8px 10px;text-align:left;font-size:11px;color:#64748b;text-transform:uppercase">Técnico</th>
+            </tr></thead>
+            <tbody>${tablaHtml}</tbody>
+          </table>
+          ${items.length > 200 ? `<p style="font-size:11px;color:#94a3b8;margin-top:12px;text-align:center">Mostrando 200 de ${total} equipos. Descarga el Excel para el reporte completo.</p>` : ''}
+        </div>
+        <div style="text-align:center;padding:16px;background:#f1f5f9;border-radius:0 0 12px 12px;border:1px solid #e2e8f0;border-top:none">
+          <p style="font-size:11px;color:#94a3b8;margin:0">Generado por EquipMaster · ${empresa}</p>
+        </div>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"${empresa}" <${smtp.user}>`,
+      to: para,
+      subject: asunto || `Reporte de Inventario - ${fecha}`,
+      html,
+    });
+
+    res.json({ ok: true, message: `Reporte enviado a ${para}`, total, items: items.length });
+  } catch (err) {
+    console.error('Error enviando email:', err);
+    res.status(500).json({ error: 'Error al enviar el correo: ' + err.message });
   }
 });
 
