@@ -64,13 +64,8 @@ export default function CentroDocumentacion() {
     setUploading(true);
     try {
       const base64 = await fileToBase64(file);
-      let docData;
-      try {
-        const result = await api.uploadFile({ codigo: codigo.toUpperCase(), categoria, archivo: base64, esDocumento: true });
-        docData = { nombre: file.name, tipo: file.type, tamano: file.size, fecha: new Date().toISOString(), url: result.url };
-      } catch {
-        docData = { nombre: file.name, tipo: file.type, tamano: file.size, fecha: new Date().toISOString(), base64 };
-      }
+      const result = await api.uploadFile({ codigo: codigo.toUpperCase(), categoria, archivo: base64, esDocumento: true });
+      const docData = { nombre: file.name, tipo: file.type, tamano: file.size, fecha: new Date().toISOString(), url: result.url, path: result.path };
       const newDocs = { ...docs, [categoria]: [...(docs[categoria] || []), docData] };
       setDocs(newDocs);
       await api.saveEquipo(codigo.toUpperCase(), { ...item, documentos: newDocs });
@@ -85,8 +80,8 @@ export default function CentroDocumentacion() {
     if (!window.confirm('¿Eliminar este documento?')) return;
     const doc = docs[categoria]?.[idx];
     try {
-      if (doc?.url && (doc.url.includes('storage.googleapis.com') || doc.url.includes('firebasestorage'))) {
-        try { await api.deleteFile(doc.path || `documentos/${codigo.toUpperCase()}/${doc.nombre}`); } catch {}
+      if (doc?.path) {
+        try { await api.deleteFile(doc.path); } catch {}
       }
       const updated = { ...docs };
       updated[categoria] = updated[categoria].filter((_, i) => i !== idx);

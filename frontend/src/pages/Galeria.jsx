@@ -72,15 +72,11 @@ export default function Galeria() {
     setUploading(true);
     try {
       const base64 = await resizeImage(files[0]);
-      let url;
-      try {
-        const result = await api.uploadFile({ codigo: codigo.toUpperCase(), categoria, archivo: base64, esDocumento: false });
-        url = result.url;
-      } catch { url = base64; }
-      const newFotos = { ...fotos, [categoria]: url };
+      const result = await api.uploadFile({ codigo: codigo.toUpperCase(), categoria, archivo: base64, esDocumento: false });
+      const newFotos = { ...fotos, [categoria]: result.url };
       setFotos(newFotos);
       await api.saveEquipo(codigo.toUpperCase(), { ...item, fotos: newFotos });
-      toast('Foto guardada', `${categoria.toUpperCase()} guardada.`, 'success');
+      toast('Foto guardada', `${categoria.toUpperCase()} subida a Storage.`, 'success');
     } catch (err) {
       toast('Error', err.message, 'error');
     }
