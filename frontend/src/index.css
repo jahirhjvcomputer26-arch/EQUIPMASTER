@@ -1,0 +1,206 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #eef0ff;
+  --color-brand-500: #0018B0;
+  --color-brand-600: #001492;
+  --color-brand-700: #001078;
+  --color-brand-900: #000856;
+  --color-accent-500: #FF9100;
+  --color-accent-600: #e68300;
+  --font-display: 'Outfit', sans-serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --animate-fade-in: fade-in .4s ease-out;
+  --animate-slide-up: slide-up .4s ease-out;
+  --animate-shimmer: shimmer 1.5s infinite;
+}
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
+@keyframes float { 0% { transform: translateY(0) scale(1); opacity: 0; } 10% { opacity: .5; } 90% { opacity: .5; } 100% { transform: translateY(-100vh) scale(1.2); opacity: 0; } }
+@keyframes slide-in-right { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.animate-slide-in-right { animation: slide-in-right .35s cubic-bezier(.21,1.02,.73,1) forwards; }
+
+body {
+  font-family: var(--font-sans);
+  background: #f4f6fb;
+}
+
+.dark body,
+.dark {
+  background: #0f172a;
+  color-scheme: dark;
+}
+
+.dark .panel {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.3);
+}
+
+.dark .form-input {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+.dark .form-input:focus {
+  border-color: #FF9100;
+  background: #1e293b;
+  box-shadow: 0 0 0 4px rgba(255, 145, 0, 0.15);
+}
+
+.dark .form-label { color: #94a3b8; }
+.dark h2, .dark h3, .dark h4, .dark .text-slate-900 { color: #f1f5f9; }
+.dark .text-slate-500, .dark .text-slate-400, .dark .text-slate-600, .dark .text-slate-700, .dark .text-slate-800 { color: #94a3b8; }
+.dark .text-brand-600 { color: #818cf8; }
+
+.dark .bg-slate-50 { background: #1e293b; }
+.dark .bg-slate-50\/50 { background: rgba(30, 41, 59, 0.5); }
+.dark .border-slate-100, .dark .border-slate-200, .dark .border-slate-300 { border-color: #334155; }
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155; }
+
+.dark table thead { background: #0f172a; }
+.dark table thead th { color: #64748b; }
+.dark table tbody tr:hover { background: #0f172a; }
+
+.dark .btn-brand { box-shadow: 0 10px 25px -5px rgba(255, 145, 0, 0.2); }
+
+.login-screen {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(0, 24, 176, 0.35), transparent 42%),
+    radial-gradient(circle at 85% 80%, rgba(255, 145, 0, 0.2), transparent 45%),
+    linear-gradient(135deg, #000856 0%, #0018B0 50%, #001492 100%);
+}
+
+.login-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.btn-brand {
+  background: linear-gradient(135deg, #FF9100 0%, #e68300 100%);
+  box-shadow: 0 10px 25px -5px rgba(255, 145, 0, 0.35);
+  transition: transform .2s, box-shadow .2s;
+}
+.btn-brand:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px -8px rgba(255, 145, 0, 0.35);
+}
+
+.sidebar-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  width: 100%;
+  padding: .75rem 1rem;
+  border-radius: .85rem;
+  font-size: .875rem;
+  font-weight: 600;
+  color: rgba(255,255,255,.75);
+  transition: all .2s;
+  text-align: left;
+}
+.sidebar-nav-btn:hover { background: rgba(255,255,255,.1); color: white; }
+.sidebar-nav-btn.active {
+  background: linear-gradient(90deg, rgba(255,145,0,.25), rgba(255,145,0,.08));
+  color: white;
+  border-left: 3px solid #FF9100;
+}
+
+.table-compact td, .table-compact th {
+  padding: 0.4rem 0.75rem !important;
+  font-size: 0.75rem !important;
+}
+.table-compact tbody td[data-label] {
+  padding: 0.25rem 0 !important;
+}
+
+@media (max-width: 640px) {
+  .table-responsive thead { display: none; }
+  .table-responsive tbody, .table-responsive tbody tr { display: block; }
+  .table-responsive tbody tr { padding: 1rem; border-bottom: 1px solid #e2e8f0; }
+  .table-responsive tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .35rem 0;
+    border: none;
+    font-size: .8125rem;
+    text-align: right;
+  }
+  .table-responsive tbody td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    font-size: .65rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #64748b;
+    margin-right: 1rem;
+    flex-shrink: 0;
+    text-align: left;
+  }
+  .dark .table-responsive tbody tr { border-color: #334155; }
+  .dark .table-responsive tbody td::before { color: #94a3b8; }
+}
+
+.panel {
+  background: white;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 24px -8px rgba(15, 23, 42, 0.08);
+}
+
+.form-input {
+  display: block;
+  width: 100%;
+  padding: .8rem 1rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: .85rem;
+  font-size: .875rem;
+  background: #fafbfd;
+}
+.form-input:focus {
+  outline: none;
+  border-color: #0018B0;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(0, 24, 176, 0.12);
+}
+
+.form-label {
+  display: block;
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #64748b;
+  margin-bottom: .5rem;
+}
+
+/* glass popover / dropdown polish */
+.glass-panel {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.dark .glass-panel {
+  background: rgba(15,23,42,0.85);
+}
+
+/* smooth scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* staggered table rows */
+.table-row-enter { animation: row-enter .3s ease-out both; }
+@keyframes row-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes bounce-subtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes ping-dot { 0%, 100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(1.5); opacity: 1; } }
+.animate-bounce-subtle { animation: bounce-subtle 1s ease-in-out infinite; }
+.animate-ping-dot { animation: ping-dot 1s ease-in-out infinite; }
