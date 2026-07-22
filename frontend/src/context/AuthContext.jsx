@@ -10,9 +10,13 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('equipmaster_token');
     const nombre = localStorage.getItem('equipmaster_nombre');
+    const rol = localStorage.getItem('equipmaster_rol');
     if (token && nombre) {
-      setUser({ nombre });
-      api.me().catch(() => logout()).finally(() => setLoading(false));
+      setUser({ nombre, rol: rol || 'tecnico' });
+      api.me().then(data => {
+        localStorage.setItem('equipmaster_rol', data.rol);
+        setUser({ nombre: data.nombre, rol: data.rol });
+      }).catch(() => logout()).finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
@@ -22,7 +26,8 @@ export function AuthProvider({ children }) {
     const data = await api.login({ usuario, password });
     localStorage.setItem('equipmaster_token', data.token);
     localStorage.setItem('equipmaster_nombre', data.nombre);
-    setUser({ nombre: data.nombre });
+    localStorage.setItem('equipmaster_rol', data.rol || 'tecnico');
+    setUser({ nombre: data.nombre, rol: data.rol || 'tecnico' });
     return data;
   };
 
@@ -33,16 +38,19 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem('equipmaster_token');
     localStorage.removeItem('equipmaster_nombre');
+    localStorage.removeItem('equipmaster_rol');
     setUser(null);
   };
 
   const setNombre = (nombre) => {
     localStorage.setItem('equipmaster_nombre', nombre);
-    setUser({ nombre });
+    setUser(prev => ({ ...prev, nombre }));
   };
 
+  const hasRole = (role) => user?.rol === role;
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, setNombre }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, setNombre, hasRole }}>
       {children}
     </AuthContext.Provider>
   );

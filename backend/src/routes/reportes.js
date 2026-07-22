@@ -122,6 +122,76 @@ router.get('/dashboard', async (_req, res) => {
   }
 });
 
+router.get('/ventas', async (_req, res) => {
+  try {
+    const data = await firebaseGet('inventario');
+    const lista = data ? Object.values(data) : [];
+    const vendidos = lista.filter(i => i.flujoSalida || i.flujoVentaML);
+    const ventas = await firebaseGet('ventas');
+    const ventasList = ventas ? Object.values(ventas) : [];
+
+    let totalLocal = 0, totalML = 0, countLocal = 0, countML = 0;
+    const porMes = {};
+
+    vendidos.forEach(item => {
+      if (item.flujoVentaML) {
+        countML++;
+        totalML += parseFloat(item.flujoVentaML.precioVenta || 0);
+      } else if (item.flujoSalida) {
+        countLocal++;
+        totalLocal += parseFloat(item.flujoSalida.precio || 0);
+      }
+    });
+
+    ventasList.forEach(v => {
+      const mes = (v.fecha || '').substring(0, 7);
+      if (mes) porMes[mes] = (porMes[mes] || 0) + 1;
+    });
+
+    res.json({
+      totalVendidos: vendidos.length,
+      totalLocal, totalML, countLocal, countML,
+      porMes,
+      items: vendidos.map(i => ({
+        codigo: i.codigo, marca: i.marca, modelo: i.modelo,
+        estado: i.estado, fechaRegistro: i.fechaRegistro,
+        precio: i.flujoSalida?.precio || i.flujoVentaML?.precioVenta || '-',
+        metodo: i.flujoSalida?.metodoPago || 'MERCADO LIBRE',
+        cliente: i.flujoSalida?.cliente || 'Mercado Libre',
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/reparaciones', async (_req, res) => {
+  try {
+    const data = await firebaseGet('inventario');
+    const lista = data ? Object.values(data) : [];
+    const reparaciones = await firebaseGet('reparaciones');
+    const repList = reparaciones ? Object.values(reparaciones) : [];
+
+    const conteoEstados = {};
+    repList.forEach(r => {
+      const est = r.estado || 'RECIBIDO';
+      conteoEstados[est] = (conteoEstados[est] || 0) + 1;
+    });
+
+    res.json({
+      total: repList.length,
+      conteoEstados,
+      items: repList.slice(0, 100).map(r => ({
+        id: r.id, equipo: r.equipo, cliente: r.cliente,
+        falla: r.falla, estado: r.estado, tecnico: r.tecnico,
+        fechaIngreso: r.fechaIngreso, costo: r.costo || 0,
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/excel', async (_req, res) => {
   try {
     const data = await firebaseGet('inventario');

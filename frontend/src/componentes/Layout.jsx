@@ -24,6 +24,8 @@ const links = [
   { to: '/reportes', icon: 'fa-chart-simple', label: 'Reportes' },
   { to: '/actividad', icon: 'fa-clock-rotate-left', label: 'Historial' },
   { to: '/base-datos', icon: 'fa-table-list', label: 'Base de Datos' },
+  { to: '/usuarios', icon: 'fa-users-gear', label: 'Usuarios', adminOnly: true },
+  { to: '/configuracion', icon: 'fa-gear', label: 'Configuración', adminOnly: true },
 ];
 
 export default function Layout() {
@@ -193,7 +195,7 @@ export default function Layout() {
         </div>
 
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
-          {links.map(l => (
+          {links.filter(l => !l.adminOnly || user?.rol === 'admin').map(l => (
             l.external ? (
               <a key={l.to} href={l.to} target="_blank" rel="noopener noreferrer" title={l.label}
                 className={`sidebar-nav-btn ${collapsed ? 'justify-center px-0' : ''}`}>

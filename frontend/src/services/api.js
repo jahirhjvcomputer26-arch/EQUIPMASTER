@@ -40,6 +40,9 @@ export const api = {
   crearReparacion: (body) => request('/reparaciones', { method: 'POST', body: JSON.stringify(body) }),
   updateReparacion: (id, body) => request(`/reparaciones/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deleteReparacion: (id) => request(`/reparaciones/${id}`, { method: 'DELETE' }),
+  getUsuarios: () => request('/usuarios/list'),
+  updateRol: (body) => request('/usuarios/rol', { method: 'PUT', body: JSON.stringify(body) }),
+  eliminarUsuario: (usuario) => request(`/usuarios/${usuario}`, { method: 'DELETE' }),
   downloadBackup: async () => {
     const token = localStorage.getItem('equipmaster_token');
     const res = await fetch(`${API}/backup`, { headers: { Authorization: `Bearer ${token}` } });
@@ -54,6 +57,11 @@ export const api = {
     URL.revokeObjectURL(url);
     return data;
   },
+  getReporteVentas: () => request('/reportes/ventas'),
+  getReporteReparaciones: () => request('/reportes/reparaciones'),
+  getConfiguracion: () => request('/configuracion'),
+  saveConfiguracion: (body) => request('/configuracion', { method: 'PUT', body: JSON.stringify(body) }),
+  getConfigPublic: () => fetch(`${API}/configuracion/public`).then(r => r.json()),
   downloadExcel: async () => {
     const token = localStorage.getItem('equipmaster_token');
     const res = await fetch(`${API}/reportes/excel`, { headers: { Authorization: `Bearer ${token}` } });

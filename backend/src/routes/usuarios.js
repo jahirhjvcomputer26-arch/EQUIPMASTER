@@ -48,6 +48,7 @@ router.post('/register', async (req, res) => {
     const datos = {
       nombre,
       password: await hashPassword(password),
+      rol: req.body.rol || 'tecnico',
       creado: new Date().toISOString(),
     };
     await firebaseSet(`usuarios/${clave}`, datos);
@@ -77,7 +78,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    res.json({ token, nombre: registro.nombre, usuario: registro.nombre });
+    res.json({ token, nombre: registro.nombre, usuario: registro.nombre, rol: registro.rol || 'tecnico' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -85,7 +86,7 @@ router.post('/login', async (req, res) => {
 
 router.get('/me', authMiddleware, async (req, res) => {
   const registro = await firebaseGet(`usuarios/${req.user.usuario}`);
-  res.json({ nombre: req.user.nombre, usuario: req.user.nombre, creado: registro?.creado || null });
+  res.json({ nombre: req.user.nombre, usuario: req.user.nombre, rol: registro?.rol || 'tecnico', creado: registro?.creado || null });
 });
 
 router.post('/cambiar-password', authMiddleware, async (req, res) => {
@@ -131,6 +132,36 @@ router.put('/cambiar-nombre', authMiddleware, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+router.get('/list', authMiddleware, async (req, res) => {
+  const registro = await firebaseGet(`usuarios/${req.user.usuario}`);
+  if (!registro || registro.rol !== 'admin') return res.status(403).json({ error: 'Solo administradores' });
+  const all = await firebaseGet('usuarios');
+  const users = Object.entries(all || {}).map(([key, val]) => ({
+    usuario: key, nombre: val.nombre, rol: val.rol || 'tecnico', creado: val.creado,
+  }));
+  res.json(users);
+});
+
+router.put('/rol', authMiddleware, async (req, res) => {
+  const registro = await firebaseGet(`usuarios/${req.user.usuario}`);
+  if (!registro || registro.rol !== 'admin') return res.status(403).json({ error: 'Solo administradores' });
+  const { usuario, rol } = req.body;
+  if (!['admin', 'tecnico', 'ventas'].includes(rol)) return res.status(400).json({ error: 'Rol inválido' });
+  const target = await firebaseGet(`usuarios/${usuario}`);
+  if (!target) return res.status(404).json({ error: 'Usuario no encontrado' });
+  target.rol = rol;
+  await firebaseSet(`usuarios/${usuario}`, target);
+  res.json({ message: 'Rol actualizado' });
+});
+
+router.delete('/:usuario', authMiddleware, async (req, res) => {
+  const registro = await firebaseGet(`usuarios/${req.user.usuario}`);
+  if (!registro || registro.rol !== 'admin') return res.status(403).json({ error: 'Solo administradores' });
+  if (req.params.usuario === req.user.usuario) return res.status(400).json({ error: 'No puedes eliminarte a ti mismo' });
+  await firebaseSet(`usuarios/${req.params.usuario}`, null);
+  res.json({ message: 'Usuario eliminado' });
 });
 
 export default router;

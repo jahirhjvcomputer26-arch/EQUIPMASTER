@@ -79,7 +79,10 @@ export default function Perfil() {
             ) : (
               <div className="flex items-center gap-2">
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900">{user?.nombre || 'Usuario'}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-slate-900">{user?.nombre || 'Usuario'}</h3>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${user?.rol === 'admin' ? 'bg-blue-100 text-blue-700' : user?.rol === 'ventas' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{user?.rol === 'admin' ? 'Administrador' : user?.rol === 'ventas' ? 'Ventas' : 'Técnico'}</span>
+                  </div>
                   <p className="text-sm text-slate-500">
                     {info?.creado ? `Usuario desde ${new Date(info.creado).toLocaleDateString()}` : 'Miembro del sistema'}
                   </p>

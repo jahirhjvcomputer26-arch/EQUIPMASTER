@@ -22,7 +22,9 @@ import FichaEquipo from './pages/FichaEquipo';
 import FichaTecnicaV2 from './pages/FichaTecnicaV2';
 import Galeria from './pages/Galeria';
 import Etiquetas from './pages/Etiquetas';
+import Usuarios from './pages/Usuarios';
 import CentroDocumentacion from './pages/CentroDocumentacion';
+import Configuracion from './pages/Configuracion';
 import LoadingScreen from './componentes/LoadingScreen';
 
 function PrivateRoute({ children }) {
@@ -53,6 +55,8 @@ export default function App() {
                 <Route path="actividad" element={<Actividad />} />
                 <Route path="base-datos" element={<BaseDatos />} />
                 <Route path="reparaciones" element={<Reparaciones />} />
+                <Route path="usuarios" element={<Usuarios />} />
+                <Route path="configuracion" element={<Configuracion />} />
               </Route>
               <Route path="consulta" element={<ConsultaPublica />} />
               <Route path="ficha/:codigo" element={<FichaEquipo />} />

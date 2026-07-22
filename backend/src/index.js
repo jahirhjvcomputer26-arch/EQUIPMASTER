@@ -11,6 +11,7 @@ import prestamosRouter from './routes/prestamos.js';
 import actividadRouter from './routes/actividad.js';
 import reparacionesRouter from './routes/reparaciones.js';
 import backupRouter from './routes/backup.js';
+import configuracionRouter from './routes/configuracion.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -32,6 +33,7 @@ app.use('/api/prestamos', prestamosRouter);
 app.use('/api/actividad', actividadRouter);
 app.use('/api/reparaciones', reparacionesRouter);
 app.use('/api/backup', backupRouter);
+app.use('/api/configuracion', configuracionRouter);
 
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
