@@ -12,24 +12,52 @@ import SearchModal from './SearchModal';
 import ScrollToTop from './ScrollToTop';
 import useBrowserNotifications from '../utils/useBrowserNotifications';
 
-const links = [
-  { to: '/', icon: 'fa-chart-pie', label: 'Dashboard', end: true },
-  { to: '/inventario', icon: 'fa-plus-circle', label: 'Entrada / Triage' },
-  { to: 'http://192.168.100.198:5175', icon: 'fa-battery-three-quarters', label: 'Cargadores', external: true },
-  { to: '/ventas', icon: 'fa-store', label: 'Venta Local' },
-  { to: '/mercadolibre', icon: 'fa-warehouse', label: 'Venta ML' },
-  { to: '/devoluciones', icon: 'fa-rotate-left', label: 'Devoluciones' },
-  { to: '/prestamos', icon: 'fa-hand-holding', label: 'Préstamos' },
-  { to: '/reparaciones', icon: 'fa-toolbox', label: 'Reparaciones' },
-  { to: '/tickets', icon: 'fa-ticket', label: 'Tickets' },
-  { to: '/etiquetas', icon: 'fa-tag', label: 'Etiquetas' },
-  { to: '/reportes', icon: 'fa-chart-simple', label: 'Reportes' },
-  { to: '/alertas', icon: 'fa-triangle-exclamation', label: 'Alertas' },
-  { to: '/actividad', icon: 'fa-clock-rotate-left', label: 'Historial' },
-  { to: '/base-datos', icon: 'fa-table-list', label: 'Base de Datos' },
-  { to: '/usuarios', icon: 'fa-users-gear', label: 'Usuarios', adminOnly: true },
-  { to: '/configuracion', icon: 'fa-gear', label: 'Configuración', adminOnly: true },
+const menuGroups = [
+  { label: 'Operación', items: [
+    { to: '/', icon: 'fa-chart-pie', label: 'Dashboard', end: true },
+  ]},
+  { label: 'Movimientos', items: [
+    { to: '/ventas', icon: 'fa-store', label: 'Venta Local' },
+    { to: '/mercadolibre', icon: 'fa-warehouse', label: 'Venta ML' },
+    { to: '/devoluciones', icon: 'fa-rotate-left', label: 'Devoluciones' },
+    { to: '/prestamos', icon: 'fa-hand-holding', label: 'Préstamos' },
+    { to: 'http://192.168.100.198:5175', icon: 'fa-battery-three-quarters', label: 'Cargadores', external: true },
+  ]},
+  { label: 'Servicio', items: [
+    { to: '/reparaciones', icon: 'fa-toolbox', label: 'Reparaciones' },
+    { to: '/tickets', icon: 'fa-ticket', label: 'Tickets' },
+    { to: '/etiquetas', icon: 'fa-tag', label: 'Etiquetas' },
+  ]},
+  { label: 'Control', items: [
+    { to: '/reportes', icon: 'fa-chart-simple', label: 'Reportes' },
+    { to: '/alertas', icon: 'fa-triangle-exclamation', label: 'Alertas' },
+    { to: '/actividad', icon: 'fa-clock-rotate-left', label: 'Historial' },
+    { to: '/base-datos', icon: 'fa-table-list', label: 'Base de Datos' },
+  ]},
+  { label: 'Admin', adminOnly: true, items: [
+    { to: '/usuarios', icon: 'fa-users-gear', label: 'Usuarios' },
+    { to: '/configuracion', icon: 'fa-gear', label: 'Configuración' },
+  ]},
 ];
+
+const ROUTE_LABELS = {
+  '/': 'Dashboard',
+  '/inventario': 'Entrada / Triage',
+  '/ventas': 'Venta Local',
+  '/mercadolibre': 'Venta ML',
+  '/devoluciones': 'Devoluciones',
+  '/prestamos': 'Préstamos',
+  '/reparaciones': 'Reparaciones',
+  '/tickets': 'Tickets',
+  '/etiquetas': 'Etiquetas',
+  '/reportes': 'Reportes',
+  '/alertas': 'Alertas',
+  '/actividad': 'Historial',
+  '/base-datos': 'Base de Datos',
+  '/usuarios': 'Usuarios',
+  '/configuracion': 'Configuración',
+  '/perfil': 'Mi Cuenta',
+};
 
 export default function Layout() {
   const { user, logout } = useAuth();
@@ -134,24 +162,24 @@ export default function Layout() {
     inventario.forEach(item => {
       if (!item.estado?.includes('🔴 VENDIDO')) {
         if (!item.fotos || Object.keys(item.fotos).length === 0) {
-          alertas.push({ id: `${item.codigo}-sin-fotos`, mensaje: `${item.codigo} sin fotografías`, detalle: `${item.marca} ${item.modelo}`, icon: 'fa-camera', color: 'text-amber-500' });
-        }
-        if (!item.checklistPruebas || Object.keys(item.checklistPruebas).length === 0) {
-          alertas.push({ id: `${item.codigo}-sin-diagnostico`, mensaje: `${item.codigo} sin diagnóstico`, detalle: `${item.marca} ${item.modelo}`, icon: 'fa-stethoscope', color: 'text-purple-500' });
+          alertas.push({ id: `${item.codigo}-sin-fotos`, mensaje: `${item.codigo} sin fotos`, detalle: `${item.marca} ${item.modelo}`, icon: 'fa-camera', color: 'text-amber-500', prioridad: 'critica' });
         }
         if (!item.serie || item.serie === 'N/A') {
-          alertas.push({ id: `${item.codigo}-sin-serie`, mensaje: `${item.codigo} sin número de serie`, detalle: `${item.marca} ${item.modelo}`, icon: 'fa-barcode', color: 'text-red-500' });
+          alertas.push({ id: `${item.codigo}-sin-serie`, mensaje: `${item.codigo} sin serie`, detalle: `${item.marca} ${item.modelo}`, icon: 'fa-barcode', color: 'text-red-500', prioridad: 'critica' });
+        }
+        if (!item.checklistPruebas || Object.keys(item.checklistPruebas).length === 0) {
+          alertas.push({ id: `${item.codigo}-sin-diagnostico`, mensaje: `${item.codigo} sin diagnóstico`, detalle: `${item.marca} ${item.modelo}`, icon: 'fa-stethoscope', color: 'text-purple-500', prioridad: 'pendiente' });
         }
         if (!item.cargador || item.cargador === 'N/A') {
-          alertas.push({ id: `${item.codigo}-sin-cargador`, mensaje: `${item.codigo} sin cargador`, detalle: `${item.marca} ${item.modelo}`, icon: 'fa-plug', color: 'text-blue-500' });
+          alertas.push({ id: `${item.codigo}-sin-cargador`, mensaje: `${item.codigo} sin cargador`, detalle: `${item.marca} ${item.modelo}`, icon: 'fa-plug', color: 'text-blue-500', prioridad: 'pendiente' });
         }
         if (item.estado?.includes('🟠') || item.estado?.includes('🟡')) {
-          alertas.push({ id: `${item.codigo}-pendiente`, mensaje: `${item.codigo} pendiente`, detalle: `${item.estado} · ${item.marca} ${item.modelo}`, icon: 'fa-clock', color: 'text-orange-500' });
+          alertas.push({ id: `${item.codigo}-pendiente`, mensaje: `${item.codigo} pendiente`, detalle: `${item.estado} · ${item.marca} ${item.modelo}`, icon: 'fa-clock', color: 'text-orange-500', prioridad: 'pendiente' });
         }
         if (item.tecnico && item.fechaRegistro) {
           const dias = Math.floor((Date.now() - new Date(item.fechaRegistro).getTime()) / (1000*60*60*24));
           if (dias > 30 && !item.flujoSalida && !item.flujoVentaML) {
-            alertas.push({ id: `${item.codigo}-antiguo`, mensaje: `${item.codigo} más de 30 días en inventario`, detalle: `${item.marca} ${item.modelo} · ${dias} días`, icon: 'fa-hourglass-half', color: 'text-cyan-500' });
+            alertas.push({ id: `${item.codigo}-antiguo`, mensaje: `${item.codigo} 30+ días`, detalle: `${item.marca} ${item.modelo} · ${dias} días`, icon: 'fa-hourglass-half', color: 'text-cyan-500', prioridad: 'aviso' });
           }
         }
       }
@@ -204,22 +232,44 @@ export default function Layout() {
           </button>
         </div>
 
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto overflow-x-hidden">
-          {links.filter(l => !l.adminOnly || user?.rol === 'admin').map(l => (
-            l.external ? (
-              <a key={l.to} href={l.to} target="_blank" rel="noopener noreferrer" title={l.label}
-                className={`sidebar-nav-btn ${collapsed ? 'justify-center px-0' : ''}`}>
-                <i className={`fa-solid ${l.icon} ${collapsed ? 'text-lg' : 'w-5 text-center'}`} />
-                {!collapsed && <span className="truncate">{l.label}</span>}
-              </a>
-            ) : (
-              <NavLink key={l.to} to={l.to} end={l.end} title={l.label}
-                className={({ isActive }) => `sidebar-nav-btn ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-0' : ''}`}
-                onClick={() => setSidebarOpen(false)}>
-                <i className={`fa-solid ${l.icon} ${collapsed ? 'text-lg' : 'w-5 text-center'}`} />
-                {!collapsed && <span className="truncate">{l.label}</span>}
-              </NavLink>
-            )
+        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
+          {!collapsed && (
+            <NavLink to="/inventario"
+              className="flex items-center justify-center gap-2 w-full py-2.5 mb-2 rounded-xl bg-white text-brand-700 text-sm font-extrabold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all"
+              onClick={() => setSidebarOpen(false)}>
+              <i className="fa-solid fa-plus-circle" /> Registrar equipo
+            </NavLink>
+          )}
+          {collapsed && (
+            <NavLink to="/inventario" title="Registrar equipo"
+              className="flex items-center justify-center w-full py-2.5 mb-2 rounded-xl bg-white text-brand-700 shadow-lg hover:shadow-xl transition-all"
+              onClick={() => setSidebarOpen(false)}>
+              <i className="fa-solid fa-plus-circle text-lg" />
+            </NavLink>
+          )}
+          {menuGroups.filter(g => !g.adminOnly || user?.rol === 'admin').map(group => (
+            <div key={group.label}>
+              {!collapsed && (
+                <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest px-3 pt-2.5 pb-1">{group.label}</p>
+              )}
+              {collapsed && <div className="border-t border-white/10 my-1.5" />}
+              {group.items.map(l => (
+                l.external ? (
+                  <a key={l.to} href={l.to} target="_blank" rel="noopener noreferrer" title={l.label}
+                    className={`sidebar-nav-btn ${collapsed ? 'justify-center px-0' : ''}`}>
+                    <i className={`fa-solid ${l.icon} ${collapsed ? 'text-lg' : 'w-5 text-center'}`} />
+                    {!collapsed && <span className="truncate">{l.label}</span>}
+                  </a>
+                ) : (
+                  <NavLink key={l.to} to={l.to} end={l.end} title={l.label}
+                    className={({ isActive }) => `sidebar-nav-btn ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-0' : ''}`}
+                    onClick={() => setSidebarOpen(false)}>
+                    <i className={`fa-solid ${l.icon} ${collapsed ? 'text-lg' : 'w-5 text-center'}`} />
+                    {!collapsed && <span className="truncate">{l.label}</span>}
+                  </NavLink>
+                )
+              ))}
+            </div>
           ))}
         </nav>
 
@@ -264,7 +314,7 @@ export default function Layout() {
               <i className="fa-solid fa-bell text-lg" />
               {notificacionesLocales.length > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                  {notificacionesLocales.length > 99 ? '99+' : notificacionesLocales.length}
+                  {notificacionesLocales.filter(n => n.prioridad === 'critica').length || notificacionesLocales.length}
                 </span>
               )}
             </button>
@@ -283,22 +333,32 @@ export default function Layout() {
                       Todo en orden
                     </div>
                   ) : (
-                    notificacionesLocales.slice(0, 20).map(n => (
-                      <div key={n.id} className="px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition flex items-start gap-3">
-                        <i className={`fa-solid ${n.icon} ${n.color} mt-0.5 text-sm`} />
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-slate-700 truncate">{n.mensaje}</p>
-                          <p className="text-[11px] text-slate-400 truncate">{n.detalle}</p>
-                        </div>
-                      </div>
-                    ))
+                    <>
+                      {['critica', 'pendiente', 'aviso'].map(prio => {
+                        const items = notificacionesLocales.filter(n => n.prioridad === prio);
+                        if (items.length === 0) return null;
+                        const labels = { critica: 'Crítica', pendiente: 'Pendiente', aviso: 'Aviso' };
+                        const colors = { critica: 'text-red-600 bg-red-50', pendiente: 'text-amber-600 bg-amber-50', aviso: 'text-blue-600 bg-blue-50' };
+                        return (
+                          <div key={prio}>
+                            <div className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider ${colors[prio]}`}>
+                              {labels[prio]} ({items.length})
+                            </div>
+                            {items.slice(0, 10).map(n => (
+                              <div key={n.id} className="px-4 py-2.5 border-b border-slate-50 hover:bg-slate-50 transition flex items-start gap-3">
+                                <i className={`fa-solid ${n.icon} ${n.color} mt-0.5 text-sm`} />
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold text-slate-700 truncate">{n.mensaje}</p>
+                                  <p className="text-[11px] text-slate-400 truncate">{n.detalle}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </>
                   )}
                 </div>
-                {notificacionesLocales.length > 20 && (
-                  <div className="px-4 py-2 bg-slate-50 text-center text-xs font-bold text-slate-400">
-                    +{notificacionesLocales.length - 20} más
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -307,23 +367,39 @@ export default function Layout() {
           </button>
         </header>
 
-        <main ref={mainRef} className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto pb-20 lg:pb-8">
+        <main ref={mainRef} className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto pb-24 lg:pb-8">
+          {location.pathname !== '/' && (
+            <nav className="flex items-center gap-1.5 text-xs text-slate-400 mb-4">
+              <NavLink to="/" className="hover:text-brand-600 transition"><i className="fa-solid fa-house text-[10px]" /> Inicio</NavLink>
+              <i className="fa-solid fa-chevron-right text-[8px]" />
+              <span className="font-bold text-slate-600">
+                {ROUTE_LABELS[location.pathname] || (location.pathname.startsWith('/inventario') ? 'Entrada / Triage' : location.pathname.startsWith('/ficha-v2/') ? 'Ficha Técnica' : location.pathname.startsWith('/galeria/') ? 'Galería' : location.pathname.startsWith('/etiquetas/') ? 'Etiquetas' : location.pathname.startsWith('/documentos/') ? 'Documentos' : location.pathname.split('/').filter(Boolean).pop() || '')}
+              </span>
+            </nav>
+          )}
           <div className="animate-fade-in" key={location.pathname}>
             <Outlet />
           </div>
         </main>
 
-        <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-slate-200 flex justify-around items-center px-2 py-1 shadow-lg">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-around items-center px-1 py-1 shadow-lg">
           {[
-            { to: '/', icon: 'fa-chart-pie' },
-            { to: '/inventario', icon: 'fa-plus-circle' },
-            { to: '/ventas', icon: 'fa-store' },
-            { to: '/prestamos', icon: 'fa-hand-holding' },
-            { to: '/base-datos', icon: 'fa-table-list' },
+            { to: '/', icon: 'fa-chart-pie', label: 'Inicio' },
+            { to: '/inventario', icon: 'fa-plus-circle', label: 'Registrar', accent: true },
+            { to: '/base-datos', icon: 'fa-table-list', label: 'Buscar' },
+            { to: '/alertas', icon: 'fa-triangle-exclamation', label: 'Alertas', badge: notificacionesLocales.length },
           ].map(l => (
             <NavLink key={l.to} to={l.to} end={l.to === '/'}
-              className={({ isActive }) => `flex flex-col items-center px-3 py-2 rounded-xl text-xs font-bold transition ${isActive ? 'text-brand-600' : 'text-slate-400 hover:text-slate-600'}`}>
-              <i className={`fa-solid ${l.icon} text-lg mb-0.5`} />
+              className={({ isActive }) => `flex flex-col items-center px-2 py-1.5 rounded-xl text-[10px] font-bold transition ${l.accent ? 'text-white bg-brand-600 shadow-md -mt-3 px-3' : isActive ? 'text-brand-600' : 'text-slate-400'}`}>
+              <div className="relative">
+                <i className={`fa-solid ${l.icon} ${l.accent ? 'text-lg' : 'text-base'} mb-0.5`} />
+                {l.badge > 0 && (
+                  <span className="absolute -top-1 -right-2 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                    {l.badge > 9 ? '9+' : l.badge}
+                  </span>
+                )}
+              </div>
+              <span>{l.label}</span>
             </NavLink>
           ))}
         </nav>
