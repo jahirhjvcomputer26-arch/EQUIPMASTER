@@ -25,12 +25,18 @@ export default function LivePreview({ form, tmpl }) {
       </div>
 
       <div className="p-4 space-y-3">
-        <div className="w-full h-24 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center">
-          <div className="text-center">
-            <i className="fa-solid fa-camera text-slate-300 text-xl" />
-            <p className="text-[9px] text-slate-300 mt-1">Foto del equipo</p>
+        {form.fotos?.frente ? (
+          <div className="w-full h-24 rounded-xl overflow-hidden border border-slate-200">
+            <img src={form.fotos.frente} alt="Foto frente" className="w-full h-full object-cover" />
           </div>
-        </div>
+        ) : (
+          <div className="w-full h-24 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center">
+            <div className="text-center">
+              <i className="fa-solid fa-camera text-slate-300 text-xl" />
+              <p className="text-[9px] text-slate-300 mt-1">Foto del equipo</p>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-0.5">
           <Row label="Código" value={form.codigo} />

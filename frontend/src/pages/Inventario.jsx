@@ -46,6 +46,7 @@ const emptyForm = {
   tecnico: '', bateria: '', cargador: '', estado: '🔵 OK', observaciones: '',
   mlFechaEnvio: '', mlPublicacionId: '', mlEnviadoPor: '',
   fichaV2: emptyFichaV2,
+  fotos: {},
 };
 
 function SectionHeader({ icon, title, color, children }) {
@@ -157,6 +158,46 @@ export default function Inventario() {
     }));
   };
 
+  const resizeImage = (file) => new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 800;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) { if (w > h) { h = Math.round(h * MAX / w); w = MAX; } else { w = Math.round(w * MAX / h); h = MAX; } }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  const handleFormPhotoUpload = async (categoria, files) => {
+    if (!files?.length) return;
+    try {
+      const base64 = await resizeImage(files[0]);
+      const result = await api.uploadFile({ codigo: form.codigo, categoria, archivo: base64, esDocumento: false });
+      setDirty(true);
+      setForm(prev => ({ ...prev, fotos: { ...prev.fotos, [categoria]: result.url } }));
+      notify('Foto subida', `${categoria} guardada en Storage.`, 'success');
+    } catch (err) { notify('Error', err.message, 'error'); }
+  };
+
+  const handleFormPhotoDelete = async (categoria) => {
+    try {
+      if (form.fotos[categoria]?.includes('storage.googleapis.com') || form.fotos[categoria]?.includes('firebasestorage')) {
+        const ext = (form.fotos[categoria].split('.').pop()?.split('?')[0]) || 'jpg';
+        await api.deleteFile(`fotos/${form.codigo}/${categoria}.${ext}`);
+      }
+      setDirty(true);
+      setForm(prev => { const f = { ...prev.fotos }; delete f[categoria]; return { ...prev, fotos: f }; });
+    } catch { /* ignore */ }
+  };
+
   useEffect(() => {
     if (!form.modelo || form.fichaV2.modeloComercial) return;
     const derivado = derivarModeloComercial(form.marca, form.modelo);
@@ -203,6 +244,7 @@ export default function Inventario() {
       mlFechaEnvio: item.flujoMercadoLibre?.fechaEnvio || '',
       mlPublicacionId: item.flujoMercadoLibre?.idPublicacion || '',
       mlEnviadoPor: item.flujoMercadoLibre?.enviadoPor || '',
+      fotos: item.fotos || {},
       fichaV2: {
         sistemaOperativo: item.sistemaOperativo || '',
         color: item.color || '',
@@ -259,6 +301,7 @@ export default function Inventario() {
       camaraIR: form.camaraIR,
       wifi: form.wifi,
       bluetooth: form.bluetooth,
+      fotos: Object.keys(form.fotos).length > 0 ? form.fotos : existente?.fotos || {},
       fechaRegistro: existente?.fechaRegistro || new Date().toLocaleString(),
       flujoSalida: existente?.flujoSalida || null,
       flujoVentaML: existente?.flujoVentaML || null,
@@ -320,7 +363,7 @@ export default function Inventario() {
     setEditing(false);
     setSkuManual(false);
     const hoy = new Date().toISOString().split('T')[0];
-    setForm({ ...emptyForm, codigo: nextCodigo, fichaV2: { ...emptyFichaV2, fechaRevision: hoy } });
+    setForm({ ...emptyForm, codigo: nextCodigo, fichaV2: { ...emptyFichaV2, fechaRevision: hoy }, fotos: {} });
     setStep(mode === 'quick' ? 1 : 1);
   };
 
@@ -571,6 +614,46 @@ export default function Inventario() {
                     {tmpl.ficha.checklist.filter(t => form.fichaV2.checklistPruebas[t] === 'OK').length}/{tmpl.ficha.checklist.length}
                   </span>
                   <VisualChecklist items={tmpl.ficha.checklist} results={form.fichaV2.checklistPruebas} onToggle={toggleChecklist} compact />
+                </SectionHeader>
+              )}
+
+              {editing && (
+                <SectionHeader icon="fa-camera" title="Fotos del Equipo" color="bg-pink-50 text-pink-600">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {Object.keys(form.fotos).length}/6
+                  </span>
+                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-1">
+                    {[
+                      { key: 'frente', label: 'Frente', icon: 'fa-laptop' },
+                      { key: 'posterior', label: 'Posterior', icon: 'fa-rotate-left' },
+                      { key: 'pantalla', label: 'Pantalla', icon: 'fa-desktop' },
+                      { key: 'teclado', label: 'Teclado', icon: 'fa-keyboard' },
+                      { key: 'bios', label: 'BIOS', icon: 'fa-microchip' },
+                      { key: 'etiquetas', label: 'Etiquetas', icon: 'fa-tag' },
+                    ].map(({ key, label, icon }) => (
+                      <label key={key} className={`relative group flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
+                        form.fotos[key]
+                          ? 'border-brand-300 bg-brand-50/50'
+                          : 'border-slate-200 hover:border-brand-300 bg-slate-50'
+                      }`}>
+                        {form.fotos[key] ? (
+                          <>
+                            <img src={form.fotos[key]} alt={label} className="w-full h-14 object-cover rounded-lg" />
+                            <button type="button" onClick={e => { e.preventDefault(); e.stopPropagation(); handleFormPhotoDelete(key); }}
+                              className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] opacity-0 group-hover:opacity-100 transition shadow">
+                              <i className="fa-solid fa-xmark" />
+                            </button>
+                          </>
+                        ) : (
+                          <div className="w-full h-14 flex flex-col items-center justify-center">
+                            <i className={`fa-solid ${icon} text-slate-300 text-sm`} />
+                            <span className="text-[9px] text-slate-400 mt-0.5">{label}</span>
+                          </div>
+                        )}
+                        <input type="file" accept="image/*" className="hidden" onChange={e => { handleFormPhotoUpload(key, e.target.files); e.target.value = ''; }} />
+                      </label>
+                    ))}
+                  </div>
                 </SectionHeader>
               )}
             </div>
