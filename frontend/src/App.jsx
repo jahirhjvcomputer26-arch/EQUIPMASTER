@@ -61,13 +61,13 @@ export default function App() {
                 <Route path="usuarios" element={<Usuarios />} />
                 <Route path="configuracion" element={<Configuracion />} />
                 <Route path="tickets" element={<Tickets />} />
+                <Route path="etiquetas" element={<Etiquetas />} />
+                <Route path="etiquetas/:codigo" element={<Etiquetas />} />
               </Route>
               <Route path="consulta" element={<ConsultaPublica />} />
               <Route path="ficha/:codigo" element={<FichaEquipo />} />
               <Route path="ficha-v2/:codigo" element={<FichaTecnicaV2 />} />
               <Route path="/galeria/:codigo" element={<Galeria />} />
-              <Route path="/etiquetas" element={<Etiquetas />} />
-              <Route path="/etiquetas/:codigo" element={<Etiquetas />} />
               <Route path="/documentos/:codigo" element={<CentroDocumentacion />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

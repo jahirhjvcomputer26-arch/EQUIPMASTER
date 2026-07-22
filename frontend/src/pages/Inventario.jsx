@@ -398,7 +398,7 @@ export default function Inventario() {
               <a href={`/documentos/${form.codigo}`} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white transition">
                 <i className="fa-solid fa-folder-open" /> Docs
               </a>
-              <a href={`/etiquetas/${form.codigo}`} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white transition">
+              <a href={`/etiquetas/${form.codigo}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white transition">
                 <i className="fa-solid fa-tag" /> Etiqueta
               </a>
             </div>
