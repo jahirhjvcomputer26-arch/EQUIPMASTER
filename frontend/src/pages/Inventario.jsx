@@ -576,7 +576,15 @@ export default function Inventario() {
             </div>
           )}
 
-          <div className="h-16" />
+          <ActionBar
+            stepIndex={currentStepIndex}
+            totalSteps={totalSteps}
+            editing={editing}
+            onPrev={goPrev}
+            onNext={goNext}
+            onSubmit={handleSubmit}
+            onCancel={() => cancelar()}
+          />
         </form>
 
         {mode === 'full' && (
@@ -585,16 +593,6 @@ export default function Inventario() {
           </div>
         )}
       </div>
-
-      <ActionBar
-        stepIndex={currentStepIndex}
-        totalSteps={totalSteps}
-        editing={editing}
-        onPrev={goPrev}
-        onNext={goNext}
-        onSubmit={handleSubmit}
-        onCancel={() => cancelar()}
-      />
     </section>
   );
 }
