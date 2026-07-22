@@ -617,8 +617,7 @@ export default function Inventario() {
                 </SectionHeader>
               )}
 
-              {editing && (
-                <SectionHeader icon="fa-camera" title="Fotos del Equipo" color="bg-pink-50 text-pink-600">
+              <SectionHeader icon="fa-camera" title="Fotos del Equipo" color="bg-pink-50 text-pink-600">
                   <span className="text-[10px] font-bold text-slate-400">
                     {Object.keys(form.fotos).length}/9
                   </span>
@@ -658,7 +657,6 @@ export default function Inventario() {
                     ))}
                   </div>
                 </SectionHeader>
-              )}
             </div>
           )}
 
