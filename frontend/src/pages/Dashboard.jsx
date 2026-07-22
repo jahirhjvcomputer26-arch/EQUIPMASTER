@@ -58,6 +58,7 @@ export default function Dashboard() {
   const { notify } = useNotify();
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
+  const [showCharts, setShowCharts] = useState(false);
 
   const stats = useMemo(() => {
     const desde = fechaDesde ? new Date(fechaDesde) : null;
@@ -294,11 +295,18 @@ export default function Dashboard() {
         <StatCard icon="fa-screwdriver-wrench" color="bg-amber-50 text-amber-600" label="En revisión" value={stats.equiposRevisionTriage + stats.equiposMercadoLibre} sub={`${stats.equiposMercadoLibre} en ML`} bgGlow="bg-amber-500" />
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '65ms' }}>
+        <StatCard icon="fa-rotate-left" color="bg-orange-50 text-orange-600" label="Pendientes" value={stats.equiposRevisionTriage} sub="🟡 + 🟠" bgGlow="bg-orange-500" />
+        <StatCard icon="fa-tag" color="bg-purple-50 text-purple-600" label="Mermas TKF" value={stats.mermasTKF} sub="🔴 TKF" bgGlow="bg-purple-500" />
+        <StatCard icon="fa-dollar-sign" color="bg-emerald-50 text-emerald-600" label="Vendidos" value={stats.totalVendidos} sub={`$${stats.totalVendidoEnPesos.toLocaleString('es-MX')}`} bgGlow="bg-emerald-500" />
+        <StatCard icon="fa-percent" color="bg-cyan-50 text-cyan-600" label="Tasa conversión" value={`${stats.tasaConversion}%`} sub="ventas / activos" bgGlow="bg-cyan-500" />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 animate-slide-up" style={{ animationDelay: '80ms' }}>
         <QuickLink to="/inventario" icon="fa-plus-circle" color="bg-brand-50 text-brand-600" label="Registrar equipo" />
         <QuickLink to="/base-datos" icon="fa-database" color="bg-blue-50 text-blue-600" label="Base de datos" count={inventario.length} />
         <QuickLink to="/reparaciones" icon="fa-wrench" color="bg-orange-50 text-orange-600" label="Reparaciones" />
-        <QuickLink to="/mercado-libre" icon="fa-truck" color="bg-emerald-50 text-emerald-600" label="Mercado Libre" />
+        <QuickLink to="/mercadolibre" icon="fa-truck" color="bg-emerald-50 text-emerald-600" label="Mercado Libre" />
         <QuickLink to="/reportes" icon="fa-chart-bar" color="bg-purple-50 text-purple-600" label="Reportes" />
       </div>
 
@@ -332,101 +340,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-up" style={{ animationDelay: '150ms' }}>
-        <div className="panel p-6 min-h-[380px] flex flex-col hover:shadow-lg transition-shadow duration-300 lg:col-span-2">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
-            <i className="fa-solid fa-chart-line text-brand-500 mr-1" /> Entradas por Mes
-          </h4>
-          <p className="text-[11px] text-slate-400 mb-3">Tendencia mensual de equipos registrados</p>
-          <div className="flex-1 min-h-[260px] relative">
-            <Line data={{
-              labels: stats.mesesLabels,
-              datasets: [{ label: 'Equipos', data: stats.mesesData, borderColor: '#0018B0', backgroundColor: 'rgba(0,24,176,0.08)', fill: true, tension: 0.35, pointRadius: 4, pointBackgroundColor: '#0018B0', pointBorderColor: '#fff', pointBorderWidth: 2, pointHoverRadius: 6, borderWidth: 2.5 }]
-            }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } } } }} />
-          </div>
-        </div>
-        <div className="panel p-6 min-h-[380px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-4">
-            <i className="fa-solid fa-pie-chart text-emerald-500 mr-1" /> Distribución Global
-          </h4>
-          <div className="flex-1 flex items-center justify-center">
-            <div className="w-full max-w-[220px]">
-              <Doughnut data={doughnutData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="panel p-6 animate-slide-up" style={{ animationDelay: '200ms' }}>
-        <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
-          <i className="fa-solid fa-bar-chart text-blue-500 mr-1" /> Stock Activo: Modelos por Estado
-        </h4>
-        <p className="text-[11px] text-slate-400 mb-3">Cada barra = modelo; colores = estados distintos</p>
-        <div className="h-[280px] relative">
-          <Bar data={barData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } } }} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-slide-up" style={{ animationDelay: '200ms' }}>
-        <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-building text-brand-500 mr-1" /> Inventario por Marca</h4>
-          <div className="flex-1 flex items-center justify-center">
-            <div className="w-full max-w-[240px]">
-              <Doughnut data={{ labels: stats.porMarca.labels, datasets: [{ data: stats.porMarca.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444', '#64748b'], borderWidth: 1.5 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
-            </div>
-          </div>
-        </div>
-        <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-microchip text-blue-500 mr-1" /> Inventario por Procesador</h4>
-          <div className="flex-1 flex items-center justify-center">
-            <div className="w-full max-w-[240px]">
-              <Doughnut data={{ labels: stats.porProcesador.labels, datasets: [{ data: stats.porProcesador.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444', '#64748b'], borderWidth: 1.5 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
-            </div>
-          </div>
-        </div>
-        <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-memory text-purple-500 mr-1" /> Distribución RAM</h4>
-          <div className="flex-1 min-h-[240px] relative">
-            <Bar data={{ labels: stats.porRam.labels, datasets: [{ label: 'Equipos', data: stats.porRam.data, backgroundColor: '#0018B0', borderRadius: 6 }] }} options={{ responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '225ms' }}>
-        <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-hard-drive text-emerald-500 mr-1" /> Distribución Almacenamiento</h4>
-          <div className="flex-1 min-h-[240px] relative">
-            <Bar data={{ labels: stats.porAlmacenamiento.labels, datasets: [{ label: 'Equipos', data: stats.porAlmacenamiento.data, backgroundColor: '#10b981', borderRadius: 6 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
-          </div>
-        </div>
-        <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-layer-group text-orange-500 mr-1" /> Distribución por Año</h4>
-          <div className="flex-1 min-h-[240px] relative">
-            <Bar data={{ labels: stats.porAnio.labels, datasets: [{ label: 'Equipos', data: stats.porAnio.data, backgroundColor: '#f97316', borderRadius: 6 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '242ms' }}>
-        <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-tags text-orange-500 mr-1" /> Distribución por Categoría</h4>
-          <div className="flex-1 flex items-center justify-center">
-            <div className="w-full max-w-[240px]">
-              <Doughnut data={{ labels: stats.porCategoria.labels, datasets: [{ data: stats.porCategoria.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b'], borderWidth: 1.5 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
-            </div>
-          </div>
-        </div>
-        <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-hourglass-half text-red-500 mr-1" /> Equipos Más Antiguos en Stock</h4>
-          <div className="flex-1 min-h-[240px] relative">
-            {stats.antiguos.length > 0 ? (
-              <Bar data={{ labels: stats.antiguos.map(i => `${i.codigo}`), datasets: [{ label: 'Días', data: stats.antiguos.map(i => i.diasEnInventario), backgroundColor: stats.antiguos.map(i => i.diasEnInventario > 60 ? '#ef4444' : i.diasEnInventario > 30 ? '#f97316' : '#f59e0b'), borderRadius: 4 }] }} options={{ responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { font: { size: 9 } } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } } }} />
-            ) : <div className="flex items-center justify-center h-full text-slate-400 text-sm">Sin datos</div>}
-          </div>
-        </div>
-      </div>
-
-      <div className="panel p-6 animate-slide-up" style={{ animationDelay: '250ms' }}>
+      <div className="panel p-6 animate-slide-up" style={{ animationDelay: '120ms' }}>
         <h4 className="text-sm font-bold text-slate-700 uppercase mb-4 flex items-center gap-2">
           <i className="fa-solid fa-user-gear text-brand-500" /> Rendimiento por Técnico
         </h4>
@@ -434,7 +348,7 @@ export default function Dashboard() {
           <p className="text-sm text-slate-400">No hay equipos asignados a técnicos aún</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {stats.tecStats.map(([nombre, data]) => (
+            {stats.tecStats.slice(0, 6).map(([nombre, data]) => (
               <div key={nombre} className="border border-slate-200 rounded-xl p-4 hover:shadow-md transition">
                 <p className="font-bold text-sm text-slate-800 mb-2 truncate">{nombre}</p>
                 <div className="flex items-center gap-2 mb-3">
@@ -449,7 +363,7 @@ export default function Dashboard() {
                     { label: '🟠 Revisión', value: data.revision, color: 'bg-orange-500' },
                     { label: '🔴 TKF', value: data.tkf, color: 'bg-red-500' },
                     { label: '💲 Vendido', value: data.vendido, color: 'bg-purple-500' },
-                  ].map(s => s.value > 0 && (
+                  ].filter(s => s.value > 0).map(s => (
                     <div key={s.label} className="flex items-center gap-2 text-xs">
                       <div className={"w-2 h-2 rounded-full " + s.color} />
                       <span className="text-slate-500 flex-1">{s.label}</span>
@@ -462,6 +376,131 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {stats.antiguos.length > 0 && (
+        <div className="panel p-5 animate-slide-up" style={{ animationDelay: '140ms' }}>
+          <h4 className="text-sm font-bold text-slate-700 uppercase mb-3 flex items-center gap-2">
+            <i className="fa-solid fa-hourglass-half text-red-500" /> Equipos con más tiempo en stock
+          </h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            {stats.antiguos.slice(0, 5).map(item => (
+              <Link key={item.codigo} to={`/inventario?editar=${item.codigo}`}
+                className="border border-slate-200 rounded-xl p-3 hover:shadow-md hover:border-brand-300 transition text-center">
+                <p className="font-mono font-bold text-xs text-brand-600">{item.codigo}</p>
+                <p className="text-[10px] text-slate-500 truncate">{item.marca} {item.modelo}</p>
+                <p className={`text-lg font-extrabold mt-1 ${item.diasEnInventario > 60 ? 'text-red-500' : item.diasEnInventario > 30 ? 'text-orange-500' : 'text-amber-500'}`}>
+                  {item.diasEnInventario}d
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="animate-slide-up" style={{ animationDelay: '160ms' }}>
+        <button onClick={() => setShowCharts(c => !c)}
+          className="w-full panel p-3 flex items-center justify-between hover:bg-slate-50 transition">
+          <span className="text-sm font-bold text-slate-600 flex items-center gap-2">
+            <i className="fa-solid fa-chart-pie text-brand-500" /> Gráficas y estadísticas detalladas
+          </span>
+          <i className={`fa-solid fa-chevron-${showCharts ? 'up' : 'down'} text-slate-400`} />
+        </button>
+        {showCharts && (
+          <div className="mt-4 space-y-6 animate-fade-in">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="panel p-6 min-h-[380px] flex flex-col lg:col-span-2">
+                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
+                  <i className="fa-solid fa-chart-line text-brand-500 mr-1" /> Entradas por Mes
+                </h4>
+                <div className="flex-1 min-h-[260px] relative">
+                  <Line data={{
+                    labels: stats.mesesLabels,
+                    datasets: [{ label: 'Equipos', data: stats.mesesData, borderColor: '#0018B0', backgroundColor: 'rgba(0,24,176,0.08)', fill: true, tension: 0.35, pointRadius: 4, pointBackgroundColor: '#0018B0', pointBorderColor: '#fff', pointBorderWidth: 2, pointHoverRadius: 6, borderWidth: 2.5 }]
+                  }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } } } }} />
+                </div>
+              </div>
+              <div className="panel p-6 min-h-[380px] flex flex-col">
+                <h4 className="text-sm font-bold text-slate-700 uppercase mb-4">
+                  <i className="fa-solid fa-pie-chart text-emerald-500 mr-1" /> Distribución Global
+                </h4>
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-full max-w-[220px]">
+                    <Doughnut data={doughnutData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="panel p-6">
+              <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
+                <i className="fa-solid fa-bar-chart text-blue-500 mr-1" /> Stock Activo: Modelos por Estado
+              </h4>
+              <div className="h-[280px] relative">
+                <Bar data={barData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } } }} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="panel p-6 min-h-[320px] flex flex-col">
+                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-building text-brand-500 mr-1" /> Por Marca</h4>
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-full max-w-[240px]">
+                    <Doughnut data={{ labels: stats.porMarca.labels, datasets: [{ data: stats.porMarca.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444', '#64748b'], borderWidth: 1.5 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
+                  </div>
+                </div>
+              </div>
+              <div className="panel p-6 min-h-[320px] flex flex-col">
+                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-microchip text-blue-500 mr-1" /> Por Procesador</h4>
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-full max-w-[240px]">
+                    <Doughnut data={{ labels: stats.porProcesador.labels, datasets: [{ data: stats.porProcesador.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444', '#64748b'], borderWidth: 1.5 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
+                  </div>
+                </div>
+              </div>
+              <div className="panel p-6 min-h-[320px] flex flex-col">
+                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-memory text-purple-500 mr-1" /> Distribución RAM</h4>
+                <div className="flex-1 min-h-[240px] relative">
+                  <Bar data={{ labels: stats.porRam.labels, datasets: [{ label: 'Equipos', data: stats.porRam.data, backgroundColor: '#0018B0', borderRadius: 6 }] }} options={{ responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="panel p-6 min-h-[320px] flex flex-col">
+                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-hard-drive text-emerald-500 mr-1" /> Almacenamiento</h4>
+                <div className="flex-1 min-h-[240px] relative">
+                  <Bar data={{ labels: stats.porAlmacenamiento.labels, datasets: [{ label: 'Equipos', data: stats.porAlmacenamiento.data, backgroundColor: '#10b981', borderRadius: 6 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
+                </div>
+              </div>
+              <div className="panel p-6 min-h-[320px] flex flex-col">
+                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-layer-group text-orange-500 mr-1" /> Por Año</h4>
+                <div className="flex-1 min-h-[240px] relative">
+                  <Bar data={{ labels: stats.porAnio.labels, datasets: [{ label: 'Equipos', data: stats.porAnio.data, backgroundColor: '#f97316', borderRadius: 6 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="panel p-6 min-h-[320px] flex flex-col">
+                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-tags text-orange-500 mr-1" /> Por Categoría</h4>
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-full max-w-[240px]">
+                    <Doughnut data={{ labels: stats.porCategoria.labels, datasets: [{ data: stats.porCategoria.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b'], borderWidth: 1.5 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
+                  </div>
+                </div>
+              </div>
+              <div className="panel p-6 min-h-[320px] flex flex-col">
+                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-hourglass-half text-red-500 mr-1" /> Equipos Más Antiguos</h4>
+                <div className="flex-1 min-h-[240px] relative">
+                  {stats.antiguos.length > 0 ? (
+                    <Bar data={{ labels: stats.antiguos.map(i => `${i.codigo}`), datasets: [{ label: 'Días', data: stats.antiguos.map(i => i.diasEnInventario), backgroundColor: stats.antiguos.map(i => i.diasEnInventario > 60 ? '#ef4444' : i.diasEnInventario > 30 ? '#f97316' : '#f59e0b'), borderRadius: 4 }] }} options={{ responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { font: { size: 9 } } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } } }} />
+                  ) : <div className="flex items-center justify-center h-full text-slate-400 text-sm">Sin datos</div>}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

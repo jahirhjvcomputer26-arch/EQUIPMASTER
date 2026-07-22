@@ -47,6 +47,14 @@ function CopyBtn({ text }) {
   );
 }
 
+const QUICK_FILTERS = [
+  { key: 'sin_fotos', label: 'Sin fotos', icon: 'fa-camera', color: 'bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-200' },
+  { key: 'sin_serie', label: 'Sin serie', icon: 'fa-barcode', color: 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' },
+  { key: 'antiguedad_30', label: '30+ días', icon: 'fa-clock', color: 'bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-200' },
+  { key: 'antiguedad_60', label: '60+ días', icon: 'fa-clock', color: 'bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-200' },
+  { key: 'antiguedad_90', label: '90+ días', icon: 'fa-clock', color: 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200' },
+];
+
 const PAGE_SIZE = 15;
 
 export default function BaseDatos() {
@@ -62,6 +70,7 @@ export default function BaseDatos() {
   const [bulkEstado, setBulkEstado] = useState('');
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [quickFilter, setQuickFilter] = useState('');
 
   const exportExcel = async () => {
     try {
@@ -160,6 +169,24 @@ export default function BaseDatos() {
         )
       : [...inventario];
 
+    if (quickFilter) {
+      const hoy = new Date();
+      items = items.filter(i => {
+        if (quickFilter === 'sin_fotos') {
+          const fotos = i.fotos;
+          return !fotos || Object.keys(fotos).length === 0;
+        }
+        if (quickFilter === 'sin_serie') return !i.serie || i.serie.trim() === '' || i.serie === 'N/A';
+        if (quickFilter === 'antiguedad_30' || quickFilter === 'antiguedad_60' || quickFilter === 'antiguedad_90') {
+          if (!i.fechaRegistro) return false;
+          const dias = Math.floor((hoy - new Date(i.fechaRegistro)) / 86400000);
+          const min = quickFilter === 'antiguedad_30' ? 30 : quickFilter === 'antiguedad_60' ? 60 : 90;
+          return dias >= min;
+        }
+        return true;
+      });
+    }
+
     if (sortKey) {
       items.sort((a, b) => {
         let va = (a[sortKey] || '').toString().toLowerCase();
@@ -173,7 +200,7 @@ export default function BaseDatos() {
       });
     }
     return items;
-  }, [inventario, search, sortKey, sortDir]);
+  }, [inventario, search, sortKey, sortDir, quickFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -197,7 +224,7 @@ export default function BaseDatos() {
       <div className="panel p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-slide-up">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Inventario General Compartido</h2>
-          <p className="text-slate-500 text-sm">{filtered.length} equipo{filtered.length !== 1 ? 's' : ''} · {inventario.length} totales</p>
+          <p className="text-slate-500 text-sm">{filtered.length} equipo{filtered.length !== 1 ? 's' : ''} · {inventario.length} totales{quickFilter && <span className="ml-1 font-bold text-brand-600">(filtro activo)</span>}</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
           <div className="relative flex-1 sm:flex-none">
@@ -208,6 +235,26 @@ export default function BaseDatos() {
             <i className="fa-solid fa-file-excel" /> Excel
           </button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2 animate-slide-up" style={{ animationDelay: '50ms' }}>
+        <span className="text-[11px] font-bold text-slate-400 uppercase self-center mr-1">Filtros rápidos:</span>
+        {QUICK_FILTERS.map(f => (
+          <button key={f.key} onClick={() => { setQuickFilter(q => q === f.key ? '' : f.key); setPage(1); }}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+              quickFilter === f.key
+                ? 'bg-brand-500 text-white border-brand-500 shadow scale-105'
+                : f.color
+            }`}>
+            <i className={`fa-solid ${f.icon} text-[10px]`} /> {f.label}
+          </button>
+        ))}
+        {quickFilter && (
+          <button onClick={() => { setQuickFilter(''); setPage(1); }}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition">
+            <i className="fa-solid fa-xmark" /> Limpiar
+          </button>
+        )}
       </div>
 
       {selected.length > 0 && (

@@ -24,11 +24,23 @@ const emptyForm = {
   equipoCodigo: '', equipoMarca: '', equipoModelo: '', equipoSerie: '',
   cliente: '', telefono: '', email: '',
   fechaIngreso: new Date().toISOString().slice(0, 10),
-  tecnico: '', estado: 'RECIBIDO',
+  fechaPrometida: '', tecnico: '', estado: 'RECIBIDO',
   problema: '', diagnostico: '',
   repuestos: [],
   costoRepuestos: 0, manoObra: 0, total: 0, anticipo: 0, saldo: 0,
   fechaReparacion: '', fechaEntrega: '', observaciones: '',
+};
+
+const diasEnTaller = (fechaIngreso) => {
+  if (!fechaIngreso) return 0;
+  const diff = Date.now() - new Date(fechaIngreso).getTime();
+  return Math.floor(diff / 86400000);
+};
+
+const estaVencida = (ord) => {
+  if (!ord.fechaPrometida) return false;
+  if (['FINALIZADO', 'ENTREGADO', 'CANCELADO'].includes(ord.estado)) return false;
+  return new Date(ord.fechaPrometida) < new Date(new Date().toISOString().slice(0, 10));
 };
 
 export default function Reparaciones() {
@@ -157,6 +169,7 @@ export default function Reparaciones() {
       ...ord,
       repuestos: ord.repuestos || [],
       fechaIngreso: (ord.fechaIngreso || '').slice(0, 10),
+      fechaPrometida: (ord.fechaPrometida || '').slice(0, 10),
       fechaReparacion: (ord.fechaReparacion || '').slice(0, 10),
       fechaEntrega: (ord.fechaEntrega || '').slice(0, 10),
     });
@@ -252,12 +265,13 @@ export default function Reparaciones() {
               <div className="overflow-x-auto">
                 <table className="min-w-full text-left text-sm table-responsive">
                   <thead className="bg-slate-50 text-slate-600">
-                    <tr>
+                      <tr>
                       <th className="px-4 py-3 text-xs font-bold uppercase">Orden</th>
                       <th className="px-4 py-3 text-xs font-bold uppercase">Cliente</th>
                       <th className="px-4 py-3 text-xs font-bold uppercase">Equipo</th>
                       <th className="px-4 py-3 text-xs font-bold uppercase">Técnico</th>
                       <th className="px-4 py-3 text-xs font-bold uppercase">Estado</th>
+                      <th className="px-4 py-3 text-xs font-bold uppercase">Días</th>
                       <th className="px-4 py-3 text-xs font-bold uppercase">Total</th>
                       <th className="px-4 py-3 text-xs font-bold uppercase text-center">Acción</th>
                     </tr>
@@ -280,6 +294,23 @@ export default function Reparaciones() {
                           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${ESTADOS_COLOR[ord.estado] || 'bg-slate-100'}`}>
                             <i className={`fa-solid ${ESTADOS_ICON[ord.estado] || 'fa-circle'}`} /> {ord.estado}
                           </span>
+                          {estaVencida(ord) && (
+                            <span className="ml-1 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
+                              <i className="fa-solid fa-triangle-exclamation" /> Vencida
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-xs font-bold" data-label="Días">
+                          {(() => {
+                            const d = diasEnTaller(ord.fechaIngreso);
+                            if (d === 0) return <span className="text-slate-400">Hoy</span>;
+                            if (d < 7) return <span className="text-slate-600">{d}d</span>;
+                            if (d < 30) return <span className="text-amber-600">{d}d</span>;
+                            return <span className="text-red-600">{d}d</span>;
+                          })()}
+                          {ord.fechaPrometida && (
+                            <p className="text-[10px] text-slate-400 mt-0.5">Hasta {new Date(ord.fechaPrometida).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}</p>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-xs font-bold" data-label="Total">${(parseFloat(ord.total) || 0).toLocaleString()}</td>
                         <td className="px-4 py-3 text-center" data-label="">
@@ -308,14 +339,30 @@ export default function Reparaciones() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: '100ms' }}>
               {activas.slice(0, 6).map(ord => (
                 <div key={ord.id} className="panel p-4 flex items-center gap-3 hover:shadow-lg transition">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-base ${ESTADOS_COLOR[ord.estado]}`}>
-                    <i className={`fa-solid ${ESTADOS_ICON[ord.estado]}`} />
+                  <div className="relative">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-base ${ESTADOS_COLOR[ord.estado]}`}>
+                      <i className={`fa-solid ${ESTADOS_ICON[ord.estado]}`} />
+                    </div>
+                    {estaVencida(ord) && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                        <i className="fa-solid fa-triangle-exclamation text-[8px] text-white" />
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-brand-600 font-mono">{ord.id}</p>
                     <p className="font-bold text-sm truncate">{ord.cliente}</p>
                     <p className="text-xs text-slate-400 truncate">{ord.equipoMarca} {ord.equipoModelo}</p>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${ESTADOS_COLOR[ord.estado]}`}>{ord.estado}</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${ESTADOS_COLOR[ord.estado]}`}>{ord.estado}</span>
+                      {(() => {
+                        const d = diasEnTaller(ord.fechaIngreso);
+                        if (d === 0) return <span className="text-[10px] text-slate-400">Hoy</span>;
+                        if (d < 7) return <span className="text-[10px] text-slate-500">{d} días</span>;
+                        if (d < 30) return <span className="text-[10px] font-bold text-amber-600">{d} días</span>;
+                        return <span className="text-[10px] font-bold text-red-600">{d} días ⚠</span>;
+                      })()}
+                    </div>
                     {ord.historial && ord.historial.length > 0 && (
                       <div className="mt-2 border-t border-slate-100 pt-2">
                         <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Timeline</p>
@@ -448,11 +495,13 @@ export default function Reparaciones() {
             <h4 className="text-xs font-bold uppercase text-slate-500 tracking-wider flex items-center gap-2">
               <i className="fa-solid fa-note-sticky text-brand-500" /> Información adicional
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div><label className="form-label">Estado *</label>
                 <select className="form-input font-bold" value={form.estado} onChange={e => set('estado', e.target.value)}>
                   {ESTADOS_REP.map(e => <option key={e} value={e}>{e}</option>)}
                 </select></div>
+              <div><label className="form-label">Fecha prometida</label>
+                <input type="date" className="form-input" value={form.fechaPrometida} onChange={e => set('fechaPrometida', e.target.value)} /></div>
               <div><label className="form-label">Fecha reparación</label>
                 <input type="date" className="form-input" value={form.fechaReparacion} onChange={e => set('fechaReparacion', e.target.value)} /></div>
               <div><label className="form-label">Fecha entrega</label>
