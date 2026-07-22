@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getBucket } from '../storage.js';
 import { firebaseGet, firebaseSet } from '../firebase.js';
-import { authMiddleware } from './usuarios.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 router.use(authMiddleware);
