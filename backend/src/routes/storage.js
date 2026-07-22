@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { getBucket } from '../storage.js';
-import { firebaseGet, firebaseSet } from '../firebase.js';
+import { uploadToStorage, deleteFromStorage, makePublic, getPublicUrl, listStorageFiles } from '../storage.js';
+import { firebaseGet } from '../firebase.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -11,11 +11,6 @@ router.post('/upload', async (req, res) => {
     const { codigo, categoria, tipo, archivo, esDocumento } = req.body;
     if (!codigo || !categoria || !archivo) {
       return res.status(400).json({ error: 'Faltan campos: codigo, categoria, archivo' });
-    }
-
-    const bucket = getBucket();
-    if (!bucket) {
-      return res.status(503).json({ error: 'Storage no configurado. Configura FIREBASE_SERVICE_ACCOUNT.' });
     }
 
     const matches = archivo.match(/^data:(.+);base64,(.+)$/);
@@ -35,18 +30,11 @@ router.post('/upload', async (req, res) => {
     const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'bin';
     const prefix = esDocumento ? 'documentos' : 'fotos';
     const filePath = `${prefix}/${codigo.toUpperCase()}/${categoria}.${ext}`;
-    const file = bucket.file(filePath);
 
-    await file.save(buffer, {
-      metadata: { contentType: mimeType, cacheControl: 'public, max-age=31536000' },
-    });
+    await uploadToStorage(filePath, buffer, mimeType);
+    await makePublic(filePath);
 
-    await file.makePublic();
-
-    const [url] = await file.getSignedUrl({
-      action: 'read',
-      expires: '2099-12-31',
-    });
+    const url = getPublicUrl(filePath);
 
     res.json({ url, path: filePath, size: buffer.length });
   } catch (err) {
@@ -60,13 +48,9 @@ router.delete('/delete', async (req, res) => {
     const { path } = req.query;
     if (!path) return res.status(400).json({ error: 'Falta path' });
 
-    const bucket = getBucket();
-    if (!bucket) return res.status(503).json({ error: 'Storage no configurado' });
-
-    await bucket.file(path).delete();
+    await deleteFromStorage(path);
     res.json({ ok: true });
   } catch (err) {
-    if (err.code === 404) return res.json({ ok: true });
     console.error('Delete error:', err);
     res.status(500).json({ error: 'Error al eliminar' });
   }
@@ -74,9 +58,6 @@ router.delete('/delete', async (req, res) => {
 
 router.post('/cleanup', async (req, res) => {
   try {
-    const bucket = getBucket();
-    if (!bucket) return res.status(503).json({ error: 'Storage no configurado' });
-
     const inventario = await firebaseGet('inventario');
     if (!inventario) return res.json({ eliminados: 0, razon: 'Sin inventario' });
 
@@ -97,14 +78,11 @@ router.post('/cleanup', async (req, res) => {
       if (!fechaVenta || isNaN(fechaVenta.getTime())) continue;
       if (ahora - fechaVenta.getTime() < tresMesesMs) continue;
 
-      const prefixFotos = `fotos/${codigo}/`;
-      const prefixDocs = `documentos/${codigo}/`;
-
       try {
-        const [fotosFiles] = await bucket.getFiles({ prefix: prefixFotos });
-        for (const f of fotosFiles) await f.delete();
-        const [docsFiles] = await bucket.getFiles({ prefix: prefixDocs });
-        for (const f of docsFiles) await f.delete();
+        const fotosFiles = await listStorageFiles(`fotos/${codigo}/`);
+        for (const f of fotosFiles) await deleteFromStorage(f.name);
+        const docsFiles = await listStorageFiles(`documentos/${codigo}/`);
+        for (const f of docsFiles) await deleteFromStorage(f.name);
         eliminados++;
         detalles.push(codigo);
       } catch (err) {
