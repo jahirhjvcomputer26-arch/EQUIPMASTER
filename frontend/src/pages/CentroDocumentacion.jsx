@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ref as dbRef, get } from 'firebase/database';
 import { db } from '../services/firebase';
@@ -17,7 +17,7 @@ const DOC_CATEGORIES = [
   { key: 'otro', label: 'Otro Documento', icon: 'fa-file', accept: '.pdf,.jpg,.png,.doc,.docx' },
 ];
 
-const MAX_DOC_SIZE = 5 * 1024 * 1024;
+const MAX_DOC_SIZE = 10 * 1024 * 1024;
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -40,27 +40,36 @@ export default function CentroDocumentacion() {
   const [activeCategory, setActiveCategory] = useState('');
   const [previewDoc, setPreviewDoc] = useState(null);
 
-  useEffect(() => {
+  const loadItem = useCallback(async () => {
     if (!codigo) return;
-    get(dbRef(db, `inventario/${codigo.toUpperCase()}`)).then(snap => {
+    try {
+      const snap = await get(dbRef(db, `inventario/${codigo.toUpperCase()}`));
       if (snap.exists()) {
         const data = snap.val();
         setItem(data);
         setDocs(data.documentos || {});
       } else setError('Equipo no encontrado');
-    }).catch(() => setError('Error al cargar'));
+    } catch { setError('Error al cargar'); }
   }, [codigo]);
+
+  useEffect(() => { loadItem(); }, [loadItem]);
 
   const handleUpload = async (categoria, files) => {
     if (!files?.length) return;
     const file = files[0];
     if (file.size > MAX_DOC_SIZE) {
-      toast('Archivo muy grande', 'El máximo es 5 MB.', 'error');
+      toast('Archivo muy grande', 'El máximo es 10 MB.', 'error');
       return;
     }
     setUploading(true);
     try {
       const base64 = await fileToBase64(file);
+      const result = await api.uploadFile({
+        codigo: codigo.toUpperCase(),
+        categoria,
+        archivo: base64,
+        esDocumento: true,
+      });
       const newDocs = {
         ...docs,
         [categoria]: [
@@ -70,13 +79,14 @@ export default function CentroDocumentacion() {
             tipo: file.type,
             tamano: file.size,
             fecha: new Date().toISOString(),
-            base64,
+            url: result.url,
+            path: result.path,
           },
         ],
       };
       setDocs(newDocs);
       await api.saveEquipo(codigo.toUpperCase(), { ...item, documentos: newDocs });
-      toast('Documento guardado', `${file.name} agregado a ${DOC_CATEGORIES.find(c => c.key === categoria)?.label}.`, 'success');
+      toast('Documento guardado', `${file.name} subido a Storage.`, 'success');
     } catch {
       toast('Error', 'No se pudo guardar el documento.', 'error');
     }
@@ -85,14 +95,24 @@ export default function CentroDocumentacion() {
 
   const handleDelete = async (categoria, idx) => {
     if (!window.confirm('¿Eliminar este documento?')) return;
-    const updated = { ...docs };
-    updated[categoria] = updated[categoria].filter((_, i) => i !== idx);
-    if (updated[categoria].length === 0) delete updated[categoria];
-    setDocs(updated);
-    await api.saveEquipo(codigo.toUpperCase(), { ...item, documentos: updated });
-    toast('Eliminado', 'Documento eliminado.', 'success');
-    setPreviewDoc(null);
+    const doc = docs[categoria]?.[idx];
+    try {
+      if (doc?.path) {
+        await api.deleteFile(doc.path);
+      }
+      const updated = { ...docs };
+      updated[categoria] = updated[categoria].filter((_, i) => i !== idx);
+      if (updated[categoria].length === 0) delete updated[categoria];
+      setDocs(updated);
+      await api.saveEquipo(codigo.toUpperCase(), { ...item, documentos: updated });
+      toast('Eliminado', 'Documento eliminado.', 'success');
+      setPreviewDoc(null);
+    } catch {
+      toast('Error', 'No se pudo eliminar.', 'error');
+    }
   };
+
+  const getDocUrl = (doc) => doc.url || doc.base64;
 
   const totalDocs = Object.values(docs).reduce((acc, arr) => acc + (arr?.length || 0), 0);
 
@@ -165,7 +185,7 @@ export default function CentroDocumentacion() {
             <div className="text-center py-8 text-slate-400">
               <i className="fa-solid fa-cloud-arrow-up text-3xl mb-2 block" />
               <p className="text-sm">No hay documentos en esta categoría</p>
-              <p className="text-xs text-slate-300 mt-1">Arrastra o selecciona un archivo para subir</p>
+              <p className="text-xs text-slate-300 mt-1">Selecciona un archivo para subir a Storage</p>
             </div>
           )}
         </div>
@@ -184,7 +204,7 @@ export default function CentroDocumentacion() {
             <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
               <h4 className="text-sm font-bold text-slate-700 truncate">{previewDoc.nombre}</h4>
               <div className="flex items-center gap-2">
-                <a href={previewDoc.base64} download={previewDoc.nombre} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
+                <a href={getDocUrl(previewDoc)} download={previewDoc.nombre} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
                   <i className="fa-solid fa-download" />
                 </a>
                 <button onClick={() => setPreviewDoc(null)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
@@ -194,11 +214,20 @@ export default function CentroDocumentacion() {
             </div>
             <div className="overflow-auto max-h-[75vh] p-4">
               {previewDoc.tipo?.includes('pdf') ? (
-                <iframe src={previewDoc.base64} className="w-full h-[70vh] rounded-lg border" title={previewDoc.nombre} />
+                <iframe src={getDocUrl(previewDoc)} className="w-full h-[70vh] rounded-lg border" title={previewDoc.nombre} />
               ) : (
-                <img src={previewDoc.base64} alt={previewDoc.nombre} className="max-w-full mx-auto rounded-lg" />
+                <img src={getDocUrl(previewDoc)} alt={previewDoc.nombre} className="max-w-full mx-auto rounded-lg" />
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {uploading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in">
+          <div className="bg-white rounded-2xl p-6 shadow-2xl text-center">
+            <div className="animate-spin w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full mx-auto mb-3" />
+            <p className="text-sm font-bold text-slate-700">Subiendo a Storage...</p>
           </div>
         </div>
       )}

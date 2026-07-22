@@ -13,6 +13,8 @@ import actividadRouter from './routes/actividad.js';
 import reparacionesRouter from './routes/reparaciones.js';
 import backupRouter from './routes/backup.js';
 import configuracionRouter from './routes/configuracion.js';
+import storageRouter from './routes/storage.js';
+import { initStorage } from './storage.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, '..', 'public');
@@ -37,6 +39,9 @@ app.use('/api/actividad', actividadRouter);
 app.use('/api/reparaciones', reparacionesRouter);
 app.use('/api/backup', backupRouter);
 app.use('/api/configuracion', configuracionRouter);
+app.use('/api/storage', storageRouter);
+
+initStorage();
 
 const indexPath = path.join(publicDir, 'index.html');
 if (fs.existsSync(indexPath)) {

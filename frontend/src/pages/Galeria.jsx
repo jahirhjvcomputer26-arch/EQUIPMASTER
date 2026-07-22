@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ref as dbRef, get } from 'firebase/database';
 import { db } from '../services/firebase';
@@ -33,7 +33,7 @@ function resizeImage(file) {
         }
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
+        resolve(canvas.toDataURL('image/jpeg', 0.75));
       };
       img.src = e.target.result;
     };
@@ -52,21 +52,20 @@ export default function Galeria() {
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const loadItem = async () => {
-      try {
-        const snap = await get(dbRef(db, `inventario/${codigo?.toUpperCase()}`));
-        if (snap.exists()) {
-          const data = snap.val();
-          setItem(data);
-          setFotos(data.fotos || {});
-        } else {
-          setError('Equipo no encontrado');
-        }
-      } catch { setError('Error al cargar equipo'); }
-    };
-    if (codigo) loadItem();
+  const loadItem = useCallback(async () => {
+    try {
+      const snap = await get(dbRef(db, `inventario/${codigo?.toUpperCase()}`));
+      if (snap.exists()) {
+        const data = snap.val();
+        setItem(data);
+        setFotos(data.fotos || {});
+      } else {
+        setError('Equipo no encontrado');
+      }
+    } catch { setError('Error al cargar equipo'); }
   }, [codigo]);
+
+  useEffect(() => { if (codigo) loadItem(); }, [codigo, loadItem]);
 
   const handleUpload = async (categoria, files) => {
     if (!files?.length) return;
@@ -74,10 +73,16 @@ export default function Galeria() {
     try {
       const file = files[0];
       const base64 = await resizeImage(file);
-      const newFotos = { ...fotos, [categoria]: base64 };
+      const result = await api.uploadFile({
+        codigo: codigo.toUpperCase(),
+        categoria,
+        archivo: base64,
+        esDocumento: false,
+      });
+      const newFotos = { ...fotos, [categoria]: result.url };
       setFotos(newFotos);
       await api.saveEquipo(codigo.toUpperCase(), { ...item, fotos: newFotos });
-      toast('Foto guardada', `${categoria.toUpperCase()} actualizada.`, 'success');
+      toast('Foto guardada', `${categoria.toUpperCase()} subida a Storage.`, 'success');
     } catch (err) {
       toast('Error', err.message, 'error');
     }
@@ -87,6 +92,10 @@ export default function Galeria() {
   const handleDelete = async (categoria) => {
     if (!window.confirm(`¿Eliminar foto de ${categoria}?`)) return;
     try {
+      if (fotos[categoria]?.includes('storage.googleapis.com') || fotos[categoria]?.includes('firebasestorage')) {
+        const ext = (fotos[categoria].split('.').pop()?.split('?')[0]) || 'jpg';
+        await api.deleteFile(`fotos/${codigo.toUpperCase()}/${categoria}.${ext}`);
+      }
       const newFotos = { ...fotos };
       delete newFotos[categoria];
       setFotos(newFotos);
@@ -131,7 +140,7 @@ export default function Galeria() {
             <div className="relative aspect-video bg-slate-100 flex items-center justify-center overflow-hidden">
               {fotos[cat.key] ? (
                 <>
-                  <img src={fotos[cat.key]} alt={cat.label} className="w-full h-full object-cover" />
+                  <img src={fotos[cat.key]} alt={cat.label} className="w-full h-full object-cover" loading="lazy" />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
                     <button onClick={() => setPreview({ url: fotos[cat.key], label: cat.label })}
                       className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-brand-600 hover:scale-110 transition shadow-lg">
@@ -185,7 +194,7 @@ export default function Galeria() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in">
           <div className="bg-white rounded-2xl p-6 shadow-2xl text-center">
             <div className="animate-spin w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full mx-auto mb-3" />
-            <p className="text-sm font-bold text-slate-700">Procesando imagen...</p>
+            <p className="text-sm font-bold text-slate-700">Subiendo a Storage...</p>
           </div>
         </div>
       )}

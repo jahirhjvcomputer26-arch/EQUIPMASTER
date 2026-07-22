@@ -62,6 +62,9 @@ export const api = {
   getConfiguracion: () => request('/configuracion'),
   saveConfiguracion: (body) => request('/configuracion', { method: 'PUT', body: JSON.stringify(body) }),
   getConfigPublic: () => fetch(`${API}/configuracion/public`).then(r => r.json()),
+  uploadFile: (body) => request('/storage/upload', { method: 'POST', body: JSON.stringify(body) }),
+  deleteFile: (path) => request(`/storage/delete?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),
+  cleanupStorage: () => request('/storage/cleanup', { method: 'POST' }),
   downloadExcel: async () => {
     const token = localStorage.getItem('equipmaster_token');
     const res = await fetch(`${API}/reportes/excel`, { headers: { Authorization: `Bearer ${token}` } });
