@@ -321,13 +321,6 @@ export default function Dashboard() {
         <StatCard icon="fa-trash-can" color="bg-red-50 text-red-600" label="Mermas TKF" value={stats.mermasTKF} bgGlow="bg-red-500" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-slide-up" style={{ animationDelay: '100ms' }}>
-        <StatCard icon="fa-hand-holding-dollar" color="bg-purple-50 text-purple-600" label="Total vendidos" value={stats.totalVendidos} sub={`$${stats.totalVendidoEnPesos.toLocaleString()}`} bgGlow="bg-purple-500" />
-        <StatCard icon="fa-credit-card" color="bg-indigo-50 text-indigo-600" label="Canal mayoritario" value={stats.topPago} bgGlow="bg-indigo-500" />
-        <StatCard icon="fa-dollar-sign" color="bg-emerald-50 text-emerald-600" label="Ingresos totales" value={`$${stats.totalIngresos.toLocaleString()}`} bgGlow="bg-emerald-500" />
-        <StatCard icon="fa-percent" color="bg-cyan-50 text-cyan-600" label="Tasa de conversión" value={`${stats.tasaConversion}%`} sub="Stock → Vendido" bgGlow="bg-cyan-500" />
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-up" style={{ animationDelay: '150ms' }}>
         <div className="panel p-6 min-h-[380px] flex flex-col hover:shadow-lg transition-shadow duration-300 lg:col-span-2">
           <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
@@ -445,31 +438,6 @@ export default function Dashboard() {
               labels: stats.porAnio.labels,
               datasets: [{ label: 'Equipos', data: stats.porAnio.data, backgroundColor: '#f97316', borderRadius: 6 }]
             }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '235ms' }}>
-        <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
-            <i className="fa-solid fa-cart-shopping text-emerald-500 mr-1" /> Ventas por Mes
-          </h4>
-          <div className="flex-1 min-h-[240px] relative">
-            <Line data={{
-              labels: stats.ventasMesLabels,
-              datasets: [{ label: 'Ventas', data: stats.ventasMesData, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)', fill: true, tension: 0.35, pointRadius: 4, pointBackgroundColor: '#10b981', borderWidth: 2.5 }]
-            }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { beginAtZero: true, ticks: { stepSize: 1 } } } }} />
-          </div>
-        </div>
-        <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
-            <i className="fa-solid fa-coins text-indigo-500 mr-1" /> Ingresos Mensuales (MXN)
-          </h4>
-          <div className="flex-1 min-h-[240px] relative">
-            <Bar data={{
-              labels: stats.ventasMesLabels,
-              datasets: [{ label: 'Ingresos', data: stats.ingresosMesData, backgroundColor: '#6366f1', borderRadius: 4 }]
-            }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString() } } } }} />
           </div>
         </div>
       </div>
