@@ -1,15 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useInventario } from '../context/InventarioContext';
 import { useNotify } from '../componentes/Notification';
 import { CATEGORIAS, ESTADOS, RAM_OPTIONS, STORAGE_OPTIONS, TECNICOS, GENERACION_OPTIONS, TIPO_RAM_OPTIONS, RESOLUCION_OPTIONS, ANIO_OPTIONS, esEstadoML, generarCodigoSiguiente, buscarSku, buscarPorSku, aprenderSku, derivarModeloComercial } from '../utils/inventario';
+import { getTemplate, FIELD_GROUPS } from '../utils/formTemplates';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import useUnsavedChanges from '../utils/useUnsavedChanges';
 
 const ESTADOS_CONDICION = ['', 'EXCELENTE', 'BUENA', 'REGULAR', 'MALA', 'NO APLICA'];
 const ESTADOS_BATERIA = ['', 'BUENA', 'REGULAR', 'MALA', 'NO REPORTA'];
-const CHECKLIST_ITEMS = ['Pantalla', 'Teclado', 'Touchpad', 'WiFi', 'Bluetooth', 'Audio', 'Puertos USB', 'Cámara', 'Batería', 'Cargador', 'Micrófono', 'Lector Huella'];
+
+const CONECTIVIDAD_OPTIONS = [
+  { key: 'wifi', label: 'WiFi', icon: 'fa-wifi' },
+  { key: 'bluetooth', label: 'Bluetooth', icon: 'fa-bluetooth-b' },
+  { key: 'pantallaTactil', label: 'Pantalla Táctil', icon: 'fa-hand-pointer' },
+  { key: 'retroiluminacion', label: 'Retroiluminación', icon: 'fa-keyboard' },
+  { key: 'lectorHuellas', label: 'Lector Huellas', icon: 'fa-fingerprint' },
+  { key: 'camaraIR', label: 'Cámara IR', icon: 'fa-eye' },
+];
+
+const CONDICION_LABELS = {
+  exterior: 'Exterior', pantalla: 'Pantalla', carcasaInferior: 'Carcasa Inferior',
+  teclado: 'Teclado', touchpad: 'Touchpad', bisagras: 'Bisagras',
+  puertos: 'Puertos', camara: 'Cámara', bocinas: 'Bocinas', microfono: 'Micrófono',
+  ventiladores: 'Ventiladores', base: 'Base',
+};
 
 const emptyFichaV2 = {
   sistemaOperativo: '', color: '', pantalla: '', modeloComercial: '',
@@ -39,6 +55,10 @@ export default function Inventario() {
   const [editing, setEditing] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [skuManual, setSkuManual] = useState(false);
+
+  const tmpl = useMemo(() => getTemplate(form.categoria), [form.categoria]);
+
+  const hasField = (fieldKey) => tmpl.step2.includes(fieldKey) || tmpl.step3.includes(fieldKey) || tmpl.ficha.condicion.includes(fieldKey) || tmpl.ficha.bateria.includes(fieldKey) || tmpl.ficha.checklist.includes(fieldKey);
 
   const generarSku = (modelo, marca, procesador) => {
     const m = modelo?.toUpperCase().trim();
@@ -97,17 +117,13 @@ export default function Inventario() {
 
   const toggleChecklist = (test) => {
     setDirty(true);
-    setForm(prev => {
-      const current = prev.fichaV2.checklistPruebas[test];
-      const next = current === 'OK' ? null : 'OK';
-      return {
-        ...prev,
-        fichaV2: {
-          ...prev.fichaV2,
-          checklistPruebas: { ...prev.fichaV2.checklistPruebas, [test]: next },
-        },
-      };
-    });
+    setForm(prev => ({
+      ...prev,
+      fichaV2: {
+        ...prev.fichaV2,
+        checklistPruebas: { ...prev.fichaV2.checklistPruebas, [test]: prev.fichaV2.checklistPruebas[test] === 'OK' ? null : 'OK' },
+      },
+    }));
   };
 
   useEffect(() => {
@@ -132,7 +148,7 @@ export default function Inventario() {
   const cargarEdicion = (item) => {
     setEditing(true);
     setForm({
-      codigo: item.codigo, categoria: item.categoria, marca: item.marca, modelo: item.modelo,
+      codigo: item.codigo, categoria: item.categoria || 'LAPTOP', marca: item.marca, modelo: item.modelo,
       serie: item.serie, sku: item.sku || '',
       anio: item.anio || '', procesador: item.procesador, generacion: item.generacion || '',
       ram: item.ram, tipoRam: item.tipoRam || 'DDR4',
@@ -318,6 +334,15 @@ export default function Inventario() {
         ))}
       </div>
 
+      {form.categoria && step > 1 && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-50 border border-brand-200 text-brand-700 text-sm animate-fade-in">
+          <i className={`fa-solid ${tmpl.icon}`} />
+          <span className="font-bold">{tmpl.label}</span>
+          <span className="text-brand-500">—</span>
+          <span>{tmpl.description}</span>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleSubmit(e); } }} className="panel overflow-hidden animate-fade-in">
         {step === 1 && (
           <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -361,61 +386,61 @@ export default function Inventario() {
         {step === 2 && (
           <div className="p-6 md:p-8 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div><label className="form-label">Procesador *</label><input className="form-input uppercase" value={form.procesador} onChange={e => markDirty('procesador', e.target.value)} required title="Ej: INTEL CORE I5-12400F" /></div>
-              <div><label className="form-label">Generación</label>
+              {tmpl.step2.includes('procesador') && <div><label className="form-label">Procesador *</label><input className="form-input uppercase" value={form.procesador} onChange={e => markDirty('procesador', e.target.value)} required title="Ej: INTEL CORE I5-12400F" /></div>}
+              {tmpl.step2.includes('generacion') && <div><label className="form-label">Generación</label>
                 <select className="form-input" value={form.generacion} onChange={e => markDirty('generacion', e.target.value)}>
                   <option value="">Selecciona...</option>
                   {GENERACION_OPTIONS.map(g => <option key={g}>{g}</option>)}
-                </select></div>
-              <div><label className="form-label">RAM *</label>
-                <select className="form-input" value={form.ram} onChange={e => markDirty('ram', e.target.value)}>{RAM_OPTIONS.map(r => <option key={r}>{r}</option>)}</select></div>
-              <div><label className="form-label">Tipo de RAM</label>
-                <select className="form-input" value={form.tipoRam} onChange={e => markDirty('tipoRam', e.target.value)}>{TIPO_RAM_OPTIONS.map(t => <option key={t}>{t}</option>)}</select></div>
-              <div><label className="form-label">Almacenamiento *</label>
-                <select className="form-input" value={form.almacenamiento} onChange={e => markDirty('almacenamiento', e.target.value)}>{STORAGE_OPTIONS.map(s => <option key={s}>{s}</option>)}</select></div>
-              <div><label className="form-label">Tipo de disco *</label><input className="form-input uppercase" value={form.tipoDisco} onChange={e => markDirty('tipoDisco', e.target.value)} required title="Ej: M.2 NVME, SSD SATA, HDD" /></div>
-              <div><label className="form-label">Gráfica</label><input className="form-input uppercase" value={form.grafica} onChange={e => markDirty('grafica', e.target.value)} title="Ej: GTX 1650, INTEGRADA" /></div>
-              <div><label className="form-label">Resolución</label>
+                </select></div>}
+              {tmpl.step2.includes('ram') && <div><label className="form-label">RAM *</label>
+                <select className="form-input" value={form.ram} onChange={e => markDirty('ram', e.target.value)}>{RAM_OPTIONS.map(r => <option key={r}>{r}</option>)}</select></div>}
+              {tmpl.step2.includes('tipoRam') && <div><label className="form-label">Tipo de RAM</label>
+                <select className="form-input" value={form.tipoRam} onChange={e => markDirty('tipoRam', e.target.value)}>{TIPO_RAM_OPTIONS.map(t => <option key={t}>{t}</option>)}</select></div>}
+              {tmpl.step2.includes('almacenamiento') && <div><label className="form-label">Almacenamiento *</label>
+                <select className="form-input" value={form.almacenamiento} onChange={e => markDirty('almacenamiento', e.target.value)}>{STORAGE_OPTIONS.map(s => <option key={s}>{s}</option>)}</select></div>}
+              {tmpl.step2.includes('tipoDisco') && <div><label className="form-label">Tipo de disco *</label><input className="form-input uppercase" value={form.tipoDisco} onChange={e => markDirty('tipoDisco', e.target.value)} required title="Ej: M.2 NVME, SSD SATA, HDD" /></div>}
+              {tmpl.step2.includes('grafica') && <div><label className="form-label">Gráfica</label><input className="form-input uppercase" value={form.grafica} onChange={e => markDirty('grafica', e.target.value)} title="Ej: GTX 1650, INTEGRADA" /></div>}
+              {tmpl.step2.includes('resolucion') && <div><label className="form-label">Resolución</label>
                 <select className="form-input" value={form.resolucion} onChange={e => markDirty('resolucion', e.target.value)}>
                   <option value="">Selecciona...</option>
                   {RESOLUCION_OPTIONS.map(r => <option key={r}>{r}</option>)}
-                </select></div>
+                </select></div>}
             </div>
-            <div className="border-t border-slate-200 pt-5">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Conectividad y Extras</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-                {[
-                  { key: 'wifi', label: 'WiFi', icon: 'fa-wifi' },
-                  { key: 'bluetooth', label: 'Bluetooth', icon: 'fa-bluetooth-b' },
-                  { key: 'pantallaTactil', label: 'Pantalla Táctil', icon: 'fa-hand-pointer' },
-                  { key: 'retroiluminacion', label: 'Retroiluminación', icon: 'fa-keyboard' },
-                  { key: 'lectorHuellas', label: 'Lector Huellas', icon: 'fa-fingerprint' },
-                  { key: 'camaraIR', label: 'Cámara IR', icon: 'fa-eye' },
-                ].map(({ key, label, icon }) => (
-                  <button key={key} type="button" onClick={() => markDirty(key, !form[key])}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                      form[key]
-                        ? 'bg-brand-50 border-brand-300 text-brand-700'
-                        : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300'
-                    }`}>
-                    <i className={`fa-solid ${icon} ${form[key] ? 'text-brand-500' : 'text-slate-300'}`} />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+
+            {(() => {
+              const connFields = CONECTIVIDAD_OPTIONS.filter(o => tmpl.step2.includes(o.key));
+              if (connFields.length === 0) return null;
+              return (
+                <div className="border-t border-slate-200 pt-5">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Conectividad y Extras</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+                    {connFields.map(({ key, label, icon }) => (
+                      <button key={key} type="button" onClick={() => markDirty(key, !form[key])}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                          form[key]
+                            ? 'bg-brand-50 border-brand-300 text-brand-700'
+                            : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300'
+                        }`}>
+                        <i className={`fa-solid ${icon} ${form[key] ? 'text-brand-500' : 'text-slate-300'}`} />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
         {step === 3 && (
           <div className="p-6 md:p-8 space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+            <div className={`grid grid-cols-1 gap-5 ${tmpl.step3.includes('bateria') && tmpl.step3.includes('cargador') ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
               <div><label className="form-label">Técnico *</label>
                 <select className="form-input" value={form.tecnico} onChange={e => markDirty('tecnico', e.target.value)} required>
                   <option value="">Selecciona...</option>{TECNICOS.map(t => <option key={t}>{t}</option>)}
                 </select></div>
-              <div><label className="form-label">Batería *</label><input className="form-input uppercase" value={form.bateria} onChange={e => markDirty('bateria', e.target.value)} required title="Ej: 100%, 80%, SIN BATERÍA" /></div>
-              <div><label className="form-label">Cargador</label><input className="form-input uppercase" value={form.cargador} onChange={e => markDirty('cargador', e.target.value)} title="Ej: ORIGINAL 65W, GENÉRICO" /></div>
+              {tmpl.step3.includes('bateria') && <div><label className="form-label">Batería *</label><input className="form-input uppercase" value={form.bateria} onChange={e => markDirty('bateria', e.target.value)} required title="Ej: 100%, 80%, SIN BATERÍA" /></div>}
+              {tmpl.step3.includes('cargador') && <div><label className="form-label">Cargador</label><input className="form-input uppercase" value={form.cargador} onChange={e => markDirty('cargador', e.target.value)} title="Ej: ORIGINAL 65W, GENÉRICO" /></div>}
               <div><label className="form-label">Estado *</label>
                 <select className="form-input font-semibold" value={form.estado} onChange={e => markDirty('estado', e.target.value)}>
                   {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
@@ -450,53 +475,59 @@ export default function Inventario() {
                 <input type="date" className="form-input" value={form.fichaV2.fechaRevision} onChange={e => markFichaV2('fechaRevision', e.target.value)} /></div>
             </div>
 
-            <div className="border-t border-slate-200 pt-5">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Condición Estética</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                {['exterior', 'pantalla', 'carcasaInferior', 'teclado', 'touchpad', 'bisagras', 'puertos', 'camara', 'bocinas', 'microfono'].map(parte => (
-                  <div key={parte}>
-                    <label className="form-label capitalize">{parte === 'carcasaInferior' ? 'Carcasa Inferior' : parte}</label>
-                    <select className="form-input" value={form.fichaV2.condicionEstetica[parte]} onChange={e => markFichaV2('condicionEstetica.' + parte, e.target.value)}>
-                      {ESTADOS_CONDICION.map(o => <option key={o} value={o}>{o || '—'}</option>)}
-                    </select>
-                  </div>
-                ))}
+            {tmpl.ficha.condicion.length > 0 && (
+              <div className="border-t border-slate-200 pt-5">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Condición Estética</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {tmpl.ficha.condicion.map(parte => (
+                    <div key={parte}>
+                      <label className="form-label">{CONDICION_LABELS[parte] || parte}</label>
+                      <select className="form-input" value={form.fichaV2.condicionEstetica[parte] || ''} onChange={e => markFichaV2('condicionEstetica.' + parte, e.target.value)}>
+                        {ESTADOS_CONDICION.map(o => <option key={o} value={o}>{o || '—'}</option>)}
+                      </select>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="border-t border-slate-200 pt-5">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Batería (detalle)</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><label className="form-label">Porcentaje</label>
-                  <select className="form-input" value={form.fichaV2.bateriaDetalle.porcentaje} onChange={e => markFichaV2('bateriaDetalle.porcentaje', e.target.value)}>
-                    <option value="">—</option>
-                    {['100%', '90%', '80%', '70%', '60%', '50%', '40%', '30%', '20%', 'SIN BATERÍA'].map(o => <option key={o}>{o}</option>)}
-                  </select></div>
-                <div><label className="form-label">Ciclos</label>
-                  <input type="number" className="form-input" min="0" value={form.fichaV2.bateriaDetalle.ciclos} onChange={e => markFichaV2('bateriaDetalle.ciclos', e.target.value)} placeholder="Ej: 150" /></div>
-                <div><label className="form-label">Condición</label>
-                  <select className="form-input" value={form.fichaV2.bateriaDetalle.condicion} onChange={e => markFichaV2('bateriaDetalle.condicion', e.target.value)}>
-                    {ESTADOS_BATERIA.map(o => <option key={o} value={o}>{o || '—'}</option>)}
-                  </select></div>
+            {tmpl.ficha.bateria.length > 0 && (
+              <div className="border-t border-slate-200 pt-5">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Batería (detalle)</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div><label className="form-label">Porcentaje</label>
+                    <select className="form-input" value={form.fichaV2.bateriaDetalle.porcentaje} onChange={e => markFichaV2('bateriaDetalle.porcentaje', e.target.value)}>
+                      <option value="">—</option>
+                      {['100%', '90%', '80%', '70%', '60%', '50%', '40%', '30%', '20%', 'SIN BATERÍA'].map(o => <option key={o}>{o}</option>)}
+                    </select></div>
+                  <div><label className="form-label">Ciclos</label>
+                    <input type="number" className="form-input" min="0" value={form.fichaV2.bateriaDetalle.ciclos} onChange={e => markFichaV2('bateriaDetalle.ciclos', e.target.value)} placeholder="Ej: 150" /></div>
+                  <div><label className="form-label">Condición</label>
+                    <select className="form-input" value={form.fichaV2.bateriaDetalle.condicion} onChange={e => markFichaV2('bateriaDetalle.condicion', e.target.value)}>
+                      {ESTADOS_BATERIA.map(o => <option key={o} value={o}>{o || '—'}</option>)}
+                    </select></div>
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="border-t border-slate-200 pt-5">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Checklist de Pruebas</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {CHECKLIST_ITEMS.map(test => (
-                  <button key={test} type="button" onClick={() => toggleChecklist(test)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                      form.fichaV2.checklistPruebas[test] === 'OK'
-                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                        : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300'
-                    }`}>
-                    <i className={`fa-solid ${form.fichaV2.checklistPruebas[test] === 'OK' ? 'fa-circle-check text-emerald-500' : 'fa-circle text-slate-300'}`} />
-                    {test}
-                  </button>
-                ))}
+            {tmpl.ficha.checklist.length > 0 && (
+              <div className="border-t border-slate-200 pt-5">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Checklist de Pruebas</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {tmpl.ficha.checklist.map(test => (
+                    <button key={test} type="button" onClick={() => toggleChecklist(test)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                        form.fichaV2.checklistPruebas[test] === 'OK'
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                          : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300'
+                      }`}>
+                      <i className={`fa-solid ${form.fichaV2.checklistPruebas[test] === 'OK' ? 'fa-circle-check text-emerald-500' : 'fa-circle text-slate-300'}`} />
+                      {test}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="border-t border-slate-200 pt-5">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Garantía</p>

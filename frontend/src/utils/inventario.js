@@ -6,7 +6,7 @@ export const ESTADOS = [
   { value: '🔴 TKF', label: '🔴 TKF (Sin Reparación / No funciona)' },
 ];
 
-export const CATEGORIAS = ['LAPTOP', 'MINI PC', 'ALL-IN-ONE', 'DESKTOP', 'TABLET', 'OTRO'];
+export const CATEGORIAS = ['LAPTOP', 'MINI PC', 'DESKTOP', 'ALL-IN-ONE', 'WORKSTATION', 'TABLET', 'MONITOR', 'ACCESORIO', 'OTRO'];
 export const RAM_OPTIONS = ['N/A', '4 GB', '8 GB', '16 GB', '32 GB', '64 GB', '128 GB'];
 export const STORAGE_OPTIONS = ['N/A', '128 GB', '256 GB', '512 GB', '1 TB', '2 TB', '4 TB'];
 export const TECNICOS = ['JAHIR HERNANDEZ', 'JOSE LUIS', 'VALERIA BARRUETA'];
@@ -29,6 +29,14 @@ export function generarCodigoSiguiente(inventario) {
     }
   });
   return `INV-${maxNum + 1}`;
+}
+
+export function getSkuPrefix(categoria) {
+  const prefixes = {
+    'LAPTOP': 'LAP', 'MINI PC': 'MIN', 'DESKTOP': 'DES', 'ALL-IN-ONE': 'AIO',
+    'WORKSTATION': 'WRK', 'TABLET': 'TAB', 'MONITOR': 'MON', 'ACCESORIO': 'ACC', 'OTRO': 'OTR',
+  };
+  return prefixes[categoria] || 'LAP';
 }
 
 export function normalizarSerie(serie) {
