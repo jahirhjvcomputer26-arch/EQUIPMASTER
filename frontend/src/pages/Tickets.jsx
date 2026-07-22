@@ -204,46 +204,46 @@ export default function Tickets() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {ESTADOS.map(estado => (
-          <div key={estado.key} className={`${estado.bg} rounded-2xl border ${estado.border} overflow-hidden`}>
+          <div key={estado.key} className={`${estado.bg} dark:bg-slate-800 rounded-2xl border ${estado.border} dark:border-slate-700 overflow-hidden`}>
             <div className={`px-4 py-3 flex items-center justify-between`}>
               <div className="flex items-center gap-2">
                 <div className={`w-2.5 h-2.5 rounded-full ${estado.dot}`} />
-                <h3 className={`text-sm font-bold ${estado.text}`}>{estado.label}</h3>
+                <h3 className={`text-sm font-bold ${estado.text} dark:!text-slate-100`}>{estado.label}</h3>
               </div>
-              <span className={`text-xs font-bold ${estado.text} bg-white/60 px-2 py-0.5 rounded-full`}>
+              <span className={`text-xs font-bold ${estado.text} dark:!text-slate-200 bg-white/60 dark:bg-slate-700/60 px-2 py-0.5 rounded-full`}>
                 {agrupados[estado.key]?.length || 0}
               </span>
             </div>
             <div className="px-3 pb-3 space-y-2 max-h-[60vh] overflow-y-auto">
               {(agrupados[estado.key] || []).length === 0 && (
-                <p className="text-xs text-slate-400 text-center py-6 italic">Sin tickets</p>
+                <p className="text-xs text-slate-400 dark:!text-slate-500 text-center py-6 italic">Sin tickets</p>
               )}
               {(agrupados[estado.key] || []).map(ticket => (
                 <div key={ticket.id}
                   onClick={() => setDetailModal(ticket)}
-                  className="bg-white rounded-xl p-3 border border-slate-100 hover:border-slate-200 hover:shadow-sm transition cursor-pointer space-y-2">
+                  className="bg-white dark:bg-slate-700 rounded-xl p-3 border border-slate-100 dark:border-slate-600 hover:border-slate-200 dark:hover:border-slate-500 hover:shadow-sm transition cursor-pointer space-y-2">
                   <div className="flex items-start justify-between gap-2">
-                    <span className="text-[10px] font-mono font-bold text-slate-400">{ticket.id}</span>
+                    <span className="text-[10px] font-mono font-bold text-slate-400 dark:!text-slate-400">{ticket.id}</span>
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${PRIORIDADES[ticket.prioridad]?.color}`}>
                       {PRIORIDADES[ticket.prioridad]?.label}
                     </span>
                   </div>
-                  <p className="text-sm font-semibold text-slate-700 line-clamp-2">{ticket.asunto}</p>
+                  <p className="text-sm font-semibold text-slate-700 dark:!text-slate-100 line-clamp-2">{ticket.asunto}</p>
                   {ticket.descripcion && (
-                    <p className="text-xs text-slate-400 line-clamp-2">{ticket.descripcion}</p>
+                    <p className="text-xs text-slate-400 dark:!text-slate-400 line-clamp-2">{ticket.descripcion}</p>
                   )}
                   <div className="flex items-center justify-between pt-1">
                     <div className="flex items-center gap-1.5">
-                      <div className="w-5 h-5 rounded-full bg-brand-100 flex items-center justify-center">
-                        <span className="text-[8px] font-bold text-brand-600">
+                      <div className="w-5 h-5 rounded-full bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center">
+                        <span className="text-[8px] font-bold text-brand-600 dark:!text-brand-300">
                           {(ticket.creadoPor || '?')[0].toUpperCase()}
                         </span>
                       </div>
-                      <span className="text-[10px] text-slate-400">{ticket.creadoPor}</span>
+                      <span className="text-[10px] text-slate-400 dark:!text-slate-400">{ticket.creadoPor}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                    <div className="flex items-center gap-1 text-[10px] text-slate-400 dark:!text-slate-400">
                       {ticket.tecnicoAsignado && (
-                        <span className="text-blue-500 font-bold mr-1">
+                        <span className="text-blue-500 dark:!text-blue-400 font-bold mr-1">
                           <i className="fa-solid fa-user-check mr-0.5" />{ticket.tecnicoAsignado}
                         </span>
                       )}
@@ -251,7 +251,7 @@ export default function Tickets() {
                     </div>
                   </div>
                   {ticket.notas?.length > 0 && (
-                    <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                    <div className="flex items-center gap-1 text-[10px] text-slate-400 dark:!text-slate-400">
                       <i className="fa-solid fa-comment-dots" /> {ticket.notas.length}
                     </div>
                   )}
@@ -264,9 +264,9 @@ export default function Tickets() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setModalOpen(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-slide-up" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-800">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg animate-slide-up" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-800 dark:!text-slate-100">
                 <i className={`fa-solid ${editando ? 'fa-pen' : 'fa-plus'} text-brand-500 mr-2`} />
                 {editando ? 'Editar Ticket' : 'Nuevo Ticket'}
               </h3>
@@ -276,24 +276,24 @@ export default function Tickets() {
             </div>
             <form onSubmit={handleCrear} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Asunto *</label>
+                <label className="block text-xs font-bold text-slate-600 dark:!text-slate-300 mb-1">Asunto *</label>
                 <input type="text" value={form.asunto} onChange={e => setForm(f => ({ ...f, asunto: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-300 focus:border-brand-300 outline-none"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:!text-slate-100 text-sm focus:ring-2 focus:ring-brand-300 focus:border-brand-300 outline-none"
                   placeholder="Ej: No enciende laptop Dell..." autoFocus />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Descripción</label>
+                <label className="block text-xs font-bold text-slate-600 dark:!text-slate-300 mb-1">Descripción</label>
                 <textarea rows={3} value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-300 focus:border-brand-300 outline-none resize-none"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:!text-slate-100 text-sm focus:ring-2 focus:ring-brand-300 focus:border-brand-300 outline-none resize-none"
                   placeholder="Detalles del problema..." />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Prioridad</label>
+                <label className="block text-xs font-bold text-slate-600 dark:!text-slate-300 mb-1">Prioridad</label>
                 <div className="flex gap-2">
                   {Object.entries(PRIORIDADES).map(([key, p]) => (
                     <button key={key} type="button" onClick={() => setForm(f => ({ ...f, prioridad: key }))}
                       className={`flex-1 py-2 rounded-xl text-sm font-bold border-2 transition ${
-                        form.prioridad === key ? `${p.color} border-current` : 'border-slate-200 text-slate-400 hover:border-slate-300'
+                        form.prioridad === key ? `${p.color} border-current` : 'border-slate-200 dark:border-slate-600 text-slate-400 dark:!text-slate-400 hover:border-slate-300'
                       }`}>
                       <i className={`fa-solid ${p.icon} mr-1`} />{p.label}
                     </button>
@@ -302,7 +302,7 @@ export default function Tickets() {
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => { setModalOpen(false); setEditando(false); }}
-                  className="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition">
+                  className="px-4 py-2 rounded-xl text-sm font-bold text-slate-500 dark:!text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
                   Cancelar
                 </button>
                 <button type="submit" disabled={saving}
@@ -318,11 +318,11 @@ export default function Tickets() {
 
       {detailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDetailModal(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-slide-up" onClick={e => e.stopPropagation()}>
-            <div className={`px-6 py-4 border-b border-slate-100 flex items-start justify-between`}>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-slide-up" onClick={e => e.stopPropagation()}>
+            <div className={`px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-start justify-between`}>
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-mono font-bold text-slate-400">{detailModal.id}</span>
+                  <span className="text-xs font-mono font-bold text-slate-400 dark:!text-slate-400">{detailModal.id}</span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${PRIORIDADES[detailModal.prioridad]?.color}`}>
                     {PRIORIDADES[detailModal.prioridad]?.label}
                   </span>
@@ -330,9 +330,9 @@ export default function Tickets() {
                     {ESTADOS.find(e => e.key === detailModal.estado)?.label}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-slate-800">{detailModal.asunto}</h3>
+                <h3 className="text-lg font-bold text-slate-800 dark:!text-slate-100">{detailModal.asunto}</h3>
                 {detailModal.descripcion && (
-                  <p className="text-sm text-slate-500 mt-1 whitespace-pre-wrap">{detailModal.descripcion}</p>
+                  <p className="text-sm text-slate-500 dark:!text-slate-300 mt-1 whitespace-pre-wrap">{detailModal.descripcion}</p>
                 )}
               </div>
               <button onClick={() => setDetailModal(null)} className="text-slate-400 hover:text-slate-600 ml-4 shrink-0">
@@ -343,40 +343,40 @@ export default function Tickets() {
             <div className="px-6 py-4 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Estado</label>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:!text-slate-500 uppercase mb-1">Estado</label>
                   <select value={detailModal.estado} onChange={e => handleCambiarEstado(detailModal, e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-300 outline-none">
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:!text-slate-100 text-sm focus:ring-2 focus:ring-brand-300 outline-none">
                     {ESTADOS.map(e => <option key={e.key} value={e.key}>{e.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Asignar a</label>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:!text-slate-500 uppercase mb-1">Asignar a</label>
                   <input type="text" value={detailModal.tecnicoAsignado || ''} onChange={e => handleAsignar(detailModal, e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-300 outline-none"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:!text-slate-100 text-sm focus:ring-2 focus:ring-brand-300 outline-none"
                     placeholder="Nombre del técnico..." />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Notas internas</label>
+                <label className="block text-[10px] font-bold text-slate-400 dark:!text-slate-500 uppercase mb-1">Notas internas</label>
                 <textarea rows={2} value={detailModal.notasInternas || ''} onChange={e => setDetailModal(d => ({ ...d, notasInternas: e.target.value }))}
                   onBlur={async () => { try { await api.actualizarTicket(detailModal.id, { notasInternas: detailModal.notasInternas }); } catch {} }}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-300 outline-none resize-none"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:!text-slate-100 text-sm focus:ring-2 focus:ring-brand-300 outline-none resize-none"
                   placeholder="Notas privadas..." />
               </div>
 
-              <div className="border-t border-slate-100 pt-4">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">
+              <div className="border-t border-slate-100 dark:border-slate-700 pt-4">
+                <label className="block text-[10px] font-bold text-slate-400 dark:!text-slate-500 uppercase mb-2">
                   Historial ({detailModal.notas?.length || 0})
                 </label>
                 <div className="space-y-2 max-h-40 overflow-y-auto mb-3">
                   {(!detailModal.notas || detailModal.notas.length === 0) && (
-                    <p className="text-xs text-slate-400 italic">Sin notas aún</p>
+                    <p className="text-xs text-slate-400 dark:!text-slate-500 italic">Sin notas aún</p>
                   )}
                   {(detailModal.notas || []).map((n, i) => (
-                    <div key={i} className="bg-slate-50 rounded-lg p-2.5 text-xs">
-                      <p className="text-slate-700 whitespace-pre-wrap">{n.texto}</p>
-                      <p className="text-[10px] text-slate-400 mt-1">
+                    <div key={i} className="bg-slate-50 dark:bg-slate-700 rounded-lg p-2.5 text-xs">
+                      <p className="text-slate-700 dark:!text-slate-200 whitespace-pre-wrap">{n.texto}</p>
+                      <p className="text-[10px] text-slate-400 dark:!text-slate-500 mt-1">
                         <i className="fa-solid fa-user mr-1" />{n.autor} · {new Date(n.fecha).toLocaleString('es-MX')}
                       </p>
                     </div>
@@ -385,7 +385,7 @@ export default function Tickets() {
                 <div className="flex gap-2">
                   <input type="text" value={notaTexto} onChange={e => setNotaTexto(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') handleNota(); }}
-                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-brand-300 outline-none"
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:!text-slate-100 text-sm focus:ring-2 focus:ring-brand-300 outline-none"
                     placeholder="Escribe una nota..." />
                   <button onClick={handleNota}
                     className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl transition">
@@ -394,17 +394,17 @@ export default function Tickets() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                <div className="text-[10px] text-slate-400">
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
+                <div className="text-[10px] text-slate-400 dark:!text-slate-500">
                   Creado por <span className="font-bold">{detailModal.creadoPor}</span> · {new Date(detailModal.creadoEn).toLocaleString('es-MX')}
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => openEditar(detailModal)}
-                    className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition">
+                    className="px-3 py-1.5 text-xs font-bold text-slate-500 dark:!text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition">
                     <i className="fa-solid fa-pen mr-1" />Editar
                   </button>
                   <button onClick={() => handleEliminar(detailModal)}
-                    className="px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition">
+                    className="px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
                     <i className="fa-solid fa-trash mr-1" />Eliminar
                   </button>
                 </div>
