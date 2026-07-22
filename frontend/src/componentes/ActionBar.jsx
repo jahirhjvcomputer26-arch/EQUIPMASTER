@@ -32,7 +32,7 @@ export default function ActionBar({ stepIndex, totalSteps, editing, onPrev, onNe
               <i className="fa-solid fa-arrow-right text-xs" />
             </button>
           ) : (
-            <button type="submit" onClick={onSubmit}
+            <button type="button" onClick={onSubmit}
               className="btn-brand flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold">
               <i className={`fa-solid ${editing ? 'fa-save' : 'fa-plus'} text-xs`} />
               {editing ? 'Guardar Cambios' : 'Registrar Equipo'}

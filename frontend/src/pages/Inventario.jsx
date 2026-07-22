@@ -419,7 +419,7 @@ export default function Inventario() {
       <SmartProgressBar stepIndex={currentStepIndex} totalSteps={totalSteps} stepLabels={mode === 'quick' ? ['Identificación', 'Estado y Técnico'] : stepLabels} stepIcons={mode === 'quick' ? [stepIcons[0], stepIcons[2]] : stepIcons} />
 
       <div className="flex gap-5 items-start">
-        <form onSubmit={handleSubmit} onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleSubmit(e); } }} className="flex-1 min-w-0 panel overflow-hidden animate-fade-in">
+        <form onSubmit={e => e.preventDefault()} onKeyDown={e => { if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); } if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleSubmit(e); } }} className="flex-1 min-w-0 panel overflow-hidden animate-fade-in">
 
           {step === 1 && (
             <div className="p-6 md:p-8 space-y-5">
