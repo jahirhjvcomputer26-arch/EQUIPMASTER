@@ -483,6 +483,14 @@ export const SKU_TABLE = [
 
 const LS_KEY = 'equipmaster_skus_aprendidos';
 
+const MARCAS_CONOCIDAS = ['LENOVO', 'HP', 'DELL', 'APPLE', 'ACER', 'ASUS', 'SAMSUNG', 'MSI', 'TOSHIBA', 'SURFACE', 'MICROSOFT', 'GIGABYTE', 'XIAOMI', 'HUAWEI', 'CHUWI', 'INTEL', 'RAZER', 'LG', 'SONY', 'THINKPAD', 'THINKBOOK', 'THINKCENTRE', 'WORKSTATION', 'YOGA', 'LEGION', 'IDEAPAD', 'LOQ', 'ZBOOK', 'ELITEBOOK', 'SPECTRE', 'ENVY', 'PAVILION', 'PROBOOK', 'ELITE', 'MACBOOK', 'IMAC', 'MAC', 'LATITUDE', 'PRECISION', 'INSPIRON', 'VOSTRO', 'OPTIPLEX', 'NITRO', 'PREDATOR', 'CHROMEBOOK', 'SURFACE BOOK'];
+
+function isValidMarca(marca) {
+  if (!marca) return false;
+  const m = marca.toUpperCase().trim();
+  return MARCAS_CONOCIDAS.some(marca => m.includes(marca));
+}
+
 function getSkusAprendidos() {
   try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch { return []; }
 }
@@ -495,11 +503,20 @@ function cargarSkusAprendidos() {
   const aprendidos = getSkusAprendidos();
   if (aprendidos.length > 0) {
     const existentes = new Set(SKU_TABLE.map(e => e.sku));
+    const validos = [];
     for (const item of aprendidos) {
       if (!existentes.has(item.sku)) {
-        SKU_TABLE.push(item);
-        existentes.add(item.sku);
+        if (isValidMarca(item.modelo)) {
+          SKU_TABLE.push(item);
+          existentes.add(item.sku);
+          validos.push(item);
+        }
+      } else {
+        validos.push(item);
       }
+    }
+    if (validos.length !== aprendidos.length) {
+      guardarSkusAprendidos(validos);
     }
   }
 }
@@ -509,6 +526,7 @@ cargarSkusAprendidos();
 export function aprenderSku(sku, modelo, procesador, ram, almacenamiento) {
   const s = sku.toUpperCase().trim();
   if (SKU_TABLE.some(e => e.sku === s)) return;
+  if (!isValidMarca(modelo)) return;
   const entry = { modelo: modelo.toUpperCase().trim(), procesador: procesador.toUpperCase().trim(), ram: ram || '', almacenamiento: almacenamiento || '', sku: s };
   SKU_TABLE.push(entry);
   const aprendidos = getSkusAprendidos();
