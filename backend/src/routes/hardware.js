@@ -5,6 +5,12 @@ const router = Router();
 
 router.get('/detect', authMiddleware, async (req, res) => {
   try {
+    const hostname = require('os').hostname().toLowerCase();
+    const cloudKeywords = ['render', 'aws', 'google', 'azure', 'heroku', 'railway', 'fly', 'docker', 'kubernetes'];
+    if (cloudKeywords.some(k => hostname.includes(k)) || process.env.RENDER) {
+      return res.status(400).json({ error: 'La detección de hardware solo funciona en la red local del taller. En producción, ingresa los datos manualmente.' });
+    }
+
     const si = await import('systeminformation');
 
     const [cpu, mem, os, diskLayout, bios, baseboard, system] = await Promise.all([
