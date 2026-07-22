@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: equipmaster
+    runtime: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: node src/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
