@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { ref, get } from 'firebase/database';
 import { db } from '../services/firebase';
 import { badgeEstado, derivarModeloComercial } from '../utils/inventario';
+import { CHECKLIST_ICONS } from '../utils/formTemplates';
 
 const CHECKLIST_ITEMS = [
   'Pantalla', 'Teclado', 'Touchpad', 'WiFi',
@@ -199,16 +200,17 @@ export default function FichaTecnicaV2() {
               <div className={`h-full rounded-full transition-all ${checkPercent === 100 ? 'bg-emerald-500' : 'bg-brand-500'}`} style={{ width: checkPercent + '%' }} />
             </div>
             <div className="grid grid-cols-3 gap-1.5">
-              {CHECKLIST_ITEMS.map(test => (
-                <div key={test} className="flex items-center gap-1.5 text-xs py-1 px-2 rounded-lg bg-slate-50">
-                  <span className={pruebas[test] === true || pruebas[test] === 'OK' ? 'text-emerald-600' : pruebas[test] === false || pruebas[test] === 'FAIL' ? 'text-red-500' : 'text-slate-300'}>
-                    {pruebas[test] === true || pruebas[test] === 'OK' ? <i className="fa-solid fa-circle-check" />
-                    : pruebas[test] === false || pruebas[test] === 'FAIL' ? <i className="fa-solid fa-circle-xmark" />
-                    : <i className="fa-regular fa-circle" />}
-                  </span>
-                  <span className="text-slate-600">{test}</span>
-                </div>
-              ))}
+              {CHECKLIST_ITEMS.map(test => {
+                const meta = CHECKLIST_ICONS[test] || { icon: 'fa-circle-question', color: 'text-slate-400' };
+                const isOk = pruebas[test] === true || pruebas[test] === 'OK';
+                const isFail = pruebas[test] === false || pruebas[test] === 'FAIL';
+                return (
+                  <div key={test} className={`flex items-center gap-1.5 text-xs py-1 px-2 rounded-lg ${isOk ? 'bg-emerald-50' : isFail ? 'bg-red-50' : 'bg-slate-50'}`}>
+                    <i className={`fa-solid ${isOk ? 'fa-circle-check text-emerald-500' : isFail ? 'fa-circle-xmark text-red-500' : meta.icon} text-[11px] ${!isOk && !isFail ? meta.color : ''}`} />
+                    <span className={isOk ? 'text-emerald-700 font-semibold' : isFail ? 'text-red-600 font-semibold' : 'text-slate-600'}>{test}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

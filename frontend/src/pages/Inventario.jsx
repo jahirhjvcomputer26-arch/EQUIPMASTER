@@ -1,10 +1,14 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useInventario } from '../context/InventarioContext';
 import { useNotify } from '../componentes/Notification';
 import { CATEGORIAS, ESTADOS, RAM_OPTIONS, STORAGE_OPTIONS, TECNICOS, GENERACION_OPTIONS, TIPO_RAM_OPTIONS, RESOLUCION_OPTIONS, ANIO_OPTIONS, esEstadoML, generarCodigoSiguiente, buscarSku, buscarPorSku, aprenderSku, derivarModeloComercial } from '../utils/inventario';
-import { getTemplate, FIELD_GROUPS } from '../utils/formTemplates';
+import { getTemplate, CHECKLIST_ICONS } from '../utils/formTemplates';
+import SmartProgressBar from '../componentes/SmartProgressBar';
+import VisualChecklist from '../componentes/VisualChecklist';
+import LivePreview from '../componentes/LivePreview';
+import ActionBar from '../componentes/ActionBar';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import useUnsavedChanges from '../utils/useUnsavedChanges';
 
@@ -44,11 +48,28 @@ const emptyForm = {
   fichaV2: emptyFichaV2,
 };
 
+function SectionHeader({ icon, title, color, children }) {
+  return (
+    <div className="border-t border-slate-200 pt-5">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs ${color}`}>
+            <i className={`fa-solid ${icon}`} />
+          </div>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{title}</p>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function Inventario() {
   useDocumentTitle('Entrada de equipos');
   const { inventario } = useInventario();
   const { notify } = useNotify();
   const [params] = useSearchParams();
+  const [mode, setMode] = useState(() => localStorage.getItem('em_capture_mode') || 'full');
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState(false);
@@ -57,9 +78,16 @@ export default function Inventario() {
 
   const tmpl = useMemo(() => getTemplate(form.categoria), [form.categoria]);
 
-  const hasField = (fieldKey) => tmpl.step2.includes(fieldKey) || tmpl.step3.includes(fieldKey) || tmpl.ficha.condicion.includes(fieldKey) || tmpl.ficha.bateria.includes(fieldKey) || tmpl.ficha.checklist.includes(fieldKey);
+  const stepLabels = tmpl.stepLabels || ['Identificación', 'Hardware', 'Estado y Técnico', 'Ficha Técnica'];
+  const stepIcons = tmpl.stepIcons || ['fa-id-card', 'fa-microchip', 'fa-clipboard-check', 'fa-file-lines'];
+  const allSteps = [1, 2, 3, 4];
+  const activeSteps = mode === 'quick' ? [1, 3] : allSteps;
+  const totalSteps = activeSteps.length;
+  const currentStepIndex = activeSteps.indexOf(step);
 
-  const generarSku = (modelo, marca, procesador) => {
+  useEffect(() => { localStorage.setItem('em_capture_mode', mode); }, [mode]);
+
+  const generarSku = useCallback((modelo, marca, procesador) => {
     const m = modelo?.toUpperCase().trim();
     const p = procesador?.toUpperCase().trim();
     if (m && p) {
@@ -75,7 +103,7 @@ export default function Inventario() {
       if (soloInv) return soloInv.sku;
     }
     return '';
-  };
+  }, [inventario]);
 
   const markDirty = (field, value) => {
     setDirty(true);
@@ -100,6 +128,7 @@ export default function Inventario() {
       return next;
     });
   };
+
   const markFichaV2 = (field, value) => {
     setDirty(true);
     setForm(prev => {
@@ -120,7 +149,10 @@ export default function Inventario() {
       ...prev,
       fichaV2: {
         ...prev.fichaV2,
-        checklistPruebas: { ...prev.fichaV2.checklistPruebas, [test]: prev.fichaV2.checklistPruebas[test] === 'OK' ? null : 'OK' },
+        checklistPruebas: {
+          ...prev.fichaV2.checklistPruebas,
+          [test]: prev.fichaV2.checklistPruebas[test] === 'OK' ? null : 'OK',
+        },
       },
     }));
   };
@@ -140,7 +172,17 @@ export default function Inventario() {
       if (item) cargarEdicion(item);
     } else if (!editing) {
       const hoy = new Date().toISOString().split('T')[0];
-      setForm(f => ({ ...f, codigo: generarCodigoSiguiente(inventario), fichaV2: { ...f.fichaV2, fechaRevision: hoy } }));
+      setForm(f => {
+        const lastBrand = localStorage.getItem('em_last_brand') || '';
+        const lastTech = localStorage.getItem('em_last_technician') || '';
+        return {
+          ...f,
+          codigo: generarCodigoSiguiente(inventario),
+          marca: lastBrand,
+          tecnico: lastTech,
+          fichaV2: { ...f.fichaV2, fechaRevision: hoy },
+        };
+      });
     }
   }, [inventario, params]);
 
@@ -172,11 +214,11 @@ export default function Inventario() {
         fechaRevision: item.fechaRevision || '',
       },
     });
-    setStep(1);
+    setStep(mode === 'quick' ? 1 : 1);
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (esEstadoML(form.estado) && (!form.mlFechaEnvio || !form.mlEnviadoPor)) {
       notify('Datos ML incompletos', 'Completa fecha y responsable del envío.', 'error');
       return;
@@ -258,6 +300,8 @@ export default function Inventario() {
           }
         } catch { /* propagación falló, no bloquea */ }
       }
+      localStorage.setItem('em_last_brand', form.marca);
+      localStorage.setItem('em_last_technician', form.tecnico);
       notify('¡Procesado!', editing ? 'Equipo actualizado.' : 'Equipo registrado en Firebase.', 'success');
       if (!editing && payload.sku && payload.sku !== 'N/A') {
         aprenderSku(payload.sku, `${payload.marca} ${payload.modelo}`, payload.procesador, payload.ram, payload.almacenamiento);
@@ -277,270 +321,280 @@ export default function Inventario() {
     setSkuManual(false);
     const hoy = new Date().toISOString().split('T')[0];
     setForm({ ...emptyForm, codigo: nextCodigo, fichaV2: { ...emptyFichaV2, fechaRevision: hoy } });
-    setStep(1);
+    setStep(mode === 'quick' ? 1 : 1);
+  };
+
+  const goNext = () => {
+    const idx = activeSteps.indexOf(step);
+    if (idx < activeSteps.length - 1) setStep(activeSteps[idx + 1]);
+  };
+  const goPrev = () => {
+    const idx = activeSteps.indexOf(step);
+    if (idx > 0) setStep(activeSteps[idx - 1]);
   };
 
   return (
-    <section className="space-y-6">
-      <div className="flex items-center justify-between animate-slide-up">
+    <section className="space-y-4 pb-20">
+      <div className="flex flex-wrap items-center justify-between gap-3 animate-slide-up">
         <div>
           <h2 className="font-display text-2xl font-bold text-slate-900">{editing ? '✏️ Modificando Ficha' : 'Entrada de equipos'}</h2>
-          <p className="text-slate-500 text-sm">Registro en 4 pasos</p>
+          <p className="text-slate-500 text-sm flex items-center gap-2">
+            <span className="font-semibold text-brand-600">{mode === 'quick' ? 'Captura Rápida' : 'Captura Completa'}</span>
+            {form.categoria && <span className="text-slate-400">· {tmpl.label}</span>}
+          </p>
         </div>
-{editing && (
-  <>
-  <a href={`/ficha-v2/${form.codigo}`} target="_blank" className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
-    <i className="fa-solid fa-file-lines" /> Ficha
-  </a>
-  <a href={`/galeria/${form.codigo}`} target="_blank" className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
-    <i className="fa-solid fa-camera" /> Galería
-  </a>
-  <a href={`/documentos/${form.codigo}`} target="_blank" className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
-    <i className="fa-solid fa-folder-open" /> Documentos
-  </a>
-  <a href={`/etiquetas/${form.codigo}`} target="_blank" className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
-    <i className="fa-solid fa-tag" /> Etiqueta
-  </a>
-  </>
-)}
-      </div>
-
-      <div className="flex items-center gap-2 animate-fade-in">
-        {[1, 2, 3, 4].map(s => (
-          <div key={s} className="flex items-center flex-1 last:flex-none last:gap-0">
-            <div className={`flex items-center gap-2 ${s < 4 ? 'flex-1' : ''}`}>
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                step === s ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/30 scale-110' :
-                step > s ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'
-              }`}>
-                {step > s ? <i className="fa-solid fa-check" /> : s}
-              </div>
-              <span className={`text-xs font-bold uppercase tracking-wider ${
-                step === s ? 'text-brand-600' : step > s ? 'text-emerald-600' : 'text-slate-400'
-              }`}>
-                {s === 1 ? 'Identificación' : s === 2 ? 'Hardware' : s === 3 ? 'Estado y técnico' : 'Ficha técnica'}
-              </span>
-            </div>
-            {s < 4 && (
-              <div className={`flex-1 h-0.5 mx-3 rounded transition-all duration-500 ${
-                step > s ? 'bg-emerald-400' : 'bg-slate-200'
-              }`} />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {form.categoria && step > 1 && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-50 border border-brand-200 text-brand-700 text-sm animate-fade-in">
-          <i className={`fa-solid ${tmpl.icon}`} />
-          <span className="font-bold">{tmpl.label}</span>
-          <span className="text-brand-500">—</span>
-          <span>{tmpl.description}</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleSubmit(e); } }} className="panel overflow-hidden animate-fade-in">
-        {step === 1 && (
-          <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div><label className="form-label">Código (Auto) *</label><input className="form-input font-mono font-bold" value={form.codigo} readOnly title="Código generado automáticamente" /></div>
-            <div><label className="form-label">Categoría *</label>
-              <select className="form-input" value={form.categoria} onChange={e => markDirty('categoria', e.target.value)} required>
-                <option value="">Selecciona...</option>
-                {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
-              </select></div>
-            <div><label className="form-label">Marca *</label><input className="form-input uppercase" value={form.marca} onChange={e => markDirty('marca', e.target.value)} required title="Ej: HP, LENOVO, DELL" /></div>
-            <div><label className="form-label">Modelo *</label><input className="form-input uppercase" value={form.modelo} onChange={e => markDirty('modelo', e.target.value)} required title="Ej: PROBOOK 450 G10" /></div>
-            <div><label className="form-label">Número de serie *</label><input className="form-input font-mono uppercase" value={form.serie} onChange={e => markDirty('serie', e.target.value)} required title="S/N grabado en el equipo" /></div>
-            <div><label className="form-label">SKU interno</label><input className="form-input font-mono uppercase" value={form.sku} onChange={e => { setSkuManual(true); markDirty('sku', e.target.value); }} onBlur={e => {
-              const val = e.target.value.toUpperCase().trim();
-              if (!editing && val) {
-                const encontrado = buscarPorSku(val);
-                if (encontrado) {
-                  let modelo = encontrado.modelo;
-                  if (encontrado.marca === 'LENOVO') {
-                    modelo = modelo.replace(/^LENOVO\s+/, '');
-                    modelo = modelo.replace(/^(THINKPAD|THINKBOOK|WORKSTATION|YOGA|LEGION|IDEAPAD|THINKCENTRE|LOQ)\s+/, '');
-                  }
-                  const comercial = derivarModeloComercial(encontrado.marca, modelo);
-                  setForm(prev => ({
-                    ...prev, sku: val, marca: encontrado.marca, modelo,
-                    procesador: encontrado.procesador, ram: encontrado.ram,
-                    almacenamiento: encontrado.almacenamiento,
-                    fichaV2: { ...prev.fichaV2, modeloComercial: comercial },
-                  }));
-                  setSkuManual(true);
-                }
-              }
-            }} title="Escribí el SKU y al salir del campo se auto-rellena" /></div>
-            <div><label className="form-label">Año</label>
-              <select className="form-input" value={form.anio} onChange={e => markDirty('anio', e.target.value)}>
-                {ANIO_OPTIONS.map(a => <option key={a}>{a}</option>)}
-              </select></div>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="p-6 md:p-8 space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {tmpl.step2.includes('procesador') && <div><label className="form-label">Procesador *</label><input className="form-input uppercase" value={form.procesador} onChange={e => markDirty('procesador', e.target.value)} required title="Ej: INTEL CORE I5-12400F" /></div>}
-              {tmpl.step2.includes('generacion') && <div><label className="form-label">Generación</label>
-                <select className="form-input" value={form.generacion} onChange={e => markDirty('generacion', e.target.value)}>
-                  <option value="">Selecciona...</option>
-                  {GENERACION_OPTIONS.map(g => <option key={g}>{g}</option>)}
-                </select></div>}
-              {tmpl.step2.includes('ram') && <div><label className="form-label">RAM *</label>
-                <select className="form-input" value={form.ram} onChange={e => markDirty('ram', e.target.value)}>{RAM_OPTIONS.map(r => <option key={r}>{r}</option>)}</select></div>}
-              {tmpl.step2.includes('tipoRam') && <div><label className="form-label">Tipo de RAM</label>
-                <select className="form-input" value={form.tipoRam} onChange={e => markDirty('tipoRam', e.target.value)}>{TIPO_RAM_OPTIONS.map(t => <option key={t}>{t}</option>)}</select></div>}
-              {tmpl.step2.includes('almacenamiento') && <div><label className="form-label">Almacenamiento *</label>
-                <select className="form-input" value={form.almacenamiento} onChange={e => markDirty('almacenamiento', e.target.value)}>{STORAGE_OPTIONS.map(s => <option key={s}>{s}</option>)}</select></div>}
-              {tmpl.step2.includes('tipoDisco') && <div><label className="form-label">Tipo de disco *</label><input className="form-input uppercase" value={form.tipoDisco} onChange={e => markDirty('tipoDisco', e.target.value)} required title="Ej: M.2 NVME, SSD SATA, HDD" /></div>}
-              {tmpl.step2.includes('grafica') && <div><label className="form-label">Gráfica</label><input className="form-input uppercase" value={form.grafica} onChange={e => markDirty('grafica', e.target.value)} title="Ej: GTX 1650, INTEGRADA" /></div>}
-              {tmpl.step2.includes('resolucion') && <div><label className="form-label">Resolución</label>
-                <select className="form-input" value={form.resolucion} onChange={e => markDirty('resolucion', e.target.value)}>
-                  <option value="">Selecciona...</option>
-                  {RESOLUCION_OPTIONS.map(r => <option key={r}>{r}</option>)}
-                </select></div>}
-            </div>
-
-            {(() => {
-              const connFields = CONECTIVIDAD_OPTIONS.filter(o => tmpl.step2.includes(o.key));
-              if (connFields.length === 0) return null;
-              return (
-                <div className="border-t border-slate-200 pt-5">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Conectividad y Extras</p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-                    {connFields.map(({ key, label, icon }) => (
-                      <button key={key} type="button" onClick={() => markDirty(key, !form[key])}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                          form[key]
-                            ? 'bg-brand-50 border-brand-300 text-brand-700'
-                            : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300'
-                        }`}>
-                        <i className={`fa-solid ${icon} ${form[key] ? 'text-brand-500' : 'text-slate-300'}`} />
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="p-6 md:p-8 space-y-5">
-            <div className={`grid grid-cols-1 gap-5 ${tmpl.step3.includes('bateria') && tmpl.step3.includes('cargador') ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
-              <div><label className="form-label">Técnico *</label>
-                <select className="form-input" value={form.tecnico} onChange={e => markDirty('tecnico', e.target.value)} required>
-                  <option value="">Selecciona...</option>{TECNICOS.map(t => <option key={t}>{t}</option>)}
-                </select></div>
-              {tmpl.step3.includes('bateria') && <div><label className="form-label">Batería *</label><input className="form-input uppercase" value={form.bateria} onChange={e => markDirty('bateria', e.target.value)} required title="Ej: 100%, 80%, SIN BATERÍA" /></div>}
-              {tmpl.step3.includes('cargador') && <div><label className="form-label">Cargador</label><input className="form-input uppercase" value={form.cargador} onChange={e => markDirty('cargador', e.target.value)} title="Ej: ORIGINAL 65W, GENÉRICO" /></div>}
-              <div><label className="form-label">Estado *</label>
-                <select className="form-input font-semibold" value={form.estado} onChange={e => markDirty('estado', e.target.value)}>
-                  {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
-                </select></div>
-            </div>
-            {esEstadoML(form.estado) && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><label className="form-label text-emerald-800">Fecha envío ML *</label><input type="date" className="form-input" value={form.mlFechaEnvio} onChange={e => markDirty('mlFechaEnvio', e.target.value)} required /></div>
-                <div><label className="form-label text-emerald-800">ID Publicación</label><input className="form-input uppercase" value={form.mlPublicacionId} onChange={e => markDirty('mlPublicacionId', e.target.value)} title="ID de la publicación en ML" /></div>
-                <div><label className="form-label text-emerald-800">Enviado por *</label><select className="form-input" value={form.mlEnviadoPor} onChange={e => markDirty('mlEnviadoPor', e.target.value)} required>
-                  <option value="">Selecciona...</option>
-                  {TECNICOS.filter(t => t !== 'VALERIA BARRUETA').map(t => <option key={t}>{t}</option>)}
-                </select></div>
-              </div>
-            )}
-            <div><label className="form-label">Observaciones</label><textarea className="form-input uppercase min-h-[80px]" value={form.observaciones} onChange={e => markDirty('observaciones', e.target.value)} title="Detalles adicionales del equipo" /></div>
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="p-6 md:p-8 space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div><label className="form-label">Sistema Operativo</label>
-                <input className="form-input uppercase" value={form.fichaV2.sistemaOperativo} onChange={e => markFichaV2('sistemaOperativo', e.target.value)} placeholder="Ej: WINDOWS 11 PRO" /></div>
-              <div><label className="form-label">Color</label>
-                <input className="form-input uppercase" value={form.fichaV2.color} onChange={e => markFichaV2('color', e.target.value)} placeholder="Ej: NEGRO, PLATA, GRIS" /></div>
-              <div><label className="form-label">Pantalla</label>
-                <input className="form-input uppercase" value={form.fichaV2.pantalla} onChange={e => markFichaV2('pantalla', e.target.value)} placeholder='Ej: 15.6" FHD IPS' /></div>
-              <div><label className="form-label">Modelo Comercial</label>
-                <input className="form-input uppercase" value={form.fichaV2.modeloComercial} onChange={e => markFichaV2('modeloComercial', e.target.value)} placeholder="Ej: THINKPAD X1 CARBON G10" /></div>
-              <div><label className="form-label">Fecha de Revisión</label>
-                <input type="date" className="form-input" value={form.fichaV2.fechaRevision} onChange={e => markFichaV2('fechaRevision', e.target.value)} /></div>
-            </div>
-
-            {tmpl.ficha.condicion.length > 0 && (
-              <div className="border-t border-slate-200 pt-5">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Condición Estética</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                  {tmpl.ficha.condicion.map(parte => (
-                    <div key={parte}>
-                      <label className="form-label">{CONDICION_LABELS[parte] || parte}</label>
-                      <select className="form-input" value={form.fichaV2.condicionEstetica[parte] || ''} onChange={e => markFichaV2('condicionEstetica.' + parte, e.target.value)}>
-                        {ESTADOS_CONDICION.map(o => <option key={o} value={o}>{o || '—'}</option>)}
-                      </select>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {tmpl.ficha.bateria.length > 0 && (
-              <div className="border-t border-slate-200 pt-5">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Batería (detalle)</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div><label className="form-label">Porcentaje</label>
-                    <select className="form-input" value={form.fichaV2.bateriaDetalle.porcentaje} onChange={e => markFichaV2('bateriaDetalle.porcentaje', e.target.value)}>
-                      <option value="">—</option>
-                      {['100%', '90%', '80%', '70%', '60%', '50%', '40%', '30%', '20%', 'SIN BATERÍA'].map(o => <option key={o}>{o}</option>)}
-                    </select></div>
-                  <div><label className="form-label">Ciclos</label>
-                    <input type="number" className="form-input" min="0" value={form.fichaV2.bateriaDetalle.ciclos} onChange={e => markFichaV2('bateriaDetalle.ciclos', e.target.value)} placeholder="Ej: 150" /></div>
-                  <div><label className="form-label">Condición</label>
-                    <select className="form-input" value={form.fichaV2.bateriaDetalle.condicion} onChange={e => markFichaV2('bateriaDetalle.condicion', e.target.value)}>
-                      {ESTADOS_BATERIA.map(o => <option key={o} value={o}>{o || '—'}</option>)}
-                    </select></div>
-                </div>
-              </div>
-            )}
-
-            {tmpl.ficha.checklist.length > 0 && (
-              <div className="border-t border-slate-200 pt-5">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Checklist de Pruebas</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {tmpl.ficha.checklist.map(test => (
-                    <button key={test} type="button" onClick={() => toggleChecklist(test)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                        form.fichaV2.checklistPruebas[test] === 'OK'
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                          : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300'
-                      }`}>
-                      <i className={`fa-solid ${form.fichaV2.checklistPruebas[test] === 'OK' ? 'fa-circle-check text-emerald-500' : 'fa-circle text-slate-300'}`} />
-                      {test}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-
-          </div>
-        )}
-
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between">
-          {step > 1 ? <button type="button" onClick={() => setStep(s => s - 1)} className="px-5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-600">Anterior</button> : <div />}
-          {step < 4 ? (
-            <button type="button" onClick={() => setStep(s => s + 1)} className="btn-brand px-6 py-2.5 rounded-xl text-white text-sm font-bold">Siguiente</button>
-          ) : (
-            <div className="flex gap-2">
-              {editing && <button type="button" onClick={cancelar} className="px-5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold">Cancelar</button>}
-              <button type="submit" className="btn-brand px-6 py-2.5 rounded-xl text-white text-sm font-bold">{editing ? 'Guardar Cambios' : 'Guardar Registro'}</button>
+        <div className="flex items-center gap-2">
+          {editing && (
+            <div className="flex items-center gap-1.5 bg-slate-100 rounded-xl p-1">
+              <a href={`/ficha-v2/${form.codigo}`} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white transition">
+                <i className="fa-solid fa-file-lines" /> Ficha
+              </a>
+              <a href={`/galeria/${form.codigo}`} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white transition">
+                <i className="fa-solid fa-camera" /> Galería
+              </a>
+              <a href={`/documentos/${form.codigo}`} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white transition">
+                <i className="fa-solid fa-folder-open" /> Docs
+              </a>
+              <a href={`/etiquetas/${form.codigo}`} target="_blank" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white transition">
+                <i className="fa-solid fa-tag" /> Etiqueta
+              </a>
             </div>
           )}
+          <div className="flex items-center bg-slate-100 rounded-xl p-1">
+            <button onClick={() => { setMode('quick'); setStep(1); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${mode === 'quick' ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-500 hover:bg-white'}`}>
+              <i className="fa-solid fa-bolt text-[10px]" /> Rápida
+            </button>
+            <button onClick={() => { setMode('full'); setStep(1); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${mode === 'full' ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-500 hover:bg-white'}`}>
+              <i className="fa-solid fa-list-check text-[10px]" /> Completa
+            </button>
+          </div>
         </div>
-      </form>
+      </div>
+
+      <SmartProgressBar stepIndex={currentStepIndex} totalSteps={totalSteps} stepLabels={mode === 'quick' ? ['Identificación', 'Estado y Técnico'] : stepLabels} stepIcons={mode === 'quick' ? [stepIcons[0], stepIcons[2]] : stepIcons} />
+
+      <div className="flex gap-5 items-start">
+        <form onSubmit={handleSubmit} onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleSubmit(e); } }} className="flex-1 min-w-0 panel overflow-hidden animate-fade-in">
+
+          {step === 1 && (
+            <div className="p-6 md:p-8 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div><label className="form-label">Código (Auto) *</label><input className="form-input font-mono font-bold" value={form.codigo} readOnly /></div>
+                <div><label className="form-label">Categoría *</label>
+                  <select className="form-input" value={form.categoria} onChange={e => markDirty('categoria', e.target.value)} required>
+                    <option value="">Selecciona...</option>
+                    {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select></div>
+                <div><label className="form-label">Año</label>
+                  <select className="form-input" value={form.anio} onChange={e => markDirty('anio', e.target.value)}>
+                    {ANIO_OPTIONS.map(a => <option key={a}>{a}</option>)}
+                  </select></div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label className="form-label">Marca *</label><input className="form-input uppercase" value={form.marca} onChange={e => markDirty('marca', e.target.value)} required placeholder="HP, LENOVO, DELL..." /></div>
+                <div><label className="form-label">Modelo *</label><input className="form-input uppercase" value={form.modelo} onChange={e => markDirty('modelo', e.target.value)} required placeholder="PROBOOK 450 G10..." /></div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label className="form-label">Número de serie *</label><input className="form-input font-mono uppercase" value={form.serie} onChange={e => markDirty('serie', e.target.value)} required placeholder="S/N grabado en el equipo" /></div>
+                <div><label className="form-label">SKU interno</label><input className="form-input font-mono uppercase" value={form.sku} onChange={e => { setSkuManual(true); markDirty('sku', e.target.value); }} onBlur={e => {
+                  const val = e.target.value.toUpperCase().trim();
+                  if (!editing && val) {
+                    const encontrado = buscarPorSku(val);
+                    if (encontrado) {
+                      let modelo = encontrado.modelo;
+                      if (encontrado.marca === 'LENOVO') {
+                        modelo = modelo.replace(/^LENOVO\s+/, '');
+                        modelo = modelo.replace(/^(THINKPAD|THINKBOOK|WORKSTATION|YOGA|LEGION|IDEAPAD|THINKCENTRE|LOQ)\s+/, '');
+                      }
+                      const comercial = derivarModeloComercial(encontrado.marca, modelo);
+                      setForm(prev => ({
+                        ...prev, sku: val, marca: encontrado.marca, modelo,
+                        procesador: encontrado.procesador, ram: encontrado.ram,
+                        almacenamiento: encontrado.almacenamiento,
+                        fichaV2: { ...prev.fichaV2, modeloComercial: comercial },
+                      }));
+                      setSkuManual(true);
+                    }
+                  }
+                }} placeholder="Escribí el SKU y se auto-rellena" /></div>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="p-6 md:p-8 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {tmpl.step2.includes('procesador') && <div className="md:col-span-2"><label className="form-label">Procesador *</label><input className="form-input uppercase" value={form.procesador} onChange={e => markDirty('procesador', e.target.value)} required placeholder="INTEL CORE I5-12400F..." /></div>}
+                {tmpl.step2.includes('generacion') && <div><label className="form-label">Generación</label>
+                  <select className="form-input" value={form.generacion} onChange={e => markDirty('generacion', e.target.value)}>
+                    <option value="">Selecciona...</option>
+                    {GENERACION_OPTIONS.map(g => <option key={g}>{g}</option>)}
+                  </select></div>}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {tmpl.step2.includes('ram') && <div><label className="form-label">RAM *</label>
+                  <select className="form-input" value={form.ram} onChange={e => markDirty('ram', e.target.value)}>{RAM_OPTIONS.map(r => <option key={r}>{r}</option>)}</select></div>}
+                {tmpl.step2.includes('tipoRam') && <div><label className="form-label">Tipo RAM</label>
+                  <select className="form-input" value={form.tipoRam} onChange={e => markDirty('tipoRam', e.target.value)}>{TIPO_RAM_OPTIONS.map(t => <option key={t}>{t}</option>)}</select></div>}
+                {tmpl.step2.includes('almacenamiento') && <div><label className="form-label">Almacenamiento *</label>
+                  <select className="form-input" value={form.almacenamiento} onChange={e => markDirty('almacenamiento', e.target.value)}>{STORAGE_OPTIONS.map(s => <option key={s}>{s}</option>)}</select></div>}
+                {tmpl.step2.includes('tipoDisco') && <div><label className="form-label">Tipo disco *</label><input className="form-input uppercase" value={form.tipoDisco} onChange={e => markDirty('tipoDisco', e.target.value)} required placeholder="M.2 NVME, SSD SATA..." /></div>}
+              </div>
+              {tmpl.step2.includes('grafica') && (
+                <div><label className="form-label">Gráfica</label><input className="form-input uppercase" value={form.grafica} onChange={e => markDirty('grafica', e.target.value)} placeholder="GTX 1650, INTEGRADA..." /></div>
+              )}
+              {tmpl.step2.includes('resolucion') && (
+                <div className="max-w-xs"><label className="form-label">Resolución</label>
+                  <select className="form-input" value={form.resolucion} onChange={e => markDirty('resolucion', e.target.value)}>
+                    <option value="">Selecciona...</option>
+                    {RESOLUCION_OPTIONS.map(r => <option key={r}>{r}</option>)}
+                  </select></div>
+              )}
+
+              {(() => {
+                const connFields = CONECTIVIDAD_OPTIONS.filter(o => tmpl.step2.includes(o.key));
+                if (connFields.length === 0) return null;
+                return (
+                  <SectionHeader icon="fa-wifi" title="Conectividad y Extras" color="bg-emerald-50 text-emerald-600">
+                    <span className="text-[10px] font-bold text-slate-400">
+                      {connFields.filter(o => form[o.key]).length}/{connFields.length} activas
+                    </span>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-1">
+                      {connFields.map(({ key, label, icon }) => (
+                        <button key={key} type="button" onClick={() => markDirty(key, !form[key])}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                            form[key]
+                              ? 'bg-brand-50 border-brand-300 text-brand-700'
+                              : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300'
+                          }`}>
+                          <i className={`fa-solid ${icon} ${form[key] ? 'text-brand-500' : 'text-slate-300'}`} />
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </SectionHeader>
+                );
+              })()}
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="p-6 md:p-8 space-y-5">
+              <div className={`grid grid-cols-1 gap-4 ${tmpl.step3.includes('bateria') && tmpl.step3.includes('cargador') ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+                <div><label className="form-label">Técnico *</label>
+                  <select className="form-input" value={form.tecnico} onChange={e => markDirty('tecnico', e.target.value)} required>
+                    <option value="">Selecciona...</option>{TECNICOS.map(t => <option key={t}>{t}</option>)}
+                  </select></div>
+                {tmpl.step3.includes('bateria') && <div><label className="form-label">Batería *</label><input className="form-input uppercase" value={form.bateria} onChange={e => markDirty('bateria', e.target.value)} required placeholder="100%, 80%, SIN BATERÍA" /></div>}
+                {tmpl.step3.includes('cargador') && <div><label className="form-label">Cargador</label><input className="form-input uppercase" value={form.cargador} onChange={e => markDirty('cargador', e.target.value)} placeholder="ORIGINAL 65W, GENÉRICO" /></div>}
+                <div><label className="form-label">Estado *</label>
+                  <select className="form-input font-semibold" value={form.estado} onChange={e => markDirty('estado', e.target.value)}>
+                    {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
+                  </select></div>
+              </div>
+              {esEstadoML(form.estado) && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div><label className="form-label text-emerald-800">Fecha envío ML *</label><input type="date" className="form-input" value={form.mlFechaEnvio} onChange={e => markDirty('mlFechaEnvio', e.target.value)} required /></div>
+                  <div><label className="form-label text-emerald-800">ID Publicación</label><input className="form-input uppercase" value={form.mlPublicacionId} onChange={e => markDirty('mlPublicacionId', e.target.value)} /></div>
+                  <div><label className="form-label text-emerald-800">Enviado por *</label><select className="form-input" value={form.mlEnviadoPor} onChange={e => markDirty('mlEnviadoPor', e.target.value)} required>
+                    <option value="">Selecciona...</option>
+                    {TECNICOS.filter(t => t !== 'VALERIA BARRUETA').map(t => <option key={t}>{t}</option>)}
+                  </select></div>
+                </div>
+              )}
+              <div><label className="form-label">Observaciones</label><textarea className="form-input uppercase min-h-[80px]" value={form.observaciones} onChange={e => markDirty('observaciones', e.target.value)} placeholder="Detalles adicionales del equipo" /></div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="p-6 md:p-8 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div><label className="form-label">Sistema Operativo</label>
+                  <input className="form-input uppercase" value={form.fichaV2.sistemaOperativo} onChange={e => markFichaV2('sistemaOperativo', e.target.value)} placeholder="WINDOWS 11 PRO" /></div>
+                <div><label className="form-label">Color</label>
+                  <input className="form-input uppercase" value={form.fichaV2.color} onChange={e => markFichaV2('color', e.target.value)} placeholder="NEGRO, PLATA, GRIS" /></div>
+                <div><label className="form-label">Pantalla</label>
+                  <input className="form-input uppercase" value={form.fichaV2.pantalla} onChange={e => markFichaV2('pantalla', e.target.value)} placeholder='15.6" FHD IPS' /></div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label className="form-label">Modelo Comercial</label>
+                  <input className="form-input uppercase" value={form.fichaV2.modeloComercial} onChange={e => markFichaV2('modeloComercial', e.target.value)} placeholder="THINKPAD X1 CARBON G10" /></div>
+                <div><label className="form-label">Fecha de Revisión</label>
+                  <input type="date" className="form-input" value={form.fichaV2.fechaRevision} onChange={e => markFichaV2('fechaRevision', e.target.value)} /></div>
+              </div>
+
+              {tmpl.ficha.condicion.length > 0 && (
+                <SectionHeader icon="fa-eye" title="Condición Estética" color="bg-orange-50 text-orange-600">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {tmpl.ficha.condicion.filter(c => form.fichaV2.condicionEstetica[c]).length}/{tmpl.ficha.condicion.length} evaluadas
+                  </span>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mt-1">
+                    {tmpl.ficha.condicion.map(parte => (
+                      <div key={parte}>
+                        <label className="form-label">{CONDICION_LABELS[parte] || parte}</label>
+                        <select className="form-input" value={form.fichaV2.condicionEstetica[parte] || ''} onChange={e => markFichaV2('condicionEstetica.' + parte, e.target.value)}>
+                          {ESTADOS_CONDICION.map(o => <option key={o} value={o}>{o || '—'}</option>)}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                </SectionHeader>
+              )}
+
+              {tmpl.ficha.bateria.length > 0 && (
+                <SectionHeader icon="fa-battery-three-quarters" title="Batería (Detalle)" color="bg-green-50 text-green-600">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-1">
+                    <div><label className="form-label">Porcentaje</label>
+                      <select className="form-input" value={form.fichaV2.bateriaDetalle.porcentaje} onChange={e => markFichaV2('bateriaDetalle.porcentaje', e.target.value)}>
+                        <option value="">—</option>
+                        {['100%', '90%', '80%', '70%', '60%', '50%', '40%', '30%', '20%', 'SIN BATERÍA'].map(o => <option key={o}>{o}</option>)}
+                      </select></div>
+                    <div><label className="form-label">Ciclos</label>
+                      <input type="number" className="form-input" min="0" value={form.fichaV2.bateriaDetalle.ciclos} onChange={e => markFichaV2('bateriaDetalle.ciclos', e.target.value)} placeholder="150" /></div>
+                    <div><label className="form-label">Condición</label>
+                      <select className="form-input" value={form.fichaV2.bateriaDetalle.condicion} onChange={e => markFichaV2('bateriaDetalle.condicion', e.target.value)}>
+                        {ESTADOS_BATERIA.map(o => <option key={o} value={o}>{o || '—'}</option>)}
+                      </select></div>
+                  </div>
+                </SectionHeader>
+              )}
+
+              {tmpl.ficha.checklist.length > 0 && (
+                <SectionHeader icon="fa-clipboard-check" title="Checklist de Pruebas" color="bg-cyan-50 text-cyan-600">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    tmpl.ficha.checklist.every(t => form.fichaV2.checklistPruebas[t] === 'OK')
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    {tmpl.ficha.checklist.filter(t => form.fichaV2.checklistPruebas[t] === 'OK').length}/{tmpl.ficha.checklist.length}
+                  </span>
+                  <VisualChecklist items={tmpl.ficha.checklist} results={form.fichaV2.checklistPruebas} onToggle={toggleChecklist} compact />
+                </SectionHeader>
+              )}
+            </div>
+          )}
+
+          <div className="h-16" />
+        </form>
+
+        {mode === 'full' && (
+          <div className="hidden lg:block w-72 shrink-0 sticky top-4">
+            <LivePreview form={form} tmpl={tmpl} />
+          </div>
+        )}
+      </div>
+
+      <ActionBar
+        stepIndex={currentStepIndex}
+        totalSteps={totalSteps}
+        editing={editing}
+        onPrev={goPrev}
+        onNext={goNext}
+        onSubmit={handleSubmit}
+        onCancel={() => cancelar()}
+      />
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, Legend, LinearScale, Tooltip, LineElement, PointElement, Filler } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { api } from '../services/api';
@@ -22,18 +23,27 @@ function StatCard({ icon, color, label, value, sub, bgGlow }) {
         {sub && <p className="text-[10px] text-slate-400 font-medium">{sub}</p>}
       </div>
       {bgGlow && <div className={`absolute -bottom-4 -right-4 w-24 h-24 rounded-full opacity-[0.06] ${bgGlow} group-hover:opacity-[0.12] transition-opacity`} />}
-      <div className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`}
-        style={{ background: `radial-gradient(600px circle at var(--mouse-x,50%) var(--mouse-y,50%), rgba(255,255,255,0.06), transparent 40%)` }} />
     </div>
   );
 }
 
-function inicioSemana() {
-  const d = new Date(); d.setDate(d.getDate() - d.getDay()); return d.toISOString().slice(0, 10);
+function QuickLink({ to, icon, color, label, count }) {
+  return (
+    <Link to={to} className={`panel p-3 flex items-center gap-3 hover:-translate-y-0.5 hover:shadow-md transition-all group`}>
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm ${color} group-hover:scale-110 transition-transform`}>
+        <i className={`fa-solid ${icon}`} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-bold text-slate-700 truncate">{label}</p>
+        {count !== undefined && <p className="text-[10px] text-slate-400">{count} registros</p>}
+      </div>
+      <i className="fa-solid fa-chevron-right text-[10px] text-slate-300 group-hover:text-brand-500 transition-colors" />
+    </Link>
+  );
 }
-function inicioMes() {
-  const d = new Date(); d.setDate(1); return d.toISOString().slice(0, 10);
-}
+
+function inicioSemana() { const d = new Date(); d.setDate(d.getDate() - d.getDay()); return d.toISOString().slice(0, 10); }
+function inicioMes() { const d = new Date(); d.setDate(1); return d.toISOString().slice(0, 10); }
 
 const PRESETS = [
   { label: 'Hoy', fn: () => new Date().toISOString().slice(0, 10) },
@@ -66,6 +76,12 @@ export default function Dashboard() {
     const conteoModelosPorEstado = {};
     const conteoMetodosPago = {};
     const tecStats = {};
+
+    const hoy = new Date().toISOString().slice(0, 10);
+    const ultimaSemana = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    let registradosHoy = 0;
+    let registradosSemana = 0;
+    const recientes = [];
 
     filtrado.forEach(item => {
       const est = item.estado || '';
@@ -116,7 +132,20 @@ export default function Dashboard() {
           conteoModelosPorEstado[modelo][estadoStock] = (conteoModelosPorEstado[modelo][estadoStock] || 0) + 1;
         }
       }
+
+      if (item.fechaRegistro) {
+        const fStr = item.fechaRegistro.slice(0, 10);
+        if (fStr === hoy) registradosHoy++;
+        if (item.fechaRegistro >= ultimaSemana) registradosSemana++;
+      }
     });
+
+    inventario.forEach(item => {
+      if (item.fechaRegistro && item.fechaRegistro >= ultimaSemana) {
+        recientes.push(item);
+      }
+    });
+    recientes.sort((a, b) => (b.fechaRegistro || '').localeCompare(a.fechaRegistro || ''));
 
     let topPago = 'Ninguno';
     let maxPago = 0;
@@ -138,7 +167,6 @@ export default function Dashboard() {
     });
     const sortedMeses = Object.keys(meses).sort();
 
-    // Charts data: by brand
     const marcaCount = {};
     filtrado.forEach(item => {
       const m = (item.marca || 'OTRA').toUpperCase().trim();
@@ -147,7 +175,6 @@ export default function Dashboard() {
     const marcaSorted = Object.entries(marcaCount).sort((a, b) => b[1] - a[1]);
     const porMarca = { labels: marcaSorted.map(e => e[0]), data: marcaSorted.map(e => e[1]) };
 
-    // Charts data: by processor (top 10)
     const procCount = {};
     filtrado.forEach(item => {
       const p = (item.procesador || 'SIN PROCESADOR').toUpperCase().trim();
@@ -156,40 +183,19 @@ export default function Dashboard() {
     const procSorted = Object.entries(procCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
     const porProcesador = { labels: procSorted.map(e => e[0]), data: procSorted.map(e => e[1]) };
 
-    // Charts data: by RAM
     const ramCount = {};
-    filtrado.forEach(item => {
-      const r = item.ram || 'N/A';
-      ramCount[r] = (ramCount[r] || 0) + 1;
-    });
-    const ramSorted = Object.entries(ramCount).sort((a, b) => {
-      const na = parseInt(a[0]) || 0, nb = parseInt(b[0]) || 0;
-      return na - nb;
-    });
+    filtrado.forEach(item => { const r = item.ram || 'N/A'; ramCount[r] = (ramCount[r] || 0) + 1; });
+    const ramSorted = Object.entries(ramCount).sort((a, b) => (parseInt(a[0]) || 0) - (parseInt(b[0]) || 0));
     const porRam = { labels: ramSorted.map(e => e[0]), data: ramSorted.map(e => e[1]) };
 
-    // Charts data: by storage
     const storCount = {};
-    filtrado.forEach(item => {
-      const s = item.almacenamiento || 'N/A';
-      storCount[s] = (storCount[s] || 0) + 1;
-    });
-    const storSorted = Object.entries(storCount).sort((a, b) => {
-      const parseSize = (s) => { const n = parseInt(s); if (s.includes('TB')) return n * 1024; return n || 0; };
-      return parseSize(a[0]) - parseSize(b[0]);
-    });
+    filtrado.forEach(item => { const s = item.almacenamiento || 'N/A'; storCount[s] = (storCount[s] || 0) + 1; });
+    const storSorted = Object.entries(storCount).sort((a, b) => { const p = (s) => { const n = parseInt(s); return s.includes('TB') ? n * 1024 : n || 0; }; return p(a[0]) - p(b[0]); });
     const porAlmacenamiento = { labels: storSorted.map(e => e[0]), data: storSorted.map(e => e[1]) };
 
-    // Charts data: by year
     const anioCount = {};
-    filtrado.forEach(item => {
-      const a = item.anio || 'SIN AÑO';
-      if (a && a !== 'NO APLICA') anioCount[a] = (anioCount[a] || 0) + 1;
-    });
-    const anioSorted = Object.entries(anioCount).sort((a, b) => {
-      const na = parseInt(a[0]) || 0, nb = parseInt(b[0]) || 0;
-      return na - nb;
-    });
+    filtrado.forEach(item => { const a = item.anio || 'SIN AÑO'; if (a && a !== 'NO APLICA') anioCount[a] = (anioCount[a] || 0) + 1; });
+    const anioSorted = Object.entries(anioCount).sort((a, b) => (parseInt(a[0]) || 0) - (parseInt(b[0]) || 0));
     const porAnio = { labels: anioSorted.map(e => e[0]), data: anioSorted.map(e => e[1]) };
 
     let totalIngresos = 0;
@@ -203,44 +209,17 @@ export default function Dashboard() {
     const activos = inventario.filter(i => !i.estado?.includes('🔴 VENDIDO')).length;
     const tasaConversion = activos > 0 ? Math.round((totalVendidos / (totalVendidos + activos)) * 100) : 0;
 
-    const ventasPorMes = {};
-    inventario.forEach(item => {
-      const fecha = item.flujoSalida?.fechaSalida || item.flujoVentaML?.fechaVenta;
-      if (!fecha) return;
-      const d = new Date(fecha);
-      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-      ventasPorMes[key] = (ventasPorMes[key] || 0) + 1;
-    });
-
-    const ingresosPorMes = {};
-    inventario.forEach(item => {
-      if (!item.flujoSalida?.precio) return;
-      const fecha = item.flujoSalida.fechaSalida;
-      if (!fecha) return;
-      const d = new Date(fecha);
-      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-      const precio = parseInt(String(item.flujoSalida.precio).replace(/[^0-9]/g, ''), 10);
-      if (!isNaN(precio)) ingresosPorMes[key] = (ingresosPorMes[key] || 0) + precio;
-    });
+    const catCount = {};
+    filtrado.forEach(item => { const c = (item.categoria || 'OTRA').toUpperCase().trim(); catCount[c] = (catCount[c] || 0) + 1; });
 
     const antiguos = inventario
       .filter(i => !i.estado?.includes('🔴 VENDIDO') && i.fechaRegistro)
-      .map(i => ({
-        ...i,
-        diasEnInventario: Math.floor((Date.now() - new Date(i.fechaRegistro).getTime()) / (1000*60*60*24))
-      }))
+      .map(i => ({ ...i, diasEnInventario: Math.floor((Date.now() - new Date(i.fechaRegistro).getTime()) / (1000*60*60*24)) }))
       .sort((a, b) => b.diasEnInventario - a.diasEnInventario)
       .slice(0, 10);
 
-    const catCount = {};
-    filtrado.forEach(item => {
-      const c = (item.categoria || 'OTRA').toUpperCase().trim();
-      catCount[c] = (catCount[c] || 0) + 1;
-    });
-
     return {
-      totalEntradasHistorico: filtrado.length,
-      filtrados: filtrado.length !== inventario.length,
+      totalEntradasHistorico: filtrado.length, filtrados: filtrado.length !== inventario.length,
       equiposVentaStock, equiposMercadoLibre, equiposRevisionTriage, mermasTKF,
       totalVendidos, totalVendidoEnPesos, topPago, conteoEstados, modelosOrdenados,
       tecStats: Object.entries(tecStats).sort((a, b) => b[1].total - a[1].total),
@@ -248,11 +227,9 @@ export default function Dashboard() {
       mesesData: sortedMeses.map(k => meses[k]),
       porMarca, porProcesador, porRam, porAlmacenamiento, porAnio,
       totalIngresos, tasaConversion,
-      ventasMesLabels: sortedMeses.map(k => { const [y,m] = k.split('-'); return `${mesesNombres[parseInt(m)-1]} ${y}`; }),
-      ventasMesData: sortedMeses.map(k => ventasPorMes[k] || 0),
-      ingresosMesData: sortedMeses.map(k => ingresosPorMes[k] || 0),
-      antiguos,
       porCategoria: { labels: Object.keys(catCount), data: Object.values(catCount) },
+      registradosHoy, registradosSemana, recientes: recientes.slice(0, 8),
+      antiguos,
     };
   }, [inventario, fechaDesde, fechaHasta]);
 
@@ -296,30 +273,64 @@ export default function Dashboard() {
           <span className="w-px h-5 bg-slate-200 mx-1" />
           <label className="flex items-center gap-1 text-[11px] text-slate-400">
             <i className="fa-regular fa-calendar" />
-            <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)}
-              className="w-28 border border-slate-200 rounded px-1 py-0.5 text-xs text-slate-600" />
+            <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} className="w-28 border border-slate-200 rounded px-1 py-0.5 text-xs text-slate-600" />
           </label>
           <span className="text-[11px] text-slate-300">→</span>
           <label className="flex items-center gap-1 text-[11px] text-slate-400">
-            <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)}
-              className="w-28 border border-slate-200 rounded px-1 py-0.5 text-xs text-slate-600" />
+            <input type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} className="w-28 border border-slate-200 rounded px-1 py-0.5 text-xs text-slate-600" />
           </label>
           {(fechaDesde || fechaHasta) && (
-            <button onClick={() => { setFechaDesde(''); setFechaHasta(''); }}
-              className="px-2 py-1 rounded-lg text-xs text-red-500 hover:bg-red-50 font-bold">
+            <button onClick={() => { setFechaDesde(''); setFechaHasta(''); }} className="px-2 py-1 rounded-lg text-xs text-red-500 hover:bg-red-50 font-bold">
               <i className="fa-solid fa-xmark" />
             </button>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 animate-slide-up" style={{ animationDelay: '50ms' }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '50ms' }}>
         <StatCard icon="fa-boxes-stacked" color="bg-brand-50 text-brand-600" label="Total entradas" value={stats.totalEntradasHistorico} bgGlow="bg-brand-500" />
+        <StatCard icon="fa-calendar-check" color="bg-indigo-50 text-indigo-600" label="Registrados hoy" value={stats.registradosHoy} sub={`${stats.registradosSemana} esta semana`} bgGlow="bg-indigo-500" />
         <StatCard icon="fa-circle-check" color="bg-blue-50 text-blue-600" label="Stock local OK" value={stats.equiposVentaStock} sub="Solo 🔵 OK" bgGlow="bg-blue-500" />
-        <StatCard icon="fa-warehouse" color="bg-emerald-50 text-emerald-600" label="En Mercado Libre" value={stats.equiposMercadoLibre} sub="🟢 FULL en ML" bgGlow="bg-emerald-500" />
-        <StatCard icon="fa-screwdriver-wrench" color="bg-amber-50 text-amber-600" label="Revisión / Triage" value={stats.equiposRevisionTriage} bgGlow="bg-amber-500" />
-        <StatCard icon="fa-trash-can" color="bg-red-50 text-red-600" label="Mermas TKF" value={stats.mermasTKF} bgGlow="bg-red-500" />
+        <StatCard icon="fa-screwdriver-wrench" color="bg-amber-50 text-amber-600" label="En revisión" value={stats.equiposRevisionTriage + stats.equiposMercadoLibre} sub={`${stats.equiposMercadoLibre} en ML`} bgGlow="bg-amber-500" />
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 animate-slide-up" style={{ animationDelay: '80ms' }}>
+        <QuickLink to="/inventario" icon="fa-plus-circle" color="bg-brand-50 text-brand-600" label="Registrar equipo" />
+        <QuickLink to="/base-datos" icon="fa-database" color="bg-blue-50 text-blue-600" label="Base de datos" count={inventario.length} />
+        <QuickLink to="/reparaciones" icon="fa-wrench" color="bg-orange-50 text-orange-600" label="Reparaciones" />
+        <QuickLink to="/mercado-libre" icon="fa-truck" color="bg-emerald-50 text-emerald-600" label="Mercado Libre" />
+        <QuickLink to="/reportes" icon="fa-chart-bar" color="bg-purple-50 text-purple-600" label="Reportes" />
+      </div>
+
+      {stats.recientes.length > 0 && (
+        <div className="panel p-5 animate-slide-up" style={{ animationDelay: '100ms' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-bold text-slate-700 uppercase flex items-center gap-2">
+              <i className="fa-solid fa-clock text-brand-500" /> Últimos registros (7 días)
+            </h4>
+            <Link to="/base-datos" className="text-[11px] font-bold text-brand-600 hover:underline">Ver todos →</Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead><tr className="text-left text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                <th className="pb-2 font-bold">Código</th><th className="pb-2 font-bold">Marca</th><th className="pb-2 font-bold">Modelo</th><th className="pb-2 font-bold">Técnico</th><th className="pb-2 font-bold">Estado</th><th className="pb-2 font-bold">Fecha</th>
+              </tr></thead>
+              <tbody>
+                {stats.recientes.map((item, i) => (
+                  <tr key={item.codigo} className="border-b border-slate-50 table-row-enter" style={{ animationDelay: `${i * 40}ms` }}>
+                    <td className="py-2 font-mono font-bold text-brand-600">{item.codigo}</td>
+                    <td className="py-2 font-semibold text-slate-700">{item.marca}</td>
+                    <td className="py-2 text-slate-600">{item.modelo}</td>
+                    <td className="py-2 text-slate-500">{item.tecnico}</td>
+                    <td className="py-2"><span className="text-[10px] font-bold">{item.estado}</span></td>
+                    <td className="py-2 text-slate-400 font-mono">{item.fechaRegistro?.slice(0, 10)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-slide-up" style={{ animationDelay: '150ms' }}>
         <div className="panel p-6 min-h-[380px] flex flex-col hover:shadow-lg transition-shadow duration-300 lg:col-span-2">
@@ -330,25 +341,8 @@ export default function Dashboard() {
           <div className="flex-1 min-h-[260px] relative">
             <Line data={{
               labels: stats.mesesLabels,
-              datasets: [{
-                label: 'Equipos',
-                data: stats.mesesData,
-                borderColor: '#0018B0',
-                backgroundColor: 'rgba(0,24,176,0.08)',
-                fill: true,
-                tension: 0.35,
-                pointRadius: 4,
-                pointBackgroundColor: '#0018B0',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointHoverRadius: 6,
-                borderWidth: 2.5,
-              }]
-            }} options={{
-              responsive: true, maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } } },
-            }} />
+              datasets: [{ label: 'Equipos', data: stats.mesesData, borderColor: '#0018B0', backgroundColor: 'rgba(0,24,176,0.08)', fill: true, tension: 0.35, pointRadius: 4, pointBackgroundColor: '#0018B0', pointBorderColor: '#fff', pointBorderWidth: 2, pointHoverRadius: 6, borderWidth: 2.5 }]
+            }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } } } }} />
           </div>
         </div>
         <div className="panel p-6 min-h-[380px] flex flex-col hover:shadow-lg transition-shadow duration-300">
@@ -369,106 +363,65 @@ export default function Dashboard() {
         </h4>
         <p className="text-[11px] text-slate-400 mb-3">Cada barra = modelo; colores = estados distintos</p>
         <div className="h-[280px] relative">
-          <Bar data={barData} options={{
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } },
-            scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } },
-          }} />
+          <Bar data={barData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } } }} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-slide-up" style={{ animationDelay: '200ms' }}>
         <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
-            <i className="fa-solid fa-building text-brand-500 mr-1" /> Inventario por Marca
-          </h4>
+          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-building text-brand-500 mr-1" /> Inventario por Marca</h4>
           <div className="flex-1 flex items-center justify-center">
             <div className="w-full max-w-[240px]">
-              <Doughnut data={{
-                labels: stats.porMarca.labels,
-                datasets: [{ data: stats.porMarca.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444', '#64748b'], borderWidth: 1.5 }]
-              }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
+              <Doughnut data={{ labels: stats.porMarca.labels, datasets: [{ data: stats.porMarca.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444', '#64748b'], borderWidth: 1.5 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
             </div>
           </div>
         </div>
         <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
-            <i className="fa-solid fa-microchip text-blue-500 mr-1" /> Inventario por Procesador
-          </h4>
+          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-microchip text-blue-500 mr-1" /> Inventario por Procesador</h4>
           <div className="flex-1 flex items-center justify-center">
             <div className="w-full max-w-[240px]">
-              <Doughnut data={{
-                labels: stats.porProcesador.labels,
-                datasets: [{ data: stats.porProcesador.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444', '#64748b'], borderWidth: 1.5 }]
-              }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
+              <Doughnut data={{ labels: stats.porProcesador.labels, datasets: [{ data: stats.porProcesador.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444', '#64748b'], borderWidth: 1.5 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
             </div>
           </div>
         </div>
         <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
-            <i className="fa-solid fa-memory text-purple-500 mr-1" /> Distribución RAM
-          </h4>
+          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-memory text-purple-500 mr-1" /> Distribución RAM</h4>
           <div className="flex-1 min-h-[240px] relative">
-            <Bar data={{
-              labels: stats.porRam.labels,
-              datasets: [{ label: 'Equipos', data: stats.porRam.data, backgroundColor: '#0018B0', borderRadius: 6 }]
-            }} options={{ responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
+            <Bar data={{ labels: stats.porRam.labels, datasets: [{ label: 'Equipos', data: stats.porRam.data, backgroundColor: '#0018B0', borderRadius: 6 }] }} options={{ responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '225ms' }}>
         <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
-            <i className="fa-solid fa-hard-drive text-emerald-500 mr-1" /> Distribución Almacenamiento
-          </h4>
+          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-hard-drive text-emerald-500 mr-1" /> Distribución Almacenamiento</h4>
           <div className="flex-1 min-h-[240px] relative">
-            <Bar data={{
-              labels: stats.porAlmacenamiento.labels,
-              datasets: [{ label: 'Equipos', data: stats.porAlmacenamiento.data, backgroundColor: '#10b981', borderRadius: 6 }]
-            }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
+            <Bar data={{ labels: stats.porAlmacenamiento.labels, datasets: [{ label: 'Equipos', data: stats.porAlmacenamiento.data, backgroundColor: '#10b981', borderRadius: 6 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
           </div>
         </div>
         <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
-            <i className="fa-solid fa-layer-group text-orange-500 mr-1" /> Distribución por Año
-          </h4>
+          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-layer-group text-orange-500 mr-1" /> Distribución por Año</h4>
           <div className="flex-1 min-h-[240px] relative">
-            <Bar data={{
-              labels: stats.porAnio.labels,
-              datasets: [{ label: 'Equipos', data: stats.porAnio.data, backgroundColor: '#f97316', borderRadius: 6 }]
-            }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
+            <Bar data={{ labels: stats.porAnio.labels, datasets: [{ label: 'Equipos', data: stats.porAnio.data, backgroundColor: '#f97316', borderRadius: 6 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '242ms' }}>
         <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
-            <i className="fa-solid fa-tags text-orange-500 mr-1" /> Distribución por Categoría
-          </h4>
+          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-tags text-orange-500 mr-1" /> Distribución por Categoría</h4>
           <div className="flex-1 flex items-center justify-center">
             <div className="w-full max-w-[240px]">
-              <Doughnut data={{
-                labels: stats.porCategoria.labels,
-                datasets: [{ data: stats.porCategoria.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b'], borderWidth: 1.5 }]
-              }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
+              <Doughnut data={{ labels: stats.porCategoria.labels, datasets: [{ data: stats.porCategoria.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b'], borderWidth: 1.5 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
             </div>
           </div>
         </div>
         <div className="panel p-6 min-h-[320px] flex flex-col hover:shadow-lg transition-shadow duration-300">
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
-            <i className="fa-solid fa-hourglass-half text-red-500 mr-1" /> Equipos Más Antiguos en Stock
-          </h4>
+          <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-hourglass-half text-red-500 mr-1" /> Equipos Más Antiguos en Stock</h4>
           <div className="flex-1 min-h-[240px] relative">
             {stats.antiguos.length > 0 ? (
-              <Bar data={{
-                labels: stats.antiguos.map(i => `${i.codigo}`),
-                datasets: [{ label: 'Días', data: stats.antiguos.map(i => i.diasEnInventario), backgroundColor: stats.antiguos.map(i => i.diasEnInventario > 60 ? '#ef4444' : i.diasEnInventario > 30 ? '#f97316' : '#f59e0b'), borderRadius: 4 }]
-              }} options={{ responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { font: { size: 9 } } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } } }} />
-            ) : (
-              <div className="flex items-center justify-center h-full text-slate-400 text-sm">Sin datos</div>
-            )}
+              <Bar data={{ labels: stats.antiguos.map(i => `${i.codigo}`), datasets: [{ label: 'Días', data: stats.antiguos.map(i => i.diasEnInventario), backgroundColor: stats.antiguos.map(i => i.diasEnInventario > 60 ? '#ef4444' : i.diasEnInventario > 30 ? '#f97316' : '#f59e0b'), borderRadius: 4 }] }} options={{ responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { font: { size: 9 } } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } } }} />
+            ) : <div className="flex items-center justify-center h-full text-slate-400 text-sm">Sin datos</div>}
           </div>
         </div>
       </div>
@@ -502,8 +455,7 @@ export default function Dashboard() {
                       <span className="text-slate-500 flex-1">{s.label}</span>
                       <span className="font-bold">{s.value}</span>
                       <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div className={"h-full " + s.color + " rounded-full transition-all duration-500"}
-                          style={{ width: (s.value / data.total) * 100 + '%' }} />
+                        <div className={"h-full " + s.color + " rounded-full transition-all duration-500"} style={{ width: (s.value / data.total) * 100 + '%' }} />
                       </div>
                     </div>
                   ))}
@@ -525,12 +477,8 @@ export default function Dashboard() {
           </div>
         </div>
         <button onClick={async () => {
-          try {
-            await api.downloadBackup();
-            notify('Respaldo descargado', 'Archivo JSON listo en tu computadora.', 'success');
-          } catch (err) {
-            notify('Error', err.message, 'error');
-          }
+          try { await api.downloadBackup(); notify('Respaldo descargado', 'Archivo JSON listo en tu computadora.', 'success'); }
+          catch (err) { notify('Error', err.message, 'error'); }
         }} className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-bold transition-all hover:scale-[1.02]">
           <i className="fa-solid fa-download" /> Descargar Respaldo
         </button>
