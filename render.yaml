@@ -3,8 +3,8 @@ services:
     name: equipmaster
     runtime: node
     plan: free
-    buildCommand: cd backend && npm install
-    startCommand: node src/index.js
+    buildCommand: npm install --prefix backend
+    startCommand: node backend/src/index.js
     envVars:
       - key: NODE_ENV
         value: production
