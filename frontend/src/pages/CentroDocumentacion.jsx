@@ -64,12 +64,6 @@ export default function CentroDocumentacion() {
     setUploading(true);
     try {
       const base64 = await fileToBase64(file);
-      const result = await api.uploadFile({
-        codigo: codigo.toUpperCase(),
-        categoria,
-        archivo: base64,
-        esDocumento: true,
-      });
       const newDocs = {
         ...docs,
         [categoria]: [
@@ -79,14 +73,13 @@ export default function CentroDocumentacion() {
             tipo: file.type,
             tamano: file.size,
             fecha: new Date().toISOString(),
-            url: result.url,
-            path: result.path,
+            base64: base64,
           },
         ],
       };
       setDocs(newDocs);
       await api.saveEquipo(codigo.toUpperCase(), { ...item, documentos: newDocs });
-      toast('Documento guardado', `${file.name} subido a Storage.`, 'success');
+      toast('Documento guardado', `${file.name} guardado.`, 'success');
     } catch {
       toast('Error', 'No se pudo guardar el documento.', 'error');
     }
@@ -95,11 +88,7 @@ export default function CentroDocumentacion() {
 
   const handleDelete = async (categoria, idx) => {
     if (!window.confirm('¿Eliminar este documento?')) return;
-    const doc = docs[categoria]?.[idx];
     try {
-      if (doc?.path) {
-        await api.deleteFile(doc.path);
-      }
       const updated = { ...docs };
       updated[categoria] = updated[categoria].filter((_, i) => i !== idx);
       if (updated[categoria].length === 0) delete updated[categoria];
@@ -185,7 +174,7 @@ export default function CentroDocumentacion() {
             <div className="text-center py-8 text-slate-400">
               <i className="fa-solid fa-cloud-arrow-up text-3xl mb-2 block" />
               <p className="text-sm">No hay documentos en esta categoría</p>
-              <p className="text-xs text-slate-300 mt-1">Selecciona un archivo para subir a Storage</p>
+              <p className="text-xs text-slate-300 mt-1">Selecciona un archivo para subir</p>
             </div>
           )}
         </div>
@@ -227,7 +216,7 @@ export default function CentroDocumentacion() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in">
           <div className="bg-white rounded-2xl p-6 shadow-2xl text-center">
             <div className="animate-spin w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full mx-auto mb-3" />
-            <p className="text-sm font-bold text-slate-700">Subiendo a Storage...</p>
+            <p className="text-sm font-bold text-slate-700">Procesando documento...</p>
           </div>
         </div>
       )}

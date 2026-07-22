@@ -180,22 +180,15 @@ export default function Inventario() {
     if (!files?.length) return;
     try {
       const base64 = await resizeImage(files[0]);
-      const result = await api.uploadFile({ codigo: form.codigo, categoria, archivo: base64, esDocumento: false });
       setDirty(true);
-      setForm(prev => ({ ...prev, fotos: { ...prev.fotos, [categoria]: result.url } }));
-      notify('Foto subida', `${categoria} guardada en Storage.`, 'success');
+      setForm(prev => ({ ...prev, fotos: { ...prev.fotos, [categoria]: base64 } }));
+      notify('Foto lista', `${categoria} guardada.`, 'success');
     } catch (err) { notify('Error', err.message, 'error'); }
   };
 
   const handleFormPhotoDelete = async (categoria) => {
-    try {
-      if (form.fotos[categoria]?.includes('storage.googleapis.com') || form.fotos[categoria]?.includes('firebasestorage')) {
-        const ext = (form.fotos[categoria].split('.').pop()?.split('?')[0]) || 'jpg';
-        await api.deleteFile(`fotos/${form.codigo}/${categoria}.${ext}`);
-      }
-      setDirty(true);
-      setForm(prev => { const f = { ...prev.fotos }; delete f[categoria]; return { ...prev, fotos: f }; });
-    } catch { /* ignore */ }
+    setDirty(true);
+    setForm(prev => { const f = { ...prev.fotos }; delete f[categoria]; return { ...prev, fotos: f }; });
   };
 
   useEffect(() => {

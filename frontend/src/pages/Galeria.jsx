@@ -33,7 +33,7 @@ function resizeImage(file) {
         }
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.75));
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
       img.src = e.target.result;
     };
@@ -71,18 +71,11 @@ export default function Galeria() {
     if (!files?.length) return;
     setUploading(true);
     try {
-      const file = files[0];
-      const base64 = await resizeImage(file);
-      const result = await api.uploadFile({
-        codigo: codigo.toUpperCase(),
-        categoria,
-        archivo: base64,
-        esDocumento: false,
-      });
-      const newFotos = { ...fotos, [categoria]: result.url };
+      const base64 = await resizeImage(files[0]);
+      const newFotos = { ...fotos, [categoria]: base64 };
       setFotos(newFotos);
       await api.saveEquipo(codigo.toUpperCase(), { ...item, fotos: newFotos });
-      toast('Foto guardada', `${categoria.toUpperCase()} subida a Storage.`, 'success');
+      toast('Foto guardada', `${categoria.toUpperCase()} guardada.`, 'success');
     } catch (err) {
       toast('Error', err.message, 'error');
     }
@@ -92,10 +85,6 @@ export default function Galeria() {
   const handleDelete = async (categoria) => {
     if (!window.confirm(`¿Eliminar foto de ${categoria}?`)) return;
     try {
-      if (fotos[categoria]?.includes('storage.googleapis.com') || fotos[categoria]?.includes('firebasestorage')) {
-        const ext = (fotos[categoria].split('.').pop()?.split('?')[0]) || 'jpg';
-        await api.deleteFile(`fotos/${codigo.toUpperCase()}/${categoria}.${ext}`);
-      }
       const newFotos = { ...fotos };
       delete newFotos[categoria];
       setFotos(newFotos);
@@ -194,7 +183,7 @@ export default function Galeria() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in">
           <div className="bg-white rounded-2xl p-6 shadow-2xl text-center">
             <div className="animate-spin w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full mx-auto mb-3" />
-            <p className="text-sm font-bold text-slate-700">Subiendo a Storage...</p>
+            <p className="text-sm font-bold text-slate-700">Procesando imagen...</p>
           </div>
         </div>
       )}
