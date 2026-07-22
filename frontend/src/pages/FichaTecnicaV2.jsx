@@ -30,9 +30,7 @@ export default function FichaTecnicaV2() {
     }).catch(() => setError('Error al cargar'));
   }, [codigo]);
 
-  useEffect(() => {
-    if (item) setTimeout(() => window.print(), 800);
-  }, [item]);
+  useEffect(() => {}, [item]);
 
   if (error) return (
     <div className="min-h-screen flex items-center justify-center text-slate-500">
@@ -188,7 +186,7 @@ export default function FichaTecnicaV2() {
           </div>
         </div>
 
-        {/* CHECKLIST + WARRANTY */}
+        {/* CHECKLIST + FECHAS */}
         <div className="grid grid-cols-[2fr_1fr] gap-3">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 print:shadow-none print:border-slate-300">
             <div className="flex items-center justify-between mb-2">
@@ -215,14 +213,8 @@ export default function FichaTecnicaV2() {
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 print:shadow-none print:border-slate-300">
-            <SectionTitle icon="fa-shield-halved" title="Garantía" color="text-indigo-500" />
+            <SectionTitle icon="fa-calendar" title="Fechas" color="text-indigo-500" />
             <div className="space-y-1">
-              <Row label="Tipo" value={item.garantia?.tipo || '—'} />
-              <Row label="Vigencia" value={item.garantia?.vigencia || '—'} />
-              <Row label="Proveedor" value={item.garantia?.proveedor || '—'} />
-            </div>
-            <div className="mt-3 pt-3 border-t border-slate-100">
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Fechas</p>
               <Row label="Registro" value={item.fechaRegistro || '—'} />
               <Row label="Revisión" value={item.fechaRevision || '—'} />
             </div>

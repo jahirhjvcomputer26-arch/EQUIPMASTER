@@ -1,27 +1,15 @@
-const CACHE_NAME = 'equipmaster-v3';
-const STATIC_CACHE = 'equipmaster-static-v3';
-const API_CACHE = 'equipmaster-api-v3';
-
-const PRECACHE_URLS = [
-  '/',
-  '/index.html',
-  '/login',
-  '/consulta',
-  '/favicon.svg',
-  '/logo-empresa.png',
-];
+const CACHE_NAME = 'equipmaster-v4';
+const STATIC_CACHE = 'equipmaster-static-v4';
+const API_CACHE = 'equipmaster-api-v4';
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(STATIC_CACHE).then(cache => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting())
-  );
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== STATIC_CACHE && k !== API_CACHE).map(k => caches.delete(k)))
+      Promise.all(keys.map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
@@ -48,24 +36,27 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  e.respondWith(
-    caches.match(request).then(cached => {
-      if (cached) {
-        fetch(request).then(res => {
-          if (res.ok) {
-            caches.open(STATIC_CACHE).then(c => c.put(request, res));
-          }
-        }).catch(() => {});
-        return cached;
-      }
-      return fetch(request).then(res => {
-        if (res.ok && request.method === 'GET') {
+  if (request.mode === 'navigate') {
+    e.respondWith(
+      fetch(request).then(res => {
+        if (res.ok) {
           const clone = res.clone();
           caches.open(STATIC_CACHE).then(c => c.put(request, clone));
         }
         return res;
-      });
-    })
+      }).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  e.respondWith(
+    fetch(request).then(res => {
+      if (res.ok && request.method === 'GET') {
+        const clone = res.clone();
+        caches.open(STATIC_CACHE).then(c => c.put(request, clone));
+      }
+      return res;
+    }).catch(() => caches.match(request))
   );
 });
 
