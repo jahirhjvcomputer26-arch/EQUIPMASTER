@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useInventario } from '../context/InventarioContext';
 import { useNotify } from '../componentes/Notification';
-import { badgeEstado } from '../utils/inventario';
+import { badgeEstado, ESTADOS } from '../utils/inventario';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import { SkeletonTable } from '../componentes/Skeleton';
 
@@ -58,6 +58,10 @@ export default function BaseDatos() {
   const [sortDir, setSortDir] = useState('desc');
   const [page, setPage] = useState(1);
   const [compact, setCompact] = useState(() => localStorage.getItem('equipmaster_compact_table') === 'true');
+  const [selected, setSelected] = useState([]);
+  const [bulkEstado, setBulkEstado] = useState('');
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const exportExcel = async () => {
     try {
@@ -66,6 +70,65 @@ export default function BaseDatos() {
     } catch (err) {
       notify('Error', err.message, 'error');
     }
+  };
+
+  const toggleSelect = (codigo) => {
+    setSelected(prev => prev.includes(codigo) ? prev.filter(c => c !== codigo) : [...prev, codigo]);
+  };
+
+  const toggleSelectAll = () => {
+    const pageItems = paginated.map(i => i.codigo);
+    if (selected.length === pageItems.length) setSelected([]);
+    else setSelected(pageItems);
+  };
+
+  const handleBulkEstado = async () => {
+    if (!bulkEstado || selected.length === 0) return;
+    setBulkLoading(true);
+    try {
+      await Promise.all(selected.map(codigo => {
+        const item = inventario.find(i => i.codigo === codigo);
+        if (!item) return Promise.resolve();
+        return api.saveEquipo(codigo, { ...item, estado: bulkEstado });
+      }));
+      notify('Estado actualizado', `${selected.length} equipo(s) actualizados a "${bulkEstado}"`, 'success');
+      setSelected([]);
+      setBulkEstado('');
+    } catch (err) {
+      notify('Error', err.message, 'error');
+    }
+    setBulkLoading(false);
+  };
+
+  const handleBulkExport = () => {
+    const items = inventario.filter(i => selected.includes(i.codigo));
+    const filas = items.map(i => ({
+      Código: i.codigo, Marca: i.marca, Modelo: i.modelo, Serie: i.serie, SKU: i.sku,
+      Procesador: i.procesador, RAM: i.ram, Almacenamiento: i.almacenamiento,
+      Estado: i.estado, Técnico: i.tecnico, Fecha: i.fechaRegistro,
+    }));
+    const csv = [Object.keys(filas[0]).join(','), ...filas.map(r => Object.values(r).map(v => `"${v || ''}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `seleccion_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    notify('CSV exportado', `${items.length} equipos descargados.`, 'success');
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkLoading(true);
+    try {
+      await Promise.all(selected.map(codigo => api.eliminarEquipo(codigo)));
+      notify('Eliminados', `${selected.length} equipo(s) eliminados.`, 'success');
+      setSelected([]);
+      setShowBulkModal(false);
+    } catch (err) {
+      notify('Error', err.message, 'error');
+    }
+    setBulkLoading(false);
   };
 
   const toggleSort = (key) => {
@@ -147,6 +210,30 @@ export default function BaseDatos() {
         </div>
       </div>
 
+      {selected.length > 0 && (
+        <div className="panel p-4 flex flex-wrap items-center gap-3 animate-fade-in">
+          <span className="text-sm font-bold text-brand-700 bg-brand-50 px-3 py-1 rounded-full">
+            {selected.length} seleccionado{selected.length > 1 ? 's' : ''}
+          </span>
+          <select value={bulkEstado} onChange={e => setBulkEstado(e.target.value)} className="form-input text-sm py-1.5 w-48">
+            <option value="">Cambiar estado a...</option>
+            {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
+          </select>
+          <button onClick={handleBulkEstado} disabled={!bulkEstado || bulkLoading} className="px-4 py-1.5 rounded-xl bg-brand-600 text-white text-xs font-bold disabled:opacity-40 hover:bg-brand-700 transition">
+            <i className="fa-solid fa-check mr-1" /> Aplicar
+          </button>
+          <button onClick={handleBulkExport} className="px-4 py-1.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
+            <i className="fa-solid fa-download mr-1" /> CSV
+          </button>
+          <button onClick={() => setShowBulkModal(true)} className="px-4 py-1.5 rounded-xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition">
+            <i className="fa-solid fa-trash mr-1" /> Eliminar
+          </button>
+          <button onClick={() => setSelected([])} className="ml-auto text-xs font-bold text-slate-400 hover:text-slate-600">
+            Limpiar
+          </button>
+        </div>
+      )}
+
       <div className="panel overflow-hidden animate-slide-up" style={{ animationDelay: '50ms' }}>
         <div className="flex justify-end px-6 pt-3 pb-0">
           <button onClick={() => { setCompact(v => { localStorage.setItem('equipmaster_compact_table', !v); return !v; }); }}
@@ -169,6 +256,9 @@ export default function BaseDatos() {
               <table className={"min-w-full text-left text-sm table-responsive " + (compact ? 'table-compact' : '')}>
                 <thead className="bg-slate-50 text-slate-600">
                   <tr>
+                    <th className="px-3 py-4 w-10">
+                      <input type="checkbox" checked={selected.length === paginated.length && paginated.length > 0} onChange={toggleSelectAll} className="rounded border-slate-300" />
+                    </th>
                     <Th k="codigo">Código</Th>
                     <Th k="sku">SKU</Th>
                     <Th k="marca">Equipo</Th>
@@ -182,6 +272,9 @@ export default function BaseDatos() {
                 <tbody className="divide-y divide-slate-100">
                     {paginated.map((item, idx) => (
                     <tr key={item.codigo} className="hover:bg-slate-50 transition-colors table-row-enter" style={{ animationDelay: `${idx * 30}ms` }}>
+                    <td className="px-3 py-4" onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.includes(item.codigo)} onChange={() => toggleSelect(item.codigo)} className="rounded border-slate-300" />
+                    </td>
                     <td className="px-6 py-4 font-mono font-bold text-brand-600" data-label="Código">{item.codigo}<CopyBtn text={item.codigo} /></td>
                     <td className="px-6 py-4 font-mono text-xs text-slate-500" data-label="SKU">{item.sku || '—'}<CopyBtn text={item.sku} /></td>
                     <td className="px-6 py-4" data-label="Equipo">
@@ -232,6 +325,29 @@ export default function BaseDatos() {
           </>
         )}
       </div>
+
+      {showBulkModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowBulkModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
+                <i className="fa-solid fa-triangle-exclamation text-red-500 text-xl" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Eliminar equipos</h3>
+                <p className="text-sm text-slate-500">Esta acción no se puede deshacer</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-600 mb-6">¿Eliminar <strong>{selected.length}</strong> equipo{selected.length > 1 ? 's' : ''} del inventario?</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setShowBulkModal(false)} className="px-4 py-2 rounded-xl border border-slate-300 text-sm font-bold text-slate-600 hover:bg-slate-50 transition">Cancelar</button>
+              <button onClick={handleBulkDelete} disabled={bulkLoading} className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-60 transition">
+                {bulkLoading ? 'Eliminando...' : `Eliminar ${selected.length}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

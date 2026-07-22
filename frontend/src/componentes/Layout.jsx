@@ -7,6 +7,7 @@ import { db } from '../services/firebase';
 import { api } from '../services/api';
 import { useNotify } from './Notification';
 import { useInventario } from '../context/InventarioContext';
+import OfflineBanner from './OfflineBanner';
 import SearchModal from './SearchModal';
 import ScrollToTop from './ScrollToTop';
 import useBrowserNotifications from '../utils/useBrowserNotifications';
@@ -22,6 +23,7 @@ const links = [
   { to: '/reparaciones', icon: 'fa-toolbox', label: 'Reparaciones' },
   { to: '/etiquetas', icon: 'fa-tag', label: 'Etiquetas' },
   { to: '/reportes', icon: 'fa-chart-simple', label: 'Reportes' },
+  { to: '/alertas', icon: 'fa-triangle-exclamation', label: 'Alertas' },
   { to: '/actividad', icon: 'fa-clock-rotate-left', label: 'Historial' },
   { to: '/base-datos', icon: 'fa-table-list', label: 'Base de Datos' },
   { to: '/usuarios', icon: 'fa-users-gear', label: 'Usuarios', adminOnly: true },
@@ -145,6 +147,12 @@ export default function Layout() {
         if (item.estado?.includes('🟠') || item.estado?.includes('🟡')) {
           alertas.push({ id: `${item.codigo}-pendiente`, mensaje: `${item.codigo} pendiente`, detalle: `${item.estado} · ${item.marca} ${item.modelo}`, icon: 'fa-clock', color: 'text-orange-500' });
         }
+        if (item.tecnico && item.fechaRegistro) {
+          const dias = Math.floor((Date.now() - new Date(item.fechaRegistro).getTime()) / (1000*60*60*24));
+          if (dias > 30 && !item.flujoSalida && !item.flujoVentaML) {
+            alertas.push({ id: `${item.codigo}-antiguo`, mensaje: `${item.codigo} más de 30 días en inventario`, detalle: `${item.marca} ${item.modelo} · ${dias} días`, icon: 'fa-hourglass-half', color: 'text-cyan-500' });
+          }
+        }
       }
     });
     setNotificacionesLocales(alertas);
@@ -177,6 +185,7 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen">
+      <OfflineBanner />
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-brand-900/55 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}

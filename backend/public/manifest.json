@@ -4,10 +4,15 @@
   "description": "Sistema de Control de Inventario TI",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#f4f6fb",
   "theme_color": "#0018B0",
+  "scope": "/",
+  "categories": ["business", "utilities"],
+  "lang": "es-MX",
   "icons": [
-    { "src": "/logo-empresa.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/logo-empresa.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/logo-empresa.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/logo-empresa.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/splash.png", "sizes": "512x512", "type": "image/png", "purpose": "splash" }
   ]
 }
