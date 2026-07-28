@@ -669,7 +669,15 @@ export default function Inventario() {
                       { key: 'bateria', label: 'Batería', icon: 'fa-battery-three-quarters' },
                       { key: 'etiquetas', label: 'Etiquetas', icon: 'fa-tag' },
                     ].map(({ key, label, icon }) => (
-                      <button type="button" key={key} onClick={() => setCameraKey(key)} className={`relative group flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
+                      <button type="button" key={key} onClick={async () => {
+                        if (navigator.mediaDevices?.getUserMedia) {
+                          try {
+                            const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
+                            tmp.getTracks().forEach(t => t.stop());
+                          } catch {}
+                        }
+                        setCameraKey(key);
+                      }} className={`relative group flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
                         form.fotos[key]
                           ? 'border-brand-300 bg-brand-50/50'
                           : 'border-slate-200 hover:border-brand-300 bg-slate-50'

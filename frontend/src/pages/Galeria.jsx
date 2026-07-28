@@ -151,7 +151,14 @@ export default function Galeria() {
                   </div>
                 </>
               ) : (
-                <button onClick={() => setCameraCat(cat.key)} disabled={uploading} className="flex flex-col items-center gap-2 cursor-pointer w-full h-full justify-center hover:bg-slate-200/50 transition">
+                <button onClick={async () => {
+                  if (!navigator.mediaDevices?.getUserMedia) { setCameraCat(cat.key); return; }
+                  try {
+                    const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
+                    tmp.getTracks().forEach(t => t.stop());
+                  } catch {}
+                  setCameraCat(cat.key);
+                }} disabled={uploading} className="flex flex-col items-center gap-2 cursor-pointer w-full h-full justify-center hover:bg-slate-200/50 transition">
                   <div className="w-12 h-12 rounded-full bg-brand-50 text-brand-400 flex items-center justify-center">
                     <i className="fa-solid fa-camera text-lg" />
                   </div>
@@ -165,7 +172,14 @@ export default function Galeria() {
                 <span className="text-sm font-bold text-slate-700">{cat.label}</span>
               </div>
               {fotos[cat.key] && (
-                <button onClick={() => setCameraCat(cat.key)} className="cursor-pointer px-3 py-1 rounded-lg bg-brand-50 text-brand-600 text-xs font-bold hover:bg-brand-100 transition">
+                <button onClick={async () => {
+                  if (!navigator.mediaDevices?.getUserMedia) { setCameraCat(cat.key); return; }
+                  try {
+                    const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
+                    tmp.getTracks().forEach(t => t.stop());
+                  } catch {}
+                  setCameraCat(cat.key);
+                }} className="cursor-pointer px-3 py-1 rounded-lg bg-brand-50 text-brand-600 text-xs font-bold hover:bg-brand-100 transition">
                   <i className="fa-solid fa-refresh mr-1" /> Cambiar
                 </button>
               )}
