@@ -5,6 +5,7 @@ import { db } from '../services/firebase';
 import { api } from '../services/api';
 import { useNotify } from '../componentes/Notification';
 import useDocumentTitle from '../utils/useDocumentTitle';
+import CameraCapture from '../componentes/CameraCapture';
 
 const CATEGORIAS = [
   { key: 'frente', label: 'Frente', icon: 'fa-laptop' },
@@ -51,6 +52,7 @@ export default function Galeria() {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
+  const [cameraCat, setCameraCat] = useState(null);
 
   const loadItem = useCallback(async () => {
     try {
@@ -149,13 +151,12 @@ export default function Galeria() {
                   </div>
                 </>
               ) : (
-                <label className="flex flex-col items-center gap-2 cursor-pointer w-full h-full justify-center hover:bg-slate-200/50 transition">
+                <button onClick={() => setCameraCat(cat.key)} disabled={uploading} className="flex flex-col items-center gap-2 cursor-pointer w-full h-full justify-center hover:bg-slate-200/50 transition">
                   <div className="w-12 h-12 rounded-full bg-brand-50 text-brand-400 flex items-center justify-center">
                     <i className="fa-solid fa-camera text-lg" />
                   </div>
                   <span className="text-xs text-slate-400 font-medium">Sin foto</span>
-                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleUpload(cat.key, e.target.files)} disabled={uploading} />
-                </label>
+                </button>
               )}
             </div>
             <div className="px-4 py-3 flex items-center justify-between">
@@ -164,10 +165,9 @@ export default function Galeria() {
                 <span className="text-sm font-bold text-slate-700">{cat.label}</span>
               </div>
               {fotos[cat.key] && (
-                <label className="cursor-pointer px-3 py-1 rounded-lg bg-brand-50 text-brand-600 text-xs font-bold hover:bg-brand-100 transition">
+                <button onClick={() => setCameraCat(cat.key)} className="cursor-pointer px-3 py-1 rounded-lg bg-brand-50 text-brand-600 text-xs font-bold hover:bg-brand-100 transition">
                   <i className="fa-solid fa-refresh mr-1" /> Cambiar
-                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleUpload(cat.key, e.target.files)} disabled={uploading} />
-                </label>
+                </button>
               )}
             </div>
           </div>
@@ -193,6 +193,16 @@ export default function Galeria() {
             <p className="text-sm font-bold text-slate-700">Subiendo imagen...</p>
           </div>
         </div>
+      )}
+
+      {cameraCat && (
+        <CameraCapture
+          onCapture={file => {
+            handleUpload(cameraCat, [file]);
+            setCameraCat(null);
+          }}
+          onClose={() => setCameraCat(null)}
+        />
       )}
     </section>
   );

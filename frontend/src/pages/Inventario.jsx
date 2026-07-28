@@ -9,6 +9,7 @@ import SmartProgressBar from '../componentes/SmartProgressBar';
 import VisualChecklist from '../componentes/VisualChecklist';
 import LivePreview from '../componentes/LivePreview';
 import ActionBar from '../componentes/ActionBar';
+import CameraCapture from '../componentes/CameraCapture';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import useUnsavedChanges from '../utils/useUnsavedChanges';
 
@@ -74,6 +75,7 @@ export default function Inventario() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState(false);
+  const [cameraKey, setCameraKey] = useState(null);
   const [dirty, setDirty] = useState(false);
   const [skuManual, setSkuManual] = useState(false);
 
@@ -667,7 +669,7 @@ export default function Inventario() {
                       { key: 'bateria', label: 'Batería', icon: 'fa-battery-three-quarters' },
                       { key: 'etiquetas', label: 'Etiquetas', icon: 'fa-tag' },
                     ].map(({ key, label, icon }) => (
-                      <label key={key} className={`relative group flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
+                      <button type="button" key={key} onClick={() => setCameraKey(key)} className={`relative group flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
                         form.fotos[key]
                           ? 'border-brand-300 bg-brand-50/50'
                           : 'border-slate-200 hover:border-brand-300 bg-slate-50'
@@ -675,7 +677,7 @@ export default function Inventario() {
                         {form.fotos[key] ? (
                           <>
                             <img src={form.fotos[key]} alt={label} className="w-full h-14 object-cover rounded-lg" />
-                            <button type="button" onClick={e => { e.preventDefault(); e.stopPropagation(); handleFormPhotoDelete(key); }}
+                            <button type="button" onClick={e => { e.stopPropagation(); handleFormPhotoDelete(key); }}
                               className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] opacity-0 group-hover:opacity-100 transition shadow">
                               <i className="fa-solid fa-xmark" />
                             </button>
@@ -686,8 +688,7 @@ export default function Inventario() {
                             <span className="text-[9px] text-slate-400 mt-0.5">{label}</span>
                           </div>
                         )}
-                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { handleFormPhotoUpload(key, e.target.files); e.target.value = ''; }} />
-                      </label>
+                      </button>
                     ))}
                   </div>
                 </SectionHeader>
@@ -711,6 +712,16 @@ export default function Inventario() {
           </div>
         )}
       </div>
+
+      {cameraKey && (
+        <CameraCapture
+          onCapture={file => {
+            handleFormPhotoUpload(cameraKey, [file]);
+            setCameraKey(null);
+          }}
+          onClose={() => setCameraKey(null)}
+        />
+      )}
     </section>
   );
 }
