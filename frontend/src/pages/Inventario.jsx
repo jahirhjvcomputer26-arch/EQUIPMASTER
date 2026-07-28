@@ -78,6 +78,7 @@ export default function Inventario() {
   const [cameraKey, setCameraKey] = useState(null);
   const [dirty, setDirty] = useState(false);
   const [skuManual, setSkuManual] = useState(false);
+  const multiRef = useRef(null);
 
   const tmpl = useMemo(() => getTemplate(form.categoria), [form.categoria]);
 
