@@ -6,6 +6,13 @@ export default function CameraCapture({ onCapture, onClose }) {
   const fileRef = useRef(null);
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
+  const [modo, setModo] = useState('camera'); // 'camera' | 'file'
+
+  const handleFilePick = (files) => {
+    if (!files?.length) return;
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+    onCapture(files[0]);
+  };
 
   useEffect(() => {
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -68,9 +75,19 @@ export default function CameraCapture({ onCapture, onClose }) {
               </button>
               <button type="button" onClick={onClose} className="px-5 py-2 bg-white/10 rounded-xl text-sm font-bold hover:bg-white/20 transition">Cerrar</button>
             </div>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => {
-              if (e.target.files?.length) onCapture(e.target.files[0]);
-            }} />
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => handleFilePick(e.target.files)} />
+          </div>
+        ) : modo === 'file' ? (
+          <div className="flex flex-col items-center gap-4 p-8 text-white text-center">
+            <i className="fa-solid fa-image text-5xl text-brand-400" />
+            <p className="text-sm">Selecciona una foto desde tu computadora</p>
+            <div className="flex gap-3 mt-2">
+              <button type="button" onClick={() => fileRef.current?.click()} className="px-5 py-2 bg-brand-500 rounded-xl text-sm font-bold hover:bg-brand-600 transition flex items-center gap-2">
+                <i className="fa-solid fa-folder-open" /> Elegir archivo
+              </button>
+              <button type="button" onClick={() => setModo('camera')} className="px-5 py-2 bg-white/10 rounded-xl text-sm font-bold hover:bg-white/20 transition">Volver a cámara</button>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => handleFilePick(e.target.files)} />
           </div>
         ) : (
           <div className="relative">
@@ -90,6 +107,9 @@ export default function CameraCapture({ onCapture, onClose }) {
                 <div className={`w-12 h-12 rounded-full ${ready ? 'bg-white' : 'bg-white/30'}`} />
               </button>
             </div>
+            <button type="button" onClick={() => { if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop()); setModo('file'); }} className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-white/20 text-white text-xs font-bold hover:bg-white/30 transition z-10 flex items-center gap-1.5">
+              <i className="fa-solid fa-image" /> Subir archivo
+            </button>
             <button type="button" onClick={onClose} className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition z-10">
               <i className="fa-solid fa-xmark text-xl" />
             </button>
