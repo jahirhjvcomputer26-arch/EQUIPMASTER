@@ -21,10 +21,12 @@ const CATEGORIAS = [
 
 const MAX_SIZE = 800;
 function resizeImage(file) {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Error al leer archivo'));
     reader.onload = e => {
       const img = new Image();
+      img.onerror = () => reject(new Error('Error al decodificar imagen'));
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let w = img.width, h = img.height;
