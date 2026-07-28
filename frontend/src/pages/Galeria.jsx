@@ -154,7 +154,7 @@ export default function Galeria() {
                     <i className="fa-solid fa-camera text-lg" />
                   </div>
                   <span className="text-xs text-slate-400 font-medium">Sin foto</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={e => handleUpload(cat.key, e.target.files)} disabled={uploading} />
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleUpload(cat.key, e.target.files)} disabled={uploading} />
                 </label>
               )}
             </div>
@@ -166,7 +166,7 @@ export default function Galeria() {
               {fotos[cat.key] && (
                 <label className="cursor-pointer px-3 py-1 rounded-lg bg-brand-50 text-brand-600 text-xs font-bold hover:bg-brand-100 transition">
                   <i className="fa-solid fa-refresh mr-1" /> Cambiar
-                  <input type="file" accept="image/*" className="hidden" onChange={e => handleUpload(cat.key, e.target.files)} disabled={uploading} />
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleUpload(cat.key, e.target.files)} disabled={uploading} />
                 </label>
               )}
             </div>

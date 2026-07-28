@@ -686,7 +686,7 @@ export default function Inventario() {
                             <span className="text-[9px] text-slate-400 mt-0.5">{label}</span>
                           </div>
                         )}
-                        <input type="file" accept="image/*" className="hidden" onChange={e => { handleFormPhotoUpload(key, e.target.files); e.target.value = ''; }} />
+                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { handleFormPhotoUpload(key, e.target.files); e.target.value = ''; }} />
                       </label>
                     ))}
                   </div>
