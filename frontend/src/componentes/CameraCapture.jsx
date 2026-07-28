@@ -8,6 +8,10 @@ export default function CameraCapture({ onCapture, onClose }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('Tu navegador no soporta acceso a cámara o la página no está en un contexto seguro (HTTPS).');
+      return;
+    }
     let cancelled = false;
     const timeout = setTimeout(() => {
       if (!cancelled && !streamRef.current) {
@@ -15,7 +19,7 @@ export default function CameraCapture({ onCapture, onClose }) {
       }
     }, 10000);
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } })
+    navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 } } })
       .then(stream => {
         clearTimeout(timeout);
         if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
@@ -69,30 +73,27 @@ export default function CameraCapture({ onCapture, onClose }) {
             }} />
           </div>
         ) : (
-          <>
+          <div className="relative">
             {!ready && (
-              <div className="flex flex-col items-center gap-3 py-20 text-white/60">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-white/60 bg-black">
                 <div className="animate-spin w-10 h-10 border-4 border-white/30 border-t-white rounded-full" />
                 <p className="text-sm">Abriendo cámara...</p>
               </div>
             )}
             <video ref={videoRef} autoPlay playsInline muted
-              className={`w-full aspect-[4/3] object-cover bg-black ${ready ? '' : 'h-0'}`}
+              className="w-full aspect-[4/3] object-cover bg-black"
               onPlaying={() => setReady(true)}
+              onCanPlay={() => setReady(true)}
             />
-            {ready && (
-              <>
-                <div className="absolute bottom-0 inset-x-0 p-4 flex items-center justify-center gap-6 bg-gradient-to-t from-black/60 to-transparent">
-                  <button type="button" onClick={capture} className="w-16 h-16 rounded-full border-4 border-white bg-white/20 flex items-center justify-center hover:bg-white/30 transition">
-                    <div className="w-12 h-12 rounded-full bg-white" />
-                  </button>
-                </div>
-                <button type="button" onClick={onClose} className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition z-10">
-                  <i className="fa-solid fa-xmark text-xl" />
-                </button>
-              </>
-            )}
-          </>
+            <div className="absolute bottom-0 inset-x-0 p-4 flex items-center justify-center gap-6 bg-gradient-to-t from-black/60 to-transparent">
+              <button type="button" onClick={capture} disabled={!ready} className={`w-16 h-16 rounded-full border-4 border-white flex items-center justify-center transition ${ready ? 'bg-white/20 hover:bg-white/30' : 'bg-white/5 opacity-40 cursor-not-allowed'}`}>
+                <div className={`w-12 h-12 rounded-full ${ready ? 'bg-white' : 'bg-white/30'}`} />
+              </button>
+            </div>
+            <button type="button" onClick={onClose} className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition z-10">
+              <i className="fa-solid fa-xmark text-xl" />
+            </button>
+          </div>
         )}
       </div>
     </div>
