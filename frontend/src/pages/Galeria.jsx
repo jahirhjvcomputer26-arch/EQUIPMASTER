@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ref as dbRef, get } from 'firebase/database';
 import { db } from '../services/firebase';
@@ -47,9 +47,11 @@ export default function Galeria() {
   const { codigo } = useParams();
   const navigate = useNavigate();
   const { notify: toast } = useNotify();
+  const multiRef = useRef(null);
   const [item, setItem] = useState(null);
   const [fotos, setFotos] = useState({});
   const [uploading, setUploading] = useState(false);
+  const [uploadInfo, setUploadInfo] = useState('');
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
   const [cameraCat, setCameraCat] = useState(null);
@@ -104,6 +106,31 @@ export default function Galeria() {
     }
   };
 
+  const handleMultiUpload = async (files) => {
+    if (!files?.length) return;
+    const vacias = CATEGORIAS.filter(c => !fotos[c.key]);
+    if (!vacias.length) { toast('Sin espacios', 'Todas las categorías ya tienen foto. Elimina alguna primero.', 'warning'); return; }
+    setUploading(true);
+    const toUpload = Math.min(files.length, vacias.length);
+    let current = { ...fotos };
+    for (let i = 0; i < toUpload; i++) {
+      setUploadInfo(`Subiendo ${i + 1} de ${toUpload}...`);
+      try {
+        const base64 = await resizeImage(files[i]);
+        const result = await api.uploadFile({ codigo: codigo.toUpperCase(), categoria: vacias[i].key, archivo: base64, esDocumento: false });
+        current = { ...current, [vacias[i].key]: result.url };
+        setFotos(current);
+        await api.saveEquipo(codigo.toUpperCase(), { ...item, fotos: current });
+      } catch (err) {
+        toast('Error', `${vacias[i].label}: ${err.message}`, 'error');
+      }
+    }
+    setUploadInfo('');
+    setUploading(false);
+    if (toUpload < files.length) toast('Algunas no se subieron', `Solo hay ${vacias.length} categorías vacías. Se subieron ${toUpload} de ${files.length} fotos.`, 'info');
+    else toast('Fotos subidas', `${toUpload} fotos asignadas secuencialmente.`, 'success');
+  };
+
   if (error) return (
     <section className="p-8 text-center">
       <i className="fa-solid fa-triangle-exclamation text-4xl text-red-400 mb-4 block" />
@@ -127,9 +154,15 @@ export default function Galeria() {
           </h2>
           <p className="text-slate-500 text-sm">{item.marca} {item.modelo} · {item.codigo}</p>
         </div>
-        <button onClick={() => navigate(-1)} className="px-4 py-2 border border-slate-300 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50">
-          <i className="fa-solid fa-arrow-left mr-1" /> Volver
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => multiRef.current?.click()} className="px-4 py-2 border border-dashed border-brand-300 text-brand-600 rounded-xl text-sm font-bold hover:bg-brand-50 transition flex items-center gap-2">
+            <i className="fa-solid fa-layer-group" /> Cargar varias
+          </button>
+          <button onClick={() => navigate(-1)} className="px-4 py-2 border border-slate-300 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50">
+            <i className="fa-solid fa-arrow-left mr-1" /> Volver
+          </button>
+        </div>
+        <input ref={multiRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { handleMultiUpload(e.target.files); e.target.value = ''; }} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -204,7 +237,7 @@ export default function Galeria() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in">
           <div className="bg-white rounded-2xl p-6 shadow-2xl text-center">
             <div className="animate-spin w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full mx-auto mb-3" />
-            <p className="text-sm font-bold text-slate-700">Subiendo imagen...</p>
+            <p className="text-sm font-bold text-slate-700">{uploadInfo || 'Subiendo imagen...'}</p>
           </div>
         </div>
       )}

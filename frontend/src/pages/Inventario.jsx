@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useInventario } from '../context/InventarioContext';
@@ -657,6 +657,46 @@ export default function Inventario() {
                   <span className="text-[10px] font-bold text-slate-400">
                     {Object.keys(form.fotos).length}/9
                   </span>
+                  <div className="flex items-center gap-2 mb-2">
+                    <button type="button" onClick={() => multiRef.current?.click()} className="text-xs px-3 py-1.5 rounded-lg border border-dashed border-brand-300 text-brand-600 font-bold hover:bg-brand-50 transition flex items-center gap-1.5">
+                      <i className="fa-solid fa-layer-group" /> Cargar varias
+                    </button>
+                  </div>
+                  <input ref={multiRef} type="file" accept="image/*" multiple className="hidden" onChange={e => {
+                    if (!e.target.files?.length) return;
+                    const CATS = [
+                      { key: 'frente', label: 'Frente' },
+                      { key: 'posterior', label: 'Posterior' },
+                      { key: 'laterales', label: 'Laterales' },
+                      { key: 'pantalla', label: 'Pantalla' },
+                      { key: 'teclado', label: 'Teclado' },
+                      { key: 'bios', label: 'BIOS' },
+                      { key: 'crystalDiskInfo', label: 'CrystalDiskInfo' },
+                      { key: 'bateria', label: 'Batería' },
+                      { key: 'etiquetas', label: 'Etiquetas' },
+                    ];
+                    const vacias = CATS.filter(c => !form.fotos[c.key]);
+                    if (!vacias.length) { notify('Sin espacios', 'Todas las categorías ya tienen foto.', 'warning'); return; }
+                    const toUpload = Math.min(e.target.files.length, vacias.length);
+                    (async () => {
+                      let f = { ...form.fotos };
+                      for (let i = 0; i < toUpload; i++) {
+                        notify('Subiendo...', `${i + 1} de ${toUpload}`, 'info');
+                        try {
+                          const base64 = await resizeImage(e.target.files[i]);
+                          const result = await api.uploadFile({ codigo: form.codigo, categoria: vacias[i].key, archivo: base64, esDocumento: false });
+                          f = { ...f, [vacias[i].key]: result.url };
+                          setForm(prev => ({ ...prev, fotos: f }));
+                          setDirty(true);
+                        } catch (err) {
+                          notify('Error', `${vacias[i].label}: ${err.message}`, 'error');
+                        }
+                      }
+                      if (toUpload < e.target.files.length) notify('Incompleto', `Solo hay ${vacias.length} espacios. Se subieron ${toUpload} de ${e.target.files.length}.`, 'info');
+                      else notify('Listo', `${toUpload} fotos asignadas secuencialmente.`, 'success');
+                    })();
+                    e.target.value = '';
+                  }} />
                   <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-1">
                     {[
                       { key: 'frente', label: 'Frente', icon: 'fa-laptop' },
