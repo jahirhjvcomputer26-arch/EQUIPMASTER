@@ -11,26 +11,25 @@ import { SkeletonCards, SkeletonChart } from '../componentes/Skeleton';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, LineElement, PointElement, Filler, Tooltip, Legend);
 
-function StatCard({ icon, color, label, value, sub, bgGlow }) {
+function StatCard({ icon, color, label, value, sub }) {
   return (
-    <div className="panel p-4 flex items-center gap-4 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 group relative overflow-hidden cursor-default">
-      <div className={`relative z-10 w-11 h-11 rounded-xl flex items-center justify-center text-lg shadow-sm ${color} group-hover:scale-110 transition-transform duration-300`}>
+    <div className="panel p-4 flex items-center gap-4">
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg ${color}`}>
         <i className={`fa-solid ${icon}`} />
       </div>
-      <div className="relative z-10 min-w-0">
+      <div className="min-w-0">
         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">{label}</p>
         <h4 className="text-2xl font-extrabold text-slate-800">{value}</h4>
         {sub && <p className="text-[10px] text-slate-400 font-medium">{sub}</p>}
       </div>
-      {bgGlow && <div className={`absolute -bottom-4 -right-4 w-24 h-24 rounded-full opacity-[0.06] ${bgGlow} group-hover:opacity-[0.12] transition-opacity`} />}
     </div>
   );
 }
 
 function QuickLink({ to, icon, color, label, count }) {
   return (
-    <Link to={to} className={`panel p-3 flex items-center gap-3 hover:-translate-y-0.5 hover:shadow-md transition-all group`}>
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm ${color} group-hover:scale-110 transition-transform`}>
+    <Link to={to} className={`panel p-3 flex items-center gap-3 transition-all group`}>
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm ${color}`}>
         <i className={`fa-solid ${icon}`} />
       </div>
       <div className="min-w-0 flex-1">
@@ -289,17 +288,17 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '50ms' }}>
-        <StatCard icon="fa-boxes-stacked" color="bg-brand-50 text-brand-600" label="Total entradas" value={stats.totalEntradasHistorico} bgGlow="bg-brand-500" />
-        <StatCard icon="fa-calendar-check" color="bg-indigo-50 text-indigo-600" label="Registrados hoy" value={stats.registradosHoy} sub={`${stats.registradosSemana} esta semana`} bgGlow="bg-indigo-500" />
-        <StatCard icon="fa-circle-check" color="bg-blue-50 text-blue-600" label="Stock local OK" value={stats.equiposVentaStock} sub="Solo 🔵 OK" bgGlow="bg-blue-500" />
-        <StatCard icon="fa-screwdriver-wrench" color="bg-amber-50 text-amber-600" label="En revisión" value={stats.equiposRevisionTriage + stats.equiposMercadoLibre} sub={`${stats.equiposMercadoLibre} en ML`} bgGlow="bg-amber-500" />
+        <StatCard icon="fa-boxes-stacked" color="bg-brand-50 text-brand-600" label="Total entradas" value={stats.totalEntradasHistorico} />
+        <StatCard icon="fa-calendar-check" color="bg-indigo-50 text-indigo-600" label="Registrados hoy" value={stats.registradosHoy} sub={`${stats.registradosSemana} esta semana`} />
+        <StatCard icon="fa-circle-check" color="bg-blue-50 text-blue-600" label="Stock local OK" value={stats.equiposVentaStock} sub="Solo 🔵 OK" />
+        <StatCard icon="fa-screwdriver-wrench" color="bg-amber-50 text-amber-600" label="En revisión" value={stats.equiposRevisionTriage + stats.equiposMercadoLibre} sub={`${stats.equiposMercadoLibre} en ML`} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '65ms' }}>
-        <StatCard icon="fa-rotate-left" color="bg-orange-50 text-orange-600" label="Pendientes" value={stats.equiposRevisionTriage} sub="🟡 + 🟠" bgGlow="bg-orange-500" />
-        <StatCard icon="fa-tag" color="bg-purple-50 text-purple-600" label="Mermas TKF" value={stats.mermasTKF} sub="🔴 TKF" bgGlow="bg-purple-500" />
-        <StatCard icon="fa-dollar-sign" color="bg-emerald-50 text-emerald-600" label="Vendidos" value={stats.totalVendidos} sub={`$${stats.totalVendidoEnPesos.toLocaleString('es-MX')}`} bgGlow="bg-emerald-500" />
-        <StatCard icon="fa-percent" color="bg-cyan-50 text-cyan-600" label="Tasa conversión" value={`${stats.tasaConversion}%`} sub="ventas / activos" bgGlow="bg-cyan-500" />
+        <StatCard icon="fa-rotate-left" color="bg-orange-50 text-orange-600" label="Pendientes" value={stats.equiposRevisionTriage} sub="🟡 + 🟠" />
+        <StatCard icon="fa-tag" color="bg-purple-50 text-purple-600" label="Mermas TKF" value={stats.mermasTKF} sub="🔴 TKF" />
+        <StatCard icon="fa-dollar-sign" color="bg-emerald-50 text-emerald-600" label="Vendidos" value={stats.totalVendidos} sub={`$${stats.totalVendidoEnPesos.toLocaleString('es-MX')}`} />
+        <StatCard icon="fa-percent" color="bg-cyan-50 text-cyan-600" label="Tasa conversión" value={`${stats.tasaConversion}%`} sub="ventas / activos" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 animate-slide-up" style={{ animationDelay: '80ms' }}>
