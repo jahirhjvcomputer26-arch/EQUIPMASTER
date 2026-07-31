@@ -167,7 +167,7 @@ export default function Galeria() {
         <input ref={multiRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { handleMultiUpload(e.target.files); e.target.value = ''; }} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
         {CATEGORIAS.map(cat => (
           <div key={cat.key} className="panel overflow-hidden hover:shadow-lg transition-all duration-300 animate-slide-up group">
             <div className="relative aspect-video bg-slate-100 flex items-center justify-center overflow-hidden">

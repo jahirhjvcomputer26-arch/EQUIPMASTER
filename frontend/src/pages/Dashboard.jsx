@@ -385,7 +385,7 @@ export default function Dashboard() {
           <h4 className="text-sm font-bold text-slate-700 uppercase mb-3 flex items-center gap-2">
             <i className="fa-solid fa-hourglass-half text-red-500" /> Equipos con más tiempo en stock
           </h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
             {stats.antiguos.slice(0, 5).map(item => (
               <Link key={item.codigo} to={`/inventario?editar=${item.codigo}`}
                 className="border border-slate-200 rounded-xl p-3 hover:shadow-md hover:border-brand-300 transition text-center">

@@ -524,16 +524,18 @@ export default function Inventario() {
                   <select className="form-input" value={form.almacenamiento} onChange={e => markDirty('almacenamiento', e.target.value)}>{STORAGE_OPTIONS.map(s => <option key={s}>{s}</option>)}</select></div>}
                 {tmpl.step2.includes('tipoDisco') && <div><label className="form-label">Tipo disco *</label><input className="form-input uppercase" value={form.tipoDisco} onChange={e => markDirty('tipoDisco', e.target.value)} required placeholder="M.2 NVME, SSD SATA..." /></div>}
               </div>
-              {tmpl.step2.includes('grafica') && (
-                <div><label className="form-label">Gráfica</label><input className="form-input uppercase" value={form.grafica} onChange={e => markDirty('grafica', e.target.value)} placeholder="GTX 1650, INTEGRADA..." /></div>
-              )}
-              {tmpl.step2.includes('resolucion') && (
-                <div className="max-w-xs"><label className="form-label">Resolución</label>
-                  <select className="form-input" value={form.resolucion} onChange={e => markDirty('resolucion', e.target.value)}>
-                    <option value="">Selecciona...</option>
-                    {RESOLUCION_OPTIONS.map(r => <option key={r}>{r}</option>)}
-                  </select></div>
-              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {tmpl.step2.includes('grafica') && (
+                  <div><label className="form-label">Gráfica</label><input className="form-input uppercase" value={form.grafica} onChange={e => markDirty('grafica', e.target.value)} placeholder="GTX 1650, INTEGRADA..." /></div>
+                )}
+                {tmpl.step2.includes('resolucion') && (
+                  <div><label className="form-label">Resolución</label>
+                    <select className="form-input" value={form.resolucion} onChange={e => markDirty('resolucion', e.target.value)}>
+                      <option value="">Selecciona...</option>
+                      {RESOLUCION_OPTIONS.map(r => <option key={r}>{r}</option>)}
+                    </select></div>
+                )}
+              </div>
 
               {(() => {
                 const connFields = CONECTIVIDAD_OPTIONS.filter(o => tmpl.step2.includes(o.key));
@@ -612,7 +614,7 @@ export default function Inventario() {
                   <span className="text-[10px] font-bold text-slate-400">
                     {tmpl.ficha.condicion.filter(c => form.fichaV2.condicionEstetica[c]).length}/{tmpl.ficha.condicion.length} evaluadas
                   </span>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mt-1">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-1">
                     {tmpl.ficha.condicion.map(parte => (
                       <div key={parte}>
                         <label className="form-label">{CONDICION_LABELS[parte] || parte}</label>
@@ -700,7 +702,7 @@ export default function Inventario() {
                     })();
                     e.target.value = '';
                   }} />
-                  <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-1">
+                  <div className="grid grid-cols-3 gap-2 mt-1">
                     {[
                       { key: 'frente', label: 'Frente', icon: 'fa-laptop' },
                       { key: 'posterior', label: 'Posterior', icon: 'fa-rotate-left' },
