@@ -28,14 +28,17 @@ const printStyles = (sizeKey) => {
 
 function EtiquetaUnica({ item, size }) {
   const s = LABEL_SIZES.find(l => l.key === size) || LABEL_SIZES[1];
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+  const qrSize = Math.round(s.h * 0.62);
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&qzone=3&margin=2&data=${encodeURIComponent(
     window.location.origin + '/consulta?q=' + item.codigo
   )}`;
 
   return (
-    <div className="inline-block border border-slate-300 rounded-lg overflow-hidden bg-white print-label" style={{ width: s.w, height: s.h, padding: 8 }}>
+    <div className="inline-block border border-slate-300 rounded-lg overflow-hidden bg-white print-label" style={{ width: s.w, height: s.h, padding: 6 }}>
       <div className="flex items-center gap-2 h-full">
-        <img src={qrUrl} alt="QR" style={{ width: s.h * 0.55, height: s.h * 0.55 }} crossOrigin="anonymous" className="shrink-0" />
+        <div className="bg-white shrink-0" style={{ width: qrSize, height: qrSize }}>
+          <img src={qrUrl} alt="QR" width={qrSize} height={qrSize} crossOrigin="anonymous" className="w-full h-full object-contain" />
+        </div>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-slate-900 truncate" style={{ fontSize: s.fontTitle }}>{item.marca} {item.modelo}</p>
           <p className="text-slate-500 truncate" style={{ fontSize: s.fontSub }}>{item.categoria} · {item.serie}</p>
