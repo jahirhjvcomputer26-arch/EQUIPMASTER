@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ref as dbRef, get } from 'firebase/database';
 import { db } from '../services/firebase';
@@ -77,6 +78,11 @@ export default function Etiquetas() {
     }).catch(() => setError('Error al cargar'));
   }, [codigo]);
 
+  useEffect(() => {
+    document.body.classList.add('printing-labels');
+    return () => document.body.classList.remove('printing-labels');
+  }, []);
+
   const toggleSelect = (cod) => {
     setSelected(prev => prev.includes(cod) ? prev.filter(c => c !== cod) : [...prev, cod]);
   };
@@ -103,8 +109,7 @@ export default function Etiquetas() {
 
   if (item) {
     return (
-      <div className="min-h-screen bg-slate-50 p-6 print:p-2 print:bg-white">
-        <style>{printStyles(size)}</style>
+      <div className="min-h-screen bg-slate-50 p-6">
         <div className="max-w-xl mx-auto space-y-4">
           <div className="no-print flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-slate-200 transition"><i className="fa-solid fa-arrow-left text-slate-600" /></button>
@@ -122,10 +127,17 @@ export default function Etiquetas() {
             <p>1. En el diálogo de impresión elige tu impresora térmica y selecciona el tamaño de papel {size === 'small' ? '54×25 mm' : size === 'large' ? '100×70 mm' : '100×50 mm'} (o papel personalizado).</p>
             <p>2. Escala al 100%, márgenes "Ninguno" y desactiva "Encabezados y pies de página".</p>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex justify-center print-only print:p-0 print:border-0 print:shadow-none">
+          <div className="no-print bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex justify-center">
             <EtiquetaUnica item={item} size={size} />
           </div>
         </div>
+        {createPortal(
+          <div className="print-only">
+            <style>{printStyles(size)}</style>
+            <EtiquetaUnica item={item} size={size} />
+          </div>,
+          document.body
+        )}
       </div>
     );
   }
@@ -205,10 +217,13 @@ export default function Etiquetas() {
       </div>
     </section>
 
-    <div className="print:block hidden print-only">
-      <style>{printStyles(size)}</style>
-      <MultiEtiquetas items={selectedItems} size={size} />
-    </div>
+    {createPortal(
+      <div className="print-only">
+        <style>{printStyles(size)}</style>
+        <MultiEtiquetas items={selectedItems} size={size} />
+      </div>,
+      document.body
+    )}
     </>
   );
 }

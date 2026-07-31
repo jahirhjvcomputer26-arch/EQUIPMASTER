@@ -2,13 +2,14 @@
 
 @custom-variant print (@media print);
 
+.print-only { display: none; }
+
 @media print {
   .no-print { display: none !important; }
   aside, header, .fixed { display: none !important; }
   body { background: white !important; }
-  body * { visibility: hidden; }
-  .print-only, .print-only * { visibility: visible; }
-  .print-only { position: absolute; left: 0; top: 0; width: 100%; }
+  body.printing-labels #root, body.printing-labels #root * { display: none !important; }
+  body.printing-labels .print-only { display: block !important; }
 }
 
 @theme {
