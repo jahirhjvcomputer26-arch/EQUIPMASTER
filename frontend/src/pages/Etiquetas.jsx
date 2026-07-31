@@ -7,9 +7,9 @@ import useDocumentTitle from '../utils/useDocumentTitle';
 import { useInventario } from '../context/InventarioContext';
 
 const LABEL_SIZES = [
-  { key: 'small', label: 'Pequeña (54×25mm)', w: 210, h: 96, mm: '54mm 25mm', fontTitle: 8, fontSub: 6, fontCode: 7 },
-  { key: 'medium', label: 'Mediana (100×50mm)', w: 380, h: 190, mm: '100mm 50mm', fontTitle: 12, fontSub: 9, fontCode: 10 },
-  { key: 'large', label: 'Grande (100×70mm)', w: 380, h: 266, mm: '100mm 70mm', fontTitle: 14, fontSub: 10, fontCode: 12 },
+  { key: 'small', label: 'Pequeña (54×25mm)', w: 202, h: 92, mm: '54mm 25mm', fontTitle: 8, fontSub: 6, fontCode: 7 },
+  { key: 'medium', label: 'Mediana (100×50mm)', w: 374, h: 186, mm: '100mm 50mm', fontTitle: 12, fontSub: 9, fontCode: 10 },
+  { key: 'large', label: 'Grande (100×70mm)', w: 374, h: 260, mm: '100mm 70mm', fontTitle: 14, fontSub: 10, fontCode: 12 },
 ];
 
 const printStyles = (sizeKey) => {
@@ -17,7 +17,7 @@ const printStyles = (sizeKey) => {
   return `
     @page { size: ${s.mm}; margin: 0; }
     @media print {
-      html, body { width: 100%; }
+      html, body { margin: 0; padding: 0; width: 100%; }
       * { box-sizing: border-box; }
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .print-label { break-inside: avoid; page-break-after: always; }
@@ -122,7 +122,7 @@ export default function Etiquetas() {
             <p>1. En el diálogo de impresión elige tu impresora térmica y selecciona el tamaño de papel {size === 'small' ? '54×25 mm' : size === 'large' ? '100×70 mm' : '100×50 mm'} (o papel personalizado).</p>
             <p>2. Escala al 100%, márgenes "Ninguno" y desactiva "Encabezados y pies de página".</p>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex justify-center print-only">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex justify-center print-only print:p-0 print:border-0 print:shadow-none">
             <EtiquetaUnica item={item} size={size} />
           </div>
         </div>
