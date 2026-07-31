@@ -8,9 +8,9 @@ import useDocumentTitle from '../utils/useDocumentTitle';
 import { useInventario } from '../context/InventarioContext';
 
 const LABEL_SIZES = [
-  { key: 'small', label: 'Pequeña (54×25mm)', w: 202, h: 92, mm: '54mm 25mm', fontTitle: 8, fontSub: 6, fontCode: 7 },
-  { key: 'medium', label: 'Mediana (100×50mm)', w: 374, h: 186, mm: '100mm 50mm', fontTitle: 12, fontSub: 9, fontCode: 10 },
-  { key: 'large', label: 'Grande (100×70mm)', w: 374, h: 260, mm: '100mm 70mm', fontTitle: 14, fontSub: 10, fontCode: 12 },
+  { key: 'small', label: 'Pequeña (54×25mm)', w: 198, h: 90, mm: '54mm 25mm', fontTitle: 8, fontSub: 6, fontCode: 7 },
+  { key: 'medium', label: 'Mediana (100×50mm)', w: 368, h: 182, mm: '100mm 50mm', fontTitle: 12, fontSub: 9, fontCode: 10 },
+  { key: 'large', label: 'Grande (100×70mm)', w: 368, h: 256, mm: '100mm 70mm', fontTitle: 14, fontSub: 10, fontCode: 12 },
 ];
 
 const printStyles = (sizeKey) => {
@@ -21,8 +21,8 @@ const printStyles = (sizeKey) => {
       html, body { margin: 0; padding: 0; width: 100%; }
       * { box-sizing: border-box; }
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .print-label { break-inside: avoid; page-break-after: always; }
-      .print-label:last-child { page-break-after: auto; }
+      .print-label { display: block; margin: 0; break-inside: avoid; }
+      .print-label + .print-label { page-break-before: always; }
     }
   `;
 };
