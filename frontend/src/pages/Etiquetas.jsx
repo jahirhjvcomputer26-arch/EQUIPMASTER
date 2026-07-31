@@ -7,18 +7,32 @@ import useDocumentTitle from '../utils/useDocumentTitle';
 import { useInventario } from '../context/InventarioContext';
 
 const LABEL_SIZES = [
-  { key: 'small', label: 'Pequeña (54×25mm)', w: 210, h: 96, fontTitle: 8, fontSub: 6, fontCode: 7 },
-  { key: 'medium', label: 'Mediana (100×50mm)', w: 380, h: 190, fontTitle: 12, fontSub: 9, fontCode: 10 },
-  { key: 'large', label: 'Grande (100×70mm)', w: 380, h: 266, fontTitle: 14, fontSub: 10, fontCode: 12 },
+  { key: 'small', label: 'Pequeña (54×25mm)', w: 210, h: 96, mm: '54mm 25mm', fontTitle: 8, fontSub: 6, fontCode: 7 },
+  { key: 'medium', label: 'Mediana (100×50mm)', w: 380, h: 190, mm: '100mm 50mm', fontTitle: 12, fontSub: 9, fontCode: 10 },
+  { key: 'large', label: 'Grande (100×70mm)', w: 380, h: 266, mm: '100mm 70mm', fontTitle: 14, fontSub: 10, fontCode: 12 },
 ];
+
+const printStyles = (sizeKey) => {
+  const s = LABEL_SIZES.find(l => l.key === sizeKey) || LABEL_SIZES[1];
+  return `
+    @page { size: ${s.mm}; margin: 0; }
+    @media print {
+      html, body { width: 100%; }
+      * { box-sizing: border-box; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .print-label { break-inside: avoid; page-break-after: always; }
+      .print-label:last-child { page-break-after: auto; }
+    }
+  `;
+};
 
 function EtiquetaUnica({ item, size }) {
   const s = LABEL_SIZES.find(l => l.key === size) || LABEL_SIZES[1];
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(item.codigo)}`;
 
   return (
-    <div className="inline-block border border-slate-300 rounded-lg overflow-hidden bg-white print:break-inside-avoid" style={{ width: s.w, padding: 8 }}>
-      <div className="flex items-center gap-2">
+    <div className="inline-block border border-slate-300 rounded-lg overflow-hidden bg-white print-label" style={{ width: s.w, height: s.h, padding: 8 }}>
+      <div className="flex items-center gap-2 h-full">
         <img src={qrUrl} alt="QR" style={{ width: s.h * 0.55, height: s.h * 0.55 }} crossOrigin="anonymous" className="shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="font-bold text-slate-900 truncate" style={{ fontSize: s.fontTitle }}>{item.marca} {item.modelo}</p>
@@ -32,7 +46,7 @@ function EtiquetaUnica({ item, size }) {
 
 function MultiEtiquetas({ items, size }) {
   return (
-    <div className="flex flex-wrap gap-3 justify-center p-4">
+    <div className="flex flex-wrap gap-3 justify-center p-4 print:p-0 print:gap-0 print:justify-start print:block">
       {items.map(it => <EtiquetaUnica key={it.codigo} item={it} size={size} />)}
     </div>
   );
@@ -85,7 +99,7 @@ export default function Etiquetas() {
   if (item) {
     return (
       <div className="min-h-screen bg-slate-50 p-6 print:p-2 print:bg-white">
-        <style>{`@media print { @page { margin: 5mm; } .no-print { display: none !important; } }`}</style>
+        <style>{printStyles(size)}</style>
         <div className="max-w-xl mx-auto space-y-4">
           <div className="no-print flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-slate-200 transition"><i className="fa-solid fa-arrow-left text-slate-600" /></button>
@@ -97,6 +111,11 @@ export default function Etiquetas() {
               {LABEL_SIZES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
             </select>
             <button onClick={handlePrint} className="btn-brand px-4 py-1.5 rounded-xl text-white text-sm font-bold ml-auto"><i className="fa-solid fa-print mr-1" /> Imprimir</button>
+          </div>
+          <div className="no-print bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
+            <p><b>Para impresora de etiquetas:</b></p>
+            <p>1. En el diálogo de impresión elige tu impresora térmica y selecciona el tamaño de papel {size === 'small' ? '54×25 mm' : size === 'large' ? '100×70 mm' : '100×50 mm'} (o papel personalizado).</p>
+            <p>2. Escala al 100%, márgenes "Ninguno" y desactiva "Encabezados y pies de página".</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex justify-center">
             <EtiquetaUnica item={item} size={size} />
@@ -182,6 +201,7 @@ export default function Etiquetas() {
     </section>
 
     <div className="print:block hidden">
+      <style>{printStyles(size)}</style>
       <MultiEtiquetas items={selectedItems} size={size} />
     </div>
     </>
