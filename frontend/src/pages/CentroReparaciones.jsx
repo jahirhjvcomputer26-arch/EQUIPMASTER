@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useInventario } from '../context/InventarioContext';
 import { useNotify } from '../componentes/Notification';
 import { api } from '../services/api';
@@ -52,21 +52,80 @@ function esVendido(item) {
   return item.flujoSalida || item.flujoVentaML || item.estado?.includes('🔴 VENDIDO');
 }
 
+const emptyForm = () => ({
+  marca: '', modelo: '', serie: '',
+  categoria: '', prioridad: 'Media', falla: '', tecnico: TECNICOS[0],
+  estado: 'Pendiente', fecha: new Date().toISOString().split('T')[0],
+});
+
 export default function CentroReparaciones() {
   useDocumentTitle('Centro de Reparaciones');
   const { inventario } = useInventario();
   const { notify } = useNotify();
 
+  const [manuales, setManuales] = useState([]);
+  const [cargandoManuales, setCargandoManuales] = useState(true);
   const [categoria, setCategoria] = useState(null);
-  const [modal, setModal] = useState(null); // { modo: 'nuevo' } | { modo: 'editar', item }
+  const [showFinalizadas, setShowFinalizadas] = useState(false);
+
+  const [modal, setModal] = useState(null);
+  const [pestana, setPestana] = useState('inv');
   const [query, setQuery] = useState('');
   const [seleccionado, setSeleccionado] = useState(null);
-  const [form, setForm] = useState({ categoria: '', prioridad: 'Media', falla: '', tecnico: TECNICOS[0], estado: 'Pendiente', fecha: new Date().toISOString().split('T')[0] });
+  const [form, setForm] = useState(emptyForm());
   const [guardando, setGuardando] = useState(false);
-  const [finItem, setFinItem] = useState(null);
 
-  const reparaciones = inventario.filter(i => i.reparacion && i.reparacion.estado !== 'Finalizada');
-  const porCategoria = key => reparaciones.filter(i => i.reparacion.categoria === key);
+  const [finItem, setFinItem] = useState(null);
+  const [delItem, setDelItem] = useState(null);
+
+  useEffect(() => {
+    api.getCentroReparaciones().then(d => { setManuales(d); setCargandoManuales(false); })
+      .catch(() => setCargandoManuales(false));
+  }, []);
+
+  const recargarManuales = () => api.getCentroReparaciones().then(setManuales);
+
+  const manualesNorm = manuales.map(m => ({
+    key: `m-${m.id}`,
+    origen: 'manual',
+    ref: m,
+    nombre: `${m.marca} ${m.modelo}`.trim(),
+    codigo: m.id,
+    serie: m.serie,
+    foto: null,
+    categoria: m.categoria,
+    prioridad: m.prioridad,
+    estado: m.estado,
+    falla: m.falla,
+    tecnico: m.tecnico,
+    fecha: m.fecha,
+    specs: '',
+  }));
+
+  const invNorm = inventario.filter(i => i.reparacion).map(i => ({
+    key: `i-${i.codigo}`,
+    origen: 'inv',
+    ref: i,
+    nombre: nombreEquipo(i.marca, i.modelo),
+    codigo: i.codigo,
+    serie: i.serie,
+    foto: i.fotos?.frente,
+    categoria: i.reparacion.categoria,
+    prioridad: i.reparacion.prioridad,
+    estado: i.reparacion.estado,
+    falla: i.reparacion.falla,
+    tecnico: i.reparacion.tecnico,
+    fecha: i.reparacion.fecha,
+    specs: [i.procesador, i.ram, i.almacenamiento].filter(Boolean).join(' · '),
+  }));
+
+  const todos = [...manualesNorm, ...invNorm];
+  const activos = todos.filter(r => r.estado !== 'Finalizada');
+  const finalizadas = todos.filter(r => r.estado === 'Finalizada');
+  const mostrar = showFinalizadas ? todos : activos;
+
+  const porCategoria = key => activos.filter(r => r.categoria === key);
+
   const disponibles = inventario.filter(i =>
     !esVendido(i) && (!i.reparacion || i.reparacion.estado === 'Finalizada'));
 
@@ -82,56 +141,110 @@ export default function CentroReparaciones() {
     : [];
 
   const abrirNuevo = () => {
+    setPestana('inv');
     setSeleccionado(null);
     setQuery('');
-    setForm({ categoria: '', prioridad: 'Media', falla: '', tecnico: TECNICOS[0], estado: 'Pendiente', fecha: new Date().toISOString().split('T')[0] });
+    setForm(emptyForm());
     setModal({ modo: 'nuevo' });
   };
 
-  const abrirEditar = (item) => {
-    setSeleccionado(item);
+  const abrirManual = () => {
+    setPestana('manual');
+    setSeleccionado(null);
     setQuery('');
-    setForm({
-      categoria: item.reparacion.categoria || '',
-      prioridad: item.reparacion.prioridad || 'Media',
-      falla: item.reparacion.falla || '',
-      tecnico: item.reparacion.tecnico || TECNICOS[0],
-      estado: item.reparacion.estado || 'Pendiente',
-      fecha: (item.reparacion.fecha || new Date().toISOString()).split('T')[0],
-    });
-    setModal({ modo: 'editar', item });
+    setForm(emptyForm());
+    setModal({ modo: 'nuevo' });
+  };
+
+  const abrirEditar = (record) => {
+    if (record.origen === 'manual') {
+      setPestana('manual');
+      setSeleccionado(null);
+      setForm({
+        marca: record.ref.marca || '', modelo: record.ref.modelo || '', serie: record.ref.serie || '',
+        categoria: record.ref.categoria || '', prioridad: record.ref.prioridad || 'Media',
+        falla: record.ref.falla || '', tecnico: record.ref.tecnico || TECNICOS[0],
+        estado: record.ref.estado || 'Pendiente',
+        fecha: (record.ref.fecha || new Date().toISOString()).split('T')[0],
+      });
+      setModal({ modo: 'editar', record });
+    } else {
+      setPestana('inv');
+      setSeleccionado(record.ref);
+      setQuery('');
+      setForm({
+        ...emptyForm(),
+        categoria: record.ref.reparacion.categoria || '',
+        prioridad: record.ref.reparacion.prioridad || 'Media',
+        falla: record.ref.reparacion.falla || '',
+        tecnico: record.ref.reparacion.tecnico || TECNICOS[0],
+        estado: record.ref.reparacion.estado || 'Pendiente',
+        fecha: (record.ref.reparacion.fecha || new Date().toISOString()).split('T')[0],
+      });
+      setModal({ modo: 'editar', record });
+    }
   };
 
   const cerrarModal = () => { if (!guardando) setModal(null); };
 
   const guardar = async () => {
-    if (!seleccionado) return;
+    if (pestana === 'inv') {
+      if (!seleccionado) return;
+      if (!form.categoria) { notify('Falta categoría', 'Selecciona la categoría de la reparación.', 'error'); return; }
+      if (!form.falla.trim()) { notify('Falta falla', 'Describe la falla detectada.', 'error'); return; }
+      setGuardando(true);
+      try {
+        const esNuevo = modal?.modo === 'nuevo';
+        const prev = esNuevo ? seleccionado.reparacion || {} : seleccionado.reparacion;
+        const enInventarioOK = seleccionado.estado === '🔵 OK' || seleccionado.estado === '🟢 FULL (ML)';
+        const payload = {
+          ...seleccionado,
+          reparacion: {
+            ...prev,
+            categoria: form.categoria,
+            prioridad: form.prioridad,
+            falla: form.falla.trim().toUpperCase(),
+            tecnico: form.tecnico,
+            estado: form.estado,
+            fecha: esNuevo ? new Date(`${form.fecha}T12:00:00`).toISOString() : (prev.fecha || new Date().toISOString()),
+            fechaFin: prev.fechaFin || null,
+          },
+          estado: esNuevo && enInventarioOK ? '🟠 Revisión' : seleccionado.estado,
+        };
+        await api.saveEquipo(seleccionado.codigo, payload);
+        notify(esNuevo ? 'Reparación iniciada' : 'Reparación actualizada',
+          `${nombreEquipo(seleccionado.marca, seleccionado.modelo)} → ${form.categoria}`, 'success');
+        setModal(null);
+      } catch (err) {
+        notify('Error', err.message, 'error');
+      } finally {
+        setGuardando(false);
+      }
+      return;
+    }
+
+    if (!form.marca.trim() || !form.modelo.trim() || !form.serie.trim()) {
+      notify('Datos incompletos', 'Marca, modelo y serie son obligatorios.', 'error'); return;
+    }
     if (!form.categoria) { notify('Falta categoría', 'Selecciona la categoría de la reparación.', 'error'); return; }
     if (!form.falla.trim()) { notify('Falta falla', 'Describe la falla detectada.', 'error'); return; }
     setGuardando(true);
     try {
-      const esNuevo = modal?.modo === 'nuevo';
-      const prev = esNuevo ? seleccionado.reparacion || {} : seleccionado.reparacion;
-      const enInventarioOK = seleccionado.estado === '🔵 OK' || seleccionado.estado === '🟢 FULL (ML)';
       const payload = {
-        ...seleccionado,
-        reparacion: {
-          ...prev,
-          categoria: form.categoria,
-          prioridad: form.prioridad,
-          falla: form.falla.trim().toUpperCase(),
-          tecnico: form.tecnico,
-          estado: form.estado,
-          fecha: esNuevo ? new Date(`${form.fecha}T12:00:00`).toISOString() : (prev.fecha || new Date().toISOString()),
-          fechaFin: prev.fechaFin || null,
-        },
-        estado: esNuevo && enInventarioOK ? '🟠 Revisión' : seleccionado.estado,
+        marca: form.marca, modelo: form.modelo, serie: form.serie,
+        categoria: form.categoria, prioridad: form.prioridad, falla: form.falla,
+        tecnico: form.tecnico, estado: form.estado,
+        fecha: new Date(`${form.fecha}T12:00:00`).toISOString(),
       };
-      await api.saveEquipo(seleccionado.codigo, payload);
-      notify(esNuevo ? 'Reparación iniciada' : 'Reparación actualizada',
-        `${nombreEquipo(seleccionado.marca, seleccionado.modelo)} → ${form.categoria}`, 'success');
+      if (modal?.modo === 'editar') {
+        await api.updateCentroReparacion(modal.record.ref.id, payload);
+        notify('Reparación actualizada', `${form.marca} ${form.modelo} → ${form.categoria}`, 'success');
+      } else {
+        await api.crearCentroReparacion(payload);
+        notify('Equipo registrado', `${form.marca} ${form.modelo} → ${form.categoria}`, 'success');
+      }
       setModal(null);
-      if (esNuevo && !form.categoria) setCategoria(null);
+      recargarManuales();
     } catch (err) {
       notify('Error', err.message, 'error');
     } finally {
@@ -139,13 +252,18 @@ export default function CentroReparaciones() {
     }
   };
 
-  const cambiarEstadoRep = async (item, estado) => {
+  const cambiarEstadoRep = async (record, estado) => {
     try {
-      await api.saveEquipo(item.codigo, {
-        ...item,
-        reparacion: { ...item.reparacion, estado },
-      });
-      notify('Estado actualizado', `${item.codigo} → ${estado}`, 'success');
+      if (record.origen === 'manual') {
+        await api.updateCentroReparacion(record.ref.id, { ...record.ref, estado });
+        recargarManuales();
+      } else {
+        await api.saveEquipo(record.ref.codigo, {
+          ...record.ref,
+          reparacion: { ...record.ref.reparacion, estado },
+        });
+      }
+      notify('Estado actualizado', `${record.codigo} → ${estado}`, 'success');
     } catch (err) {
       notify('Error', err.message, 'error');
     }
@@ -155,96 +273,164 @@ export default function CentroReparaciones() {
     const item = finItem;
     setFinItem(null);
     try {
-      await api.saveEquipo(item.codigo, {
-        ...item,
-        estado: '🔵 OK',
-        reparacion: { ...item.reparacion, estado: 'Finalizada', fechaFin: new Date().toISOString() },
-      });
-      notify('Reparación finalizada', `${item.codigo} vuelve al inventario como 🔵 OK.`, 'success');
+      if (item.origen === 'manual') {
+        await api.finalizarCentroReparacion(item.ref.id);
+        recargarManuales();
+        notify('Reparación finalizada', `${item.nombre} marcado como terminado.`, 'success');
+      } else {
+        await api.saveEquipo(item.ref.codigo, {
+          ...item.ref,
+          estado: '🔵 OK',
+          reparacion: { ...item.ref.reparacion, estado: 'Finalizada', fechaFin: new Date().toISOString() },
+        });
+        notify('Reparación finalizada', `${item.codigo} vuelve al inventario como 🔵 OK.`, 'success');
+      }
     } catch (err) {
       notify('Error', err.message, 'error');
     }
   };
 
-  const CardEquipo = ({ item }) => (
-    <div className="panel p-4 animate-slide-up">
-      <div className="flex gap-4">
-        {item.fotos?.frente ? (
-          <img src={item.fotos.frente} alt={item.codigo} className="w-24 h-24 object-cover rounded-xl border border-slate-200 shrink-0" />
-        ) : (
-          <div className="w-24 h-24 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
-            <i className="fa-solid fa-image text-2xl" />
+  const reabrir = async (record) => {
+    try {
+      await api.updateCentroReparacion(record.ref.id, { ...record.ref, estado: 'Pendiente', fechaFin: null });
+      recargarManuales();
+      notify('Reparación reabierta', `${record.codigo} vuelve a Pendiente.`, 'success');
+    } catch (err) {
+      notify('Error', err.message, 'error');
+    }
+  };
+
+  const eliminar = async () => {
+    const item = delItem;
+    setDelItem(null);
+    try {
+      await api.deleteCentroReparacion(item.ref.id);
+      recargarManuales();
+      notify('Registro eliminado', `${item.nombre} eliminado del centro.`, 'success');
+    } catch (err) {
+      notify('Error', err.message, 'error');
+    }
+  };
+
+  const CardEquipo = ({ record }) => {
+    const finalizada = record.estado === 'Finalizada';
+    return (
+      <div className="panel p-4 animate-slide-up">
+        <div className="flex gap-4">
+          {record.foto ? (
+            <img src={record.foto} alt={record.codigo} className="w-24 h-24 object-cover rounded-xl border border-slate-200 shrink-0" />
+          ) : (
+            <div className="w-24 h-24 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+              <i className={`fa-solid ${record.origen === 'manual' ? 'fa-boxes-stacked' : 'fa-image'} text-2xl`} />
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="font-bold text-slate-900 leading-tight">{record.nombre}</p>
+            <p className="text-xs text-slate-400 font-mono mt-0.5">
+              {record.codigo} · S/N {record.serie || '—'}
+              {record.origen === 'manual' && <span className="ml-2 text-[9px] uppercase font-bold bg-slate-100 rounded px-1.5 py-0.5 text-slate-500">Almacén</span>}
+            </p>
+            {record.specs && <p className="text-xs text-slate-500 mt-1 truncate">{record.specs}</p>}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${PRIORIDAD_STYLE[record.prioridad] || PRIORIDAD_STYLE.Media}`}>
+                <i className={`fa-solid ${PRIORIDAD_ICON[record.prioridad] || 'fa-equals'} mr-1`} />{record.prioridad}
+              </span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ESTADO_REP_STYLE[record.estado] || ''}`}>{record.estado}</span>
+              {record.origen === 'inv' && finalizada && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-sky-50 text-sky-700 border-sky-200">
+                  <i className="fa-solid fa-store mr-1" />En inventario 🔵 OK
+                </span>
+              )}
+            </div>
           </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="font-bold text-slate-900 leading-tight">{nombreEquipo(item.marca, item.modelo)}</p>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">{item.codigo} · S/N {item.serie || '—'}</p>
-          <p className="text-xs text-slate-500 mt-1 truncate">{item.procesador}{item.ram ? ` · ${item.ram}` : ''}{item.almacenamiento ? ` · ${item.almacenamiento}` : ''}</p>
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${PRIORIDAD_STYLE[item.reparacion.prioridad] || PRIORIDAD_STYLE.Media}`}>
-              <i className={`fa-solid ${PRIORIDAD_ICON[item.reparacion.prioridad] || 'fa-equals'} mr-1`} />{item.reparacion.prioridad}
-            </span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ESTADO_REP_STYLE[item.reparacion.estado] || ''}`}>{item.reparacion.estado}</span>
+        </div>
+        <div className="mt-3 bg-rose-50/70 border border-rose-100 rounded-lg p-2.5 text-xs text-rose-900">
+          <span className="font-bold uppercase text-[10px] text-rose-500 block mb-0.5">Falla detectada</span>
+          {record.falla || '—'}
+        </div>
+        <div className="flex items-center justify-between gap-3 mt-3">
+          <div className="text-[11px] text-slate-500 min-w-0">
+            <p><i className="fa-solid fa-user-gear w-4 text-slate-400" /> {record.tecnico || '—'}</p>
+            <p className="mt-0.5"><i className="fa-solid fa-calendar-plus w-4 text-slate-400" /> Ingreso: {fmtFecha(record.fecha)}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {!finalizada ? (
+              <>
+                <select
+                  value={record.estado}
+                  onChange={e => cambiarEstadoRep(record, e.target.value)}
+                  className="form-input !py-1.5 !px-2 text-xs"
+                >
+                  {ESTADOS_ACTIVOS.map(e => <option key={e}>{e}</option>)}
+                </select>
+                <button onClick={() => abrirEditar(record)} className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="Editar reparación">
+                  <i className="fa-solid fa-pen text-sm" />
+                </button>
+                <button onClick={() => setFinItem(record)} className="p-2 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition" title="Marcar como Finalizada">
+                  <i className="fa-solid fa-check text-sm" />
+                </button>
+              </>
+            ) : (
+              <>
+                {record.origen === 'manual' && (
+                  <button onClick={() => reabrir(record)} className="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition">
+                    Reabrir
+                  </button>
+                )}
+                <button onClick={() => setDelItem(record)} className="p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 transition" title="Eliminar registro">
+                  <i className="fa-solid fa-trash text-sm" />
+                </button>
+              </>
+            )}
+            {record.origen === 'manual' && !finalizada && (
+              <button onClick={() => setDelItem(record)} className="p-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 transition" title="Eliminar registro">
+                <i className="fa-solid fa-trash text-sm" />
+              </button>
+            )}
           </div>
         </div>
       </div>
-      <div className="mt-3 bg-rose-50/70 border border-rose-100 rounded-lg p-2.5 text-xs text-rose-900">
-        <span className="font-bold uppercase text-[10px] text-rose-500 block mb-0.5">Falla detectada</span>
-        {item.reparacion.falla || '—'}
-      </div>
-      <div className="flex items-center justify-between gap-3 mt-3">
-        <div className="text-[11px] text-slate-500 min-w-0">
-          <p><i className="fa-solid fa-user-gear w-4 text-slate-400" /> {item.reparacion.tecnico || '—'}</p>
-          <p className="mt-0.5"><i className="fa-solid fa-calendar-plus w-4 text-slate-400" /> Ingreso: {fmtFecha(item.reparacion.fecha)}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={item.reparacion.estado}
-            onChange={e => cambiarEstadoRep(item, e.target.value)}
-            className="form-input !py-1.5 !px-2 text-xs"
-          >
-            {ESTADOS_ACTIVOS.map(e => <option key={e}>{e}</option>)}
-          </select>
-          <button onClick={() => abrirEditar(item)} className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="Editar reparación">
-            <i className="fa-solid fa-pen text-sm" />
-          </button>
-          <button onClick={() => setFinItem(item)} className="p-2 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition" title="Marcar como Finalizada">
-            <i className="fa-solid fa-check text-sm" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <section className="space-y-6 animate-fade-in">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="font-display text-2xl font-bold text-slate-900">Centro de Reparaciones</h2>
-          <p className="text-slate-500 text-sm">Equipos del inventario en reparación o mantenimiento, organizados por categoría de falla</p>
+          <p className="text-slate-500 text-sm">Equipos en reparación o mantenimiento, del inventario o del almacén</p>
         </div>
-        <button onClick={abrirNuevo} className="btn-brand px-5 py-3 rounded-xl text-sm font-bold">
-          <i className="fa-solid fa-plus mr-1" /> Registrar reparación
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowFinalizadas(v => !v)}
+            className={`px-4 py-3 rounded-xl text-sm font-bold border transition ${showFinalizadas ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
+            title="Mostrar u ocultar reparaciones finalizadas"
+          >
+            <i className="fa-solid fa-clock-rotate-left mr-1" /> Finalizadas ({finalizadas.length})
+          </button>
+          <button onClick={abrirNuevo} className="btn-brand px-5 py-3 rounded-xl text-sm font-bold">
+            <i className="fa-solid fa-plus mr-1" /> Registrar reparación
+          </button>
+        </div>
       </div>
 
       {!categoria ? (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="panel p-4">
-              <p className="text-3xl font-bold text-slate-900">{reparaciones.length}</p>
+              <p className="text-3xl font-bold text-slate-900">{activos.length}</p>
               <p className="text-xs text-slate-500 font-bold uppercase mt-1">En taller</p>
             </div>
             <div className="panel p-4">
-              <p className="text-3xl font-bold text-red-600">{reparaciones.filter(i => i.reparacion.prioridad === 'Alta').length}</p>
+              <p className="text-3xl font-bold text-red-600">{activos.filter(r => r.prioridad === 'Alta').length}</p>
               <p className="text-xs text-slate-500 font-bold uppercase mt-1">Prioridad alta</p>
             </div>
             <div className="panel p-4">
-              <p className="text-3xl font-bold text-amber-600">{reparaciones.filter(i => i.reparacion.estado === 'En proceso').length}</p>
+              <p className="text-3xl font-bold text-amber-600">{activos.filter(r => r.estado === 'En proceso').length}</p>
               <p className="text-xs text-slate-500 font-bold uppercase mt-1">En proceso</p>
             </div>
             <div className="panel p-4">
-              <p className="text-3xl font-bold text-orange-600">{reparaciones.filter(i => i.reparacion.estado === 'Esperando refacción').length}</p>
+              <p className="text-3xl font-bold text-orange-600">{activos.filter(r => r.estado === 'Esperando refacción').length}</p>
               <p className="text-xs text-slate-500 font-bold uppercase mt-1">Esperando refacción</p>
             </div>
           </div>
@@ -267,13 +453,18 @@ export default function CentroReparaciones() {
             })}
           </div>
 
-          {reparaciones.length === 0 && (
+          {activos.length === 0 && (
             <div className="panel p-12 text-center text-slate-400">
               <i className="fa-solid fa-screwdriver-wrench text-4xl mb-3" />
-              <p className="text-sm font-semibold">No hay equipos en el centro de reparaciones</p>
-              <p className="text-xs mt-1">Registra una reparación para un equipo del inventario.</p>
+              <p className="text-sm font-semibold">No hay equipos activos en el centro de reparaciones</p>
+              <p className="text-xs mt-1">Registra una reparación de un equipo del inventario o agrega uno manual del almacén.</p>
+              <button onClick={abrirManual} className="mt-4 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-bold hover:bg-slate-100 transition">
+                <i className="fa-solid fa-boxes-stacked mr-1" /> Agregar equipo del almacén
+              </button>
             </div>
           )}
+
+          {cargandoManuales && <p className="text-center text-xs text-slate-400 animate-pulse"><i className="fa-solid fa-spinner fa-spin mr-1" />Cargando almacén...</p>}
         </>
       ) : (
         <>
@@ -283,17 +474,17 @@ export default function CentroReparaciones() {
             </button>
             <div className="min-w-0">
               <h3 className="font-bold text-slate-900 text-lg">{categoria}</h3>
-              <p className="text-xs text-slate-500">{porCategoria(categoria).length} equipo{porCategoria(categoria).length !== 1 ? 's' : ''} en esta categoría</p>
+              <p className="text-xs text-slate-500">{porCategoria(categoria).length} activo{porCategoria(categoria).length !== 1 ? 's' : ''} · {mostrar.filter(r => r.categoria === categoria).length} en vista</p>
             </div>
           </div>
-          {porCategoria(categoria).length === 0 ? (
+          {mostrar.filter(r => r.categoria === categoria).length === 0 ? (
             <div className="panel p-12 text-center text-slate-400">
               <i className="fa-solid fa-box-open text-4xl mb-3" />
-              <p className="text-sm">Sin equipos pendientes en esta categoría.</p>
+              <p className="text-sm">Sin equipos en esta categoría.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {porCategoria(categoria).map(item => <CardEquipo key={item.codigo} item={item} />)}
+              {mostrar.filter(r => r.categoria === categoria).map(record => <CardEquipo key={record.key} record={record} />)}
             </div>
           )}
         </>
@@ -312,61 +503,103 @@ export default function CentroReparaciones() {
               </button>
             </div>
 
-            {modal.modo === 'nuevo' && !seleccionado && (
-              <div>
-                <label className="form-label">Buscar equipo del inventario</label>
-                <input
-                  className="form-input uppercase"
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  placeholder="Código, serie, marca o modelo..."
-                  autoFocus
-                />
-                <div className="mt-3 space-y-2 max-h-72 overflow-y-auto pr-1">
-                  {resultados.length === 0 ? (
-                    <p className="text-xs text-slate-400 text-center py-6">
-                      {query.trim() ? 'Sin coincidencias. Solo se muestran equipos sin reparación activa.' : 'Escribe para buscar.'}
-                    </p>
-                  ) : resultados.map(r => (
-                    <button
-                      key={r.codigo}
-                      onClick={() => {
-                        setSeleccionado(r);
-                        setForm(f => ({ ...f, tecnico: TECNICOS[0] }));
-                      }}
-                      className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 hover:border-brand-400 hover:bg-brand-50 transition text-left"
-                    >
-                      {r.fotos?.frente ? (
-                        <img src={r.fotos.frente} alt="" className="w-12 h-12 object-cover rounded-lg" />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400"><i className="fa-solid fa-laptop" /></div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-800 text-sm truncate">{nombreEquipo(r.marca, r.modelo)}</p>
-                        <p className="text-xs text-slate-400 font-mono">{r.codigo} · {r.serie || 'sin serie'}</p>
-                      </div>
-                    </button>
-                  ))}
+            {modal.modo === 'nuevo' && (
+              <div className="flex gap-2 mb-4 bg-slate-100 rounded-xl p-1">
+                <button
+                  onClick={() => setPestana('inv')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-bold transition ${pestana === 'inv' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  <i className="fa-solid fa-laptop mr-1" /> Del inventario
+                </button>
+                <button
+                  onClick={() => setPestana('manual')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-bold transition ${pestana === 'manual' ? 'bg-white shadow text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  <i className="fa-solid fa-boxes-stacked mr-1" /> Manual (almacén)
+                </button>
+              </div>
+            )}
+
+            {pestana === 'inv' ? (
+              <>
+                {modal.modo === 'nuevo' && !seleccionado && (
+                  <div>
+                    <label className="form-label">Buscar equipo del inventario</label>
+                    <input
+                      className="form-input uppercase"
+                      value={query}
+                      onChange={e => setQuery(e.target.value)}
+                      placeholder="Código, serie, marca o modelo..."
+                      autoFocus
+                    />
+                    <div className="mt-3 space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {resultados.length === 0 ? (
+                        <p className="text-xs text-slate-400 text-center py-6">
+                          {query.trim() ? 'Sin coincidencias. Solo se muestran equipos sin reparación activa.' : 'Escribe para buscar.'}
+                        </p>
+                      ) : resultados.map(r => (
+                        <button
+                          key={r.codigo}
+                          onClick={() => {
+                            setSeleccionado(r);
+                            setForm(f => ({ ...f, tecnico: TECNICOS[0] }));
+                          }}
+                          className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 hover:border-brand-400 hover:bg-brand-50 transition text-left"
+                        >
+                          {r.fotos?.frente ? (
+                            <img src={r.fotos.frente} alt="" className="w-12 h-12 object-cover rounded-lg" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400"><i className="fa-solid fa-laptop" /></div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-800 text-sm truncate">{nombreEquipo(r.marca, r.modelo)}</p>
+                            <p className="text-xs text-slate-400 font-mono">{r.codigo} · {r.serie || 'sin serie'}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="form-label">Marca *</label>
+                  <input className="form-input uppercase" value={form.marca} onChange={e => setForm({ ...form, marca: e.target.value })} placeholder="LENOVO" />
+                </div>
+                <div>
+                  <label className="form-label">Modelo *</label>
+                  <input className="form-input uppercase" value={form.modelo} onChange={e => setForm({ ...form, modelo: e.target.value })} placeholder="THINKPAD T520" />
+                </div>
+                <div>
+                  <label className="form-label">Serie *</label>
+                  <input className="form-input uppercase" value={form.serie} onChange={e => setForm({ ...form, serie: e.target.value })} placeholder="R9-XXXX" />
                 </div>
               </div>
             )}
 
-            {seleccionado && (
+            {pestana === 'inv' && modal.modo === 'editar' && (
+              <p className="text-xs text-slate-500 mb-3">Editando {seleccionado ? nombreEquipo(seleccionado.marca, seleccionado.modelo) : ''}</p>
+            )}
+
+            {((pestana === 'inv' && seleccionado) || pestana === 'manual') && (
               <div className="space-y-4">
-                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
-                  {seleccionado.fotos?.frente ? (
-                    <img src={seleccionado.fotos.frente} alt="" className="w-14 h-14 object-cover rounded-lg" />
-                  ) : (
-                    <div className="w-14 h-14 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400"><i className="fa-solid fa-laptop" /></div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-slate-800 text-sm">{nombreEquipo(seleccionado.marca, seleccionado.modelo)}</p>
-                    <p className="text-xs text-slate-400 font-mono">{seleccionado.codigo} · {seleccionado.serie || 'sin serie'}</p>
+                {pestana === 'inv' && (
+                  <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    {seleccionado.fotos?.frente ? (
+                      <img src={seleccionado.fotos.frente} alt="" className="w-14 h-14 object-cover rounded-lg" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400"><i className="fa-solid fa-laptop" /></div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-800 text-sm">{nombreEquipo(seleccionado.marca, seleccionado.modelo)}</p>
+                      <p className="text-xs text-slate-400 font-mono">{seleccionado.codigo} · {seleccionado.serie || 'sin serie'}</p>
+                    </div>
+                    {modal.modo === 'nuevo' && (
+                      <button onClick={() => setSeleccionado(null)} className="text-xs text-brand-600 font-bold hover:underline">Cambiar</button>
+                    )}
                   </div>
-                  {modal.modo === 'nuevo' && (
-                    <button onClick={() => setSeleccionado(null)} className="text-xs text-brand-600 font-bold hover:underline">Cambiar</button>
-                  )}
-                </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -422,10 +655,22 @@ export default function CentroReparaciones() {
       <ConfirmModal
         open={!!finItem}
         title="Finalizar reparación"
-        message={`¿Marcar como finalizada ${finItem ? nombreEquipo(finItem.marca, finItem.modelo) : ''}? El equipo volverá al inventario como 🔵 OK, listo para venta o entrega.`}
+        message={finItem?.origen === 'manual'
+          ? `¿Marcar como finalizada ${finItem?.nombre}? Salió del almacén, quedará registrado como terminado.`
+          : `¿Marcar como finalizada ${finItem ? finItem.nombre : ''}? El equipo volverá al inventario como 🔵 OK, listo para venta o entrega.`}
         confirmLabel="Sí, finalizar"
         onConfirm={finalizar}
         onCancel={() => setFinItem(null)}
+      />
+
+      <ConfirmModal
+        open={!!delItem}
+        title="Eliminar registro"
+        message={`¿Eliminar ${delItem?.nombre} (${delItem?.codigo}) del centro? No está en el inventario: se borrará definitivamente.`}
+        confirmLabel="Sí, eliminar"
+        onConfirm={eliminar}
+        onCancel={() => setDelItem(null)}
+        danger
       />
     </section>
   );
