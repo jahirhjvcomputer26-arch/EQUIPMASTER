@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useInventario } from '../context/InventarioContext';
 import { useNotify } from '../componentes/Notification';
 import { api } from '../services/api';
@@ -77,6 +77,9 @@ export default function CentroReparaciones() {
 
   const [finItem, setFinItem] = useState(null);
   const [delItem, setDelItem] = useState(null);
+  const [importando, setImportando] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     api.getCentroReparaciones().then(d => { setManuales(d); setCargandoManuales(false); })
@@ -312,6 +315,28 @@ export default function CentroReparaciones() {
     }
   };
 
+  const onSeleccionarArchivo = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImportando(true);
+    try {
+      const base64 = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result.split(',')[1]);
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
+      });
+      const res = await api.importarCentroReparaciones({ nombre: file.name, data: base64 });
+      setImportResult(res);
+      if (res.importados > 0) recargarManuales();
+    } catch (err) {
+      notify('Error', err.message, 'error');
+    } finally {
+      setImportando(false);
+    }
+  };
+
   const CardEquipo = ({ record }) => {
     const finalizada = record.estado === 'Finalizada';
     return (
@@ -400,7 +425,7 @@ export default function CentroReparaciones() {
           <h2 className="font-display text-2xl font-bold text-slate-900">Centro de Reparaciones</h2>
           <p className="text-slate-500 text-sm">Equipos en reparación o mantenimiento, del inventario o del almacén</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setShowFinalizadas(v => !v)}
             className={`px-4 py-3 rounded-xl text-sm font-bold border transition ${showFinalizadas ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`}
@@ -408,6 +433,23 @@ export default function CentroReparaciones() {
           >
             <i className="fa-solid fa-clock-rotate-left mr-1" /> Finalizadas ({finalizadas.length})
           </button>
+          <button
+            onClick={() => api.descargarPlantillaCentro().catch(err => notify('Error', err.message, 'error'))}
+            className="px-4 py-3 rounded-xl text-sm font-bold border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition"
+            title="Descargar plantilla Excel con las columnas esperadas"
+          >
+            <i className="fa-solid fa-file-arrow-down mr-1" /> Plantilla
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importando}
+            className="px-4 py-3 rounded-xl text-sm font-bold border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+            title="Importar equipos desde Excel"
+          >
+            <i className={`fa-solid ${importando ? 'fa-spinner fa-spin' : 'fa-file-import'} mr-1`} />
+            {importando ? 'Importando...' : 'Importar Excel'}
+          </button>
+          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={onSeleccionarArchivo} />
           <button onClick={abrirNuevo} className="btn-brand px-5 py-3 rounded-xl text-sm font-bold">
             <i className="fa-solid fa-plus mr-1" /> Registrar reparación
           </button>
@@ -672,6 +714,54 @@ export default function CentroReparaciones() {
         onCancel={() => setDelItem(null)}
         danger
       />
+
+      {importResult && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 animate-in fade-in">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setImportResult(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 animate-in zoom-in-95 slide-in-from-bottom-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2.5 rounded-full ${importResult.omitidos > 0 ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                <i className={`fa-solid ${importResult.omitidos > 0 ? 'fa-triangle-exclamation' : 'fa-file-import'} text-xl`} />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-lg">Importación completada</h3>
+                <p className="text-sm text-slate-500">Procesadas {importResult.total} filas del Excel</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+                <p className="text-3xl font-bold text-emerald-600">{importResult.importados}</p>
+                <p className="text-xs text-emerald-700 font-bold uppercase mt-1">Importados</p>
+              </div>
+              <div className={`rounded-xl p-4 text-center ${importResult.omitidos > 0 ? 'bg-amber-50 border border-amber-200' : 'bg-slate-50 border border-slate-200'}`}>
+                <p className={`text-3xl font-bold ${importResult.omitidos > 0 ? 'text-amber-600' : 'text-slate-500'}`}>{importResult.omitidos}</p>
+                <p className={`text-xs font-bold uppercase mt-1 ${importResult.omitidos > 0 ? 'text-amber-700' : 'text-slate-500'}`}>Omitidos</p>
+              </div>
+            </div>
+            {importResult.errores?.length > 0 && (
+              <div className="mt-4">
+                <p className="form-label">Detalle de filas omitidas</p>
+                <div className="max-h-44 overflow-y-auto space-y-1 pr-1">
+                  {importResult.errores.map((err, i) => (
+                    <p key={i} className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5">{err}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                onClick={() => api.descargarPlantillaCentro().catch(err => notify('Error', err.message, 'error'))}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
+              >
+                <i className="fa-solid fa-file-arrow-down mr-1" /> Plantilla
+              </button>
+              <button onClick={() => setImportResult(null)} className="btn-brand px-5 py-2.5 rounded-xl text-sm font-bold">
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

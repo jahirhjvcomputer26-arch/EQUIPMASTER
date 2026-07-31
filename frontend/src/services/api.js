@@ -45,6 +45,19 @@ export const api = {
   updateCentroReparacion: (id, body) => request(`/centro-reparaciones/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   finalizarCentroReparacion: (id) => request(`/centro-reparaciones/${id}/finalizar`, { method: 'POST' }),
   deleteCentroReparacion: (id) => request(`/centro-reparaciones/${id}`, { method: 'DELETE' }),
+  importarCentroReparaciones: (body) => request('/centro-reparaciones/importar', { method: 'POST', body: JSON.stringify(body) }),
+  descargarPlantillaCentro: async () => {
+    const token = localStorage.getItem('equipmaster_token');
+    const res = await fetch(`${API}/centro-reparaciones/plantilla`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error('Error al descargar plantilla');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Plantilla_Centro_Reparaciones.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
+  },
   getUsuarios: () => request('/usuarios/list'),
   updateRol: (body) => request('/usuarios/rol', { method: 'PUT', body: JSON.stringify(body) }),
   eliminarUsuario: (usuario) => request(`/usuarios/${usuario}`, { method: 'DELETE' }),
