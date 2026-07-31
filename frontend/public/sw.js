@@ -1,6 +1,6 @@
-const CACHE_NAME = 'equipmaster-v4';
-const STATIC_CACHE = 'equipmaster-static-v4';
-const API_CACHE = 'equipmaster-api-v4';
+const CACHE_NAME = 'equipmaster-v5';
+const STATIC_CACHE = 'equipmaster-static-v5';
+const API_CACHE = 'equipmaster-api-v5';
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
@@ -38,7 +38,7 @@ self.addEventListener('fetch', (e) => {
 
   if (request.mode === 'navigate') {
     e.respondWith(
-      fetch(request).then(res => {
+      fetch(request, { cache: 'no-store' }).then(res => {
         if (res.ok) {
           const clone = res.clone();
           caches.open(STATIC_CACHE).then(c => c.put(request, clone));
