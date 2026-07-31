@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { db } from '../services/firebase';
+import { fechaRegistroTs } from '../utils/inventario';
 
 const InventarioContext = createContext(null);
 
@@ -13,11 +14,7 @@ export function InventarioProvider({ children }) {
     const unsub = onValue(invRef, (snap) => {
       const data = snap.val();
       const items = data ? Object.values(data) : [];
-      items.sort((a, b) => {
-        const fa = a.fechaRegistro || '';
-        const fb = b.fechaRegistro || '';
-        return fb.localeCompare(fa);
-      });
+      items.sort((a, b) => fechaRegistroTs(b.fechaRegistro) - fechaRegistroTs(a.fechaRegistro));
       setInventario(items);
       setLoading(false);
     }, () => setLoading(false));

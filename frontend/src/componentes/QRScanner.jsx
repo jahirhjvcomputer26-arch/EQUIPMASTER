@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotify } from './Notification';
+import SmartFicha from './SmartFicha';
+import { useInventario } from '../context/InventarioContext';
+import { normalizarSerie } from '../utils/inventario';
 
 export default function QRScanner() {
   const [open, setOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [smartItem, setSmartItem] = useState(null);
   const scannerRef = useRef(null);
   const containerRef = useRef(null);
   const navigate = useNavigate();
   const { notify } = useNotify();
+  const { inventario } = useInventario();
 
   const startScanner = async () => {
     if (!containerRef.current) return;
@@ -51,6 +56,17 @@ export default function QRScanner() {
     setScanning(false);
   };
 
+  const buscarEquipo = (codigo, serie) => {
+    const c = (codigo || '').toUpperCase().trim();
+    const s = normalizarSerie(serie);
+    const item = inventario.find(i =>
+      (i.codigo || '').toUpperCase() === c ||
+      (i.sku || '').toUpperCase() === c ||
+      (s && normalizarSerie(i.serie) === s)
+    );
+    return item || null;
+  };
+
   const handleResult = async (text) => {
     await stopScanner();
     setOpen(false);
@@ -58,6 +74,12 @@ export default function QRScanner() {
     const code = text.trim().toUpperCase();
 
     if (code.startsWith('INV-')) {
+      const item = buscarEquipo(code);
+      if (item) {
+        setSmartItem(item);
+        notify('Equipo encontrado', `Abriendo ficha rápida de ${item.codigo}`, 'success');
+        return;
+      }
       navigate(`/inventario?editar=${code}`);
       notify('Equipo encontrado', `Abriendo ${code}...`, 'success');
       return;
@@ -66,6 +88,12 @@ export default function QRScanner() {
     if (code.includes('/consulta?q=')) {
       const url = new URL(code.startsWith('http') ? code : window.location.origin + code);
       const q = url.searchParams.get('q');
+      const item = q ? buscarEquipo(null, q) : null;
+      if (item) {
+        setSmartItem(item);
+        notify('Equipo encontrado', `Abriendo ficha rápida de ${item.codigo}`, 'success');
+        return;
+      }
       if (q) {
         navigate(`/base-de-datos?search=${encodeURIComponent(q)}`);
         notify('Búsqueda', `Buscando serie: ${q}`, 'success');
@@ -131,6 +159,10 @@ export default function QRScanner() {
             </div>
           </div>
         </div>
+      )}
+
+      {smartItem && (
+        <SmartFicha item={smartItem} onClose={() => setSmartItem(null)} />
       )}
     </>
   );
