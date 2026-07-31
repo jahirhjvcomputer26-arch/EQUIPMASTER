@@ -6,6 +6,7 @@ import { db } from '../services/firebase';
 import { useNotify } from '../componentes/Notification';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import { useInventario } from '../context/InventarioContext';
+import { nombreEquipo } from '../utils/inventario';
 
 const LABEL_SIZES = [
   { key: 'small', label: 'Pequeña (54×25mm)', w: 198, h: 90, mm: '54mm 25mm', fontTitle: 8, fontSub: 6, fontCode: 7 },
@@ -41,7 +42,7 @@ function EtiquetaUnica({ item, size }) {
           <img src={qrUrl} alt="QR" width={qrSize} height={qrSize} crossOrigin="anonymous" className="w-full h-full object-contain" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-bold text-slate-900 truncate" style={{ fontSize: s.fontTitle }}>{item.marca} {item.modelo}</p>
+          <p className="font-bold text-slate-900 truncate" style={{ fontSize: s.fontTitle }}>{nombreEquipo(item.marca, item.modelo)}</p>
           <p className="text-slate-500 truncate" style={{ fontSize: s.fontSub }}>{item.categoria} · {item.serie}</p>
           <p className="font-mono text-brand-700 font-bold mt-0.5" style={{ fontSize: s.fontCode }}>{item.codigo}</p>
         </div>

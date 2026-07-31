@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ref, get } from 'firebase/database';
 import { db } from '../services/firebase';
-import { badgeEstado, formatearFechaRegistro } from '../utils/inventario';
+import { badgeEstado, formatearFechaRegistro, nombreEquipo } from '../utils/inventario';
 
 export default function ConsultaPublica() {
   const [query, setQuery] = useState('');
@@ -71,7 +71,7 @@ export default function ConsultaPublica() {
             <div className="mt-6 border border-slate-200 rounded-2xl p-5 text-left space-y-3 animate-fade-in">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="font-display font-bold text-slate-900 leading-tight">{resultado.marca} {resultado.modelo}</p>
+                  <p className="font-display font-bold text-slate-900 leading-tight">{nombreEquipo(resultado.marca, resultado.modelo)}</p>
                   <p className="text-xs text-slate-500">{resultado.categoria}</p>
                 </div>
                 <span className={"px-3 py-1 rounded-full text-xs font-bold shrink-0 " + badgeEstado(resultado.estado)}>

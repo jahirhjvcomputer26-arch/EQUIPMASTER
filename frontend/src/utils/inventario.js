@@ -578,10 +578,14 @@ export function buscarSku(modelo, procesador) {
   const m = modelo.toUpperCase().trim();
   if (procesador) {
     const p = procesador.toUpperCase().trim();
-    const exacto = SKU_TABLE.find(e => e.modelo === m && e.procesador === p);
+    let exacto = SKU_TABLE.find(e => e.modelo === m && e.procesador === p);
+    if (exacto) return exacto.sku;
+    exacto = SKU_TABLE.find(e => e.modelo.toUpperCase().endsWith(m) && e.procesador === p);
     if (exacto) return exacto.sku;
   }
-  const soloModelo = SKU_TABLE.find(e => e.modelo === m);
+  let soloModelo = SKU_TABLE.find(e => e.modelo === m);
+  if (soloModelo) return soloModelo.sku;
+  soloModelo = SKU_TABLE.find(e => e.modelo.toUpperCase().endsWith(m));
   if (soloModelo) return soloModelo.sku;
   return null;
 }
@@ -591,8 +595,22 @@ export function buscarPorSku(sku) {
   const s = sku.toUpperCase().trim();
   const match = SKU_TABLE.find(e => e.sku === s);
   if (!match) return null;
-  const marca = match.modelo.split(' ')[0];
-  return { modelo: match.modelo, procesador: match.procesador, marca, ram: match.ram || '', almacenamiento: match.almacenamiento || '' };
+  const words = match.modelo.trim().split(/\s+/);
+  const marca = words[0];
+  const modelo = MARCAS_CONOCIDAS.includes(marca.toUpperCase())
+    ? words.slice(1).join(' ')
+    : match.modelo;
+  return { modelo, procesador: match.procesador, marca, ram: match.ram || '', almacenamiento: match.almacenamiento || '' };
+}
+
+export function nombreEquipo(marca, modelo) {
+  const m = (marca || '').trim();
+  const mo = (modelo || '').trim();
+  if (!mo) return m;
+  if (!m) return mo;
+  const primera = mo.split(/\s+/)[0] || '';
+  if (primera.toUpperCase() === m.toUpperCase()) return mo;
+  return `${m} ${mo}`;
 }
 
 export function derivarModeloComercial(marca, modelo) {
