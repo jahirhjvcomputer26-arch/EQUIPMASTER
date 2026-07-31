@@ -27,6 +27,7 @@ const menuGroups = [
   ]},
   { label: 'Servicio', items: [
     { to: '/reparaciones', icon: 'fa-toolbox', label: 'Reparaciones' },
+    { to: '/centro-reparaciones', icon: 'fa-screwdriver-wrench', label: 'Centro Reparaciones' },
     { to: '/tickets', icon: 'fa-ticket', label: 'Tickets' },
     { to: '/etiquetas', icon: 'fa-tag', label: 'Etiquetas' },
   ]},
@@ -50,6 +51,7 @@ const ROUTE_LABELS = {
   '/devoluciones': 'Devoluciones',
   '/prestamos': 'Préstamos',
   '/reparaciones': 'Reparaciones',
+  '/centro-reparaciones': 'Centro Reparaciones',
   '/tickets': 'Tickets',
   '/etiquetas': 'Etiquetas',
   '/reportes': 'Reportes',

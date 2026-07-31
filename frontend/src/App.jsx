@@ -17,6 +17,7 @@ import Actividad from './pages/Actividad';
 import NotFound from './pages/NotFound';
 import BaseDatos from './pages/BaseDatos';
 import Reparaciones from './pages/Reparaciones';
+import CentroReparaciones from './pages/CentroReparaciones';
 import ConsultaPublica from './pages/ConsultaPublica';
 import FichaEquipo from './pages/FichaEquipo';
 import FichaTecnicaV2 from './pages/FichaTecnicaV2';
@@ -58,6 +59,7 @@ export default function App() {
                 <Route path="actividad" element={<Actividad />} />
                 <Route path="base-datos" element={<BaseDatos />} />
                 <Route path="reparaciones" element={<Reparaciones />} />
+                <Route path="centro-reparaciones" element={<CentroReparaciones />} />
                 <Route path="usuarios" element={<Usuarios />} />
                 <Route path="configuracion" element={<Configuracion />} />
                 <Route path="tickets" element={<Tickets />} />
