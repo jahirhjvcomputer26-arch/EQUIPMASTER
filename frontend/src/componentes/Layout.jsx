@@ -222,15 +222,14 @@ export default function Layout() {
         <div className="fixed inset-0 z-40 bg-brand-900/55 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 ${asideW} flex flex-col text-white transform transition-all duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ background: 'linear-gradient(180deg, #0018B0 0%, #000856 100%)' }}>
-        <div className={`p-4 border-b border-white/10 flex items-center justify-center gap-2 ${collapsed ? 'flex-col' : ''}`}>
-          <div className="bg-white rounded-xl p-1.5 shadow-md shrink-0">
+      <aside className={`fixed inset-y-0 left-0 z-50 ${asideW} flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className={`p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-center gap-2 ${collapsed ? 'flex-col' : ''}`}>
+          <div className="bg-white border border-slate-200 dark:border-slate-600 rounded-xl p-1.5 shrink-0">
             <img src="/logo-empresa.png" alt="JV" className="h-8 w-8 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
           </div>
-          {!collapsed && <p className="text-[9px] text-white/50 font-semibold uppercase tracking-widest text-center">EquipMaster v2.1</p>}
+          {!collapsed && <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-widest text-center">EquipMaster v3.0</p>}
           <button onClick={() => setCollapsed(c => !c)} title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-            className="absolute -right-3 top-6 w-6 h-6 rounded-full bg-white text-brand-700 shadow-md flex items-center justify-center text-xs hover:scale-110 transition hidden lg:flex">
+            className="absolute -right-3 top-6 w-6 h-6 rounded-full bg-white text-brand-700 border border-slate-200 shadow-md flex items-center justify-center text-xs hover:scale-110 transition hidden lg:flex">
             <i className={`fa-solid ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`} />
           </button>
         </div>
@@ -238,14 +237,14 @@ export default function Layout() {
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
           {!collapsed && (
             <NavLink to="/inventario"
-              className="flex items-center justify-center gap-2 w-full py-2.5 mb-2 rounded-xl bg-white text-brand-700 text-sm font-extrabold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all"
+              className="flex items-center justify-center gap-2 w-full py-2.5 mb-2 rounded-xl bg-brand-600 text-white text-sm font-extrabold shadow-sm hover:bg-brand-700 transition-all"
               onClick={() => setSidebarOpen(false)}>
               <i className="fa-solid fa-plus-circle" /> Registrar equipo
             </NavLink>
           )}
           {collapsed && (
             <NavLink to="/inventario" title="Registrar equipo"
-              className="flex items-center justify-center w-full py-2.5 mb-2 rounded-xl bg-white text-brand-700 shadow-lg hover:shadow-xl transition-all"
+              className="flex items-center justify-center w-full py-2.5 mb-2 rounded-xl bg-brand-600 text-white shadow-sm hover:bg-brand-700 transition-all"
               onClick={() => setSidebarOpen(false)}>
               <i className="fa-solid fa-plus-circle text-lg" />
             </NavLink>
@@ -253,9 +252,9 @@ export default function Layout() {
           {menuGroups.filter(g => !g.adminOnly || user?.rol === 'admin').map(group => (
             <div key={group.label}>
               {!collapsed && (
-                <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest px-3 pt-2.5 pb-1">{group.label}</p>
+                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 pt-2.5 pb-1">{group.label}</p>
               )}
-              {collapsed && <div className="border-t border-white/10 my-1.5" />}
+              {collapsed && <div className="border-t border-slate-100 dark:border-slate-800 my-1.5" />}
               {group.items.map(l => (
                 l.external ? (
                   <a key={l.to} href={l.to} target="_blank" rel="noopener noreferrer" title={l.label}
@@ -276,7 +275,7 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className={`p-3 border-t border-white/10 space-y-2 ${collapsed ? 'flex flex-col items-center' : ''}`}>
+        <div className={`p-3 border-t border-slate-100 dark:border-slate-800 space-y-2 ${collapsed ? 'flex flex-col items-center' : ''}`}>
           <NavLink to="/perfil" title="Mi Cuenta"
             className={({ isActive }) => `sidebar-nav-btn ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-0' : 'text-xs'}`}
             onClick={() => setSidebarOpen(false)}>
@@ -286,12 +285,12 @@ export default function Layout() {
 
           <div className={`flex ${collapsed ? 'flex-col' : 'items-center'} gap-2`}>
             <button onClick={toggleDark} title={dark ? 'Modo claro' : 'Modo oscuro'}
-              className={`${collapsed ? 'w-full' : 'flex-1'} py-2 px-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition flex items-center justify-center gap-1`}>
+              className={`${collapsed ? 'w-full' : 'flex-1'} py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition flex items-center justify-center gap-1`}>
               <i className={`fa-solid ${dark ? 'fa-sun' : 'fa-moon'}`} />
               {!collapsed && (dark ? 'Claro' : 'Oscuro')}
             </button>
             <button onClick={handleLogout} title="Cerrar sesión"
-              className={`py-2 px-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition flex items-center justify-center ${collapsed ? 'w-full' : ''}`}>
+              className={`py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition flex items-center justify-center ${collapsed ? 'w-full' : ''}`}>
               <i className="fa-solid fa-right-from-bracket" />
             </button>
           </div>

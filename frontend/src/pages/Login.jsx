@@ -89,7 +89,7 @@ export default function Login() {
             {loading ? 'Procesando...' : modo === 'login' ? 'Entrar al sistema' : 'Crear cuenta'}
           </button>
         </form>
-        <p className="text-[11px] text-slate-400 mt-6">JV COMPUTER · Sistema de inventario</p>
+        <p className="text-[11px] text-slate-400 mt-6">JV COMPUTER · EquipMaster v3.0</p>
       </div>
     </div>
   );
