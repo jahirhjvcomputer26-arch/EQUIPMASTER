@@ -122,7 +122,7 @@ export default function Etiquetas() {
             <p>1. En el diálogo de impresión elige tu impresora térmica y selecciona el tamaño de papel {size === 'small' ? '54×25 mm' : size === 'large' ? '100×70 mm' : '100×50 mm'} (o papel personalizado).</p>
             <p>2. Escala al 100%, márgenes "Ninguno" y desactiva "Encabezados y pies de página".</p>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex justify-center">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex justify-center print-only">
             <EtiquetaUnica item={item} size={size} />
           </div>
         </div>
@@ -205,7 +205,7 @@ export default function Etiquetas() {
       </div>
     </section>
 
-    <div className="print:block hidden">
+    <div className="print:block hidden print-only">
       <style>{printStyles(size)}</style>
       <MultiEtiquetas items={selectedItems} size={size} />
     </div>
