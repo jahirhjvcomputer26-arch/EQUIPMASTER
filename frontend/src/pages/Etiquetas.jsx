@@ -107,7 +107,8 @@ export default function Etiquetas() {
   }
 
   return (
-    <section className="space-y-6">
+    <>
+    <section className="space-y-6 no-print">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-2xl font-bold text-slate-900">Etiquetas</h2>
@@ -178,11 +179,12 @@ export default function Etiquetas() {
         </div>
         {filtered.length === 0 && <p className="p-8 text-center text-slate-400 text-sm">No se encontraron equipos</p>}
       </div>
-
-      <div className="print:block hidden">
-        <MultiEtiquetas items={selectedItems} size={size} />
-      </div>
     </section>
+
+    <div className="print:block hidden">
+      <MultiEtiquetas items={selectedItems} size={size} />
+    </div>
+    </>
   );
 }
 

@@ -222,7 +222,7 @@ export default function Layout() {
         <div className="fixed inset-0 z-40 bg-brand-900/55 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 ${asideW} flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 ${asideW} flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} no-print`}>
         <div className={`p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-center gap-2 ${collapsed ? 'flex-col' : ''}`}>
           <div className="bg-white border border-slate-200 dark:border-slate-600 rounded-xl p-1.5 shrink-0">
             <img src="/logo-empresa.png" alt="JV" className="h-8 w-8 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
@@ -301,7 +301,7 @@ export default function Layout() {
       <ScrollToTop />
 
       <div className={`flex-1 flex flex-col min-w-0 ${mlW} transition-all duration-300`}>
-        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
+        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 no-print">
           <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg text-brand-600 lg:hidden">
             <i className="fa-solid fa-bars text-lg" />
           </button>
