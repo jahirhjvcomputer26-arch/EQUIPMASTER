@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useInventario } from '../context/InventarioContext';
 import { useNotify } from '../componentes/Notification';
-import { badgeEstado } from '../utils/inventario';
+import { badgeEstado, formatearFechaRegistro } from '../utils/inventario';
 import { api } from '../services/api';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import jsPDF from 'jspdf';
@@ -223,7 +223,7 @@ export default function Reportes() {
       rows: resultados.items.map(i => [
         i.codigo, i.marca, i.modelo, i.categoria,
         i.procesador || '-', i.ram || '-', i.almacenamiento || '-',
-        i.estado, i.tecnico || '-', i.fechaRegistro || '-'
+        i.estado, i.tecnico || '-', formatearFechaRegistro(i.fechaRegistro) || '-'
       ]),
       fileName: `Reporte_Inventario_${new Date().toISOString().slice(0, 10)}.pdf`
     });
@@ -242,7 +242,7 @@ export default function Reportes() {
       rows: ventasData.items.map(i => [
         i.codigo, i.marca, i.modelo, i.estado,
         `$${Number(i.precio || 0).toLocaleString('es-MX')}`,
-        i.metodo, i.cliente, i.fechaRegistro || '-'
+        i.metodo, i.cliente, formatearFechaRegistro(i.fechaRegistro) || '-'
       ]),
       fileName: `Reporte_Ventas_${new Date().toISOString().slice(0, 10)}.pdf`
     });
@@ -420,7 +420,7 @@ export default function Reportes() {
                           <td className="px-6 py-4 text-xs text-slate-600" data-label="Especs">{item.procesador}<br />{item.ram} / {item.almacenamiento}</td>
                           <td className="px-6 py-4" data-label="Estado"><span className={`px-2.5 py-1 rounded-full text-xs font-bold ${badgeEstado(item.estado)}`}>{item.estado}</span></td>
                           <td className="px-6 py-4 text-xs" data-label="Técnico">{item.tecnico || '—'}</td>
-                          <td className="px-6 py-4 text-xs text-slate-400" data-label="Fecha">{item.fechaRegistro}</td>
+                          <td className="px-6 py-4 text-xs text-slate-400" data-label="Fecha">{formatearFechaRegistro(item.fechaRegistro)}</td>
                         </tr>
                       ))}
                     </tbody>

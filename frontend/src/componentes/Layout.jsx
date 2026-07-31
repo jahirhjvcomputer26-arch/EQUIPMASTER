@@ -7,6 +7,7 @@ import { db } from '../services/firebase';
 import { api } from '../services/api';
 import { useNotify } from './Notification';
 import { useInventario } from '../context/InventarioContext';
+import { fechaRegistroTs } from '../utils/inventario';
 import OfflineBanner from './OfflineBanner';
 import SearchModal from './SearchModal';
 import QRScanner from './QRScanner';
@@ -177,9 +178,10 @@ export default function Layout() {
         if (item.estado?.includes('🟠') || item.estado?.includes('🟡')) {
           alertas.push({ id: `${item.codigo}-pendiente`, mensaje: `${item.codigo} pendiente`, detalle: `${item.estado} · ${item.marca} ${item.modelo}`, icon: 'fa-clock', color: 'text-orange-500', prioridad: 'pendiente' });
         }
-        if (item.tecnico && item.fechaRegistro) {
-          const dias = Math.floor((Date.now() - new Date(item.fechaRegistro).getTime()) / (1000*60*60*24));
-          if (dias > 30 && !item.flujoSalida && !item.flujoVentaML) {
+          const fTs = fechaRegistroTs(item.fechaRegistro);
+          if (item.tecnico && !isNaN(fTs)) {
+            const dias = Math.floor((Date.now() - fTs) / (1000 * 60 * 60 * 24));
+            if (dias > 30 && !item.flujoSalida && !item.flujoVentaML) {
             alertas.push({ id: `${item.codigo}-antiguo`, mensaje: `${item.codigo} 30+ días`, detalle: `${item.marca} ${item.modelo} · ${dias} días`, icon: 'fa-hourglass-half', color: 'text-cyan-500', prioridad: 'aviso' });
           }
         }

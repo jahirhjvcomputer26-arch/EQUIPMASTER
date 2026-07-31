@@ -5,7 +5,7 @@ import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { api } from '../services/api';
 import { useNotify } from '../componentes/Notification';
 import { useInventario } from '../context/InventarioContext';
-import { COLORES_ESTADO, ESTADOS_STOCK, TECNICOS } from '../utils/inventario';
+import { COLORES_ESTADO, ESTADOS_STOCK, TECNICOS, parseFechaRegistro, fechaRegistroTs, formatearFechaRegistro, esMismoDia } from '../utils/inventario';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import { SkeletonCards, SkeletonChart } from '../componentes/Skeleton';
 
@@ -63,7 +63,7 @@ export default function Dashboard() {
     const desde = fechaDesde ? new Date(fechaDesde) : null;
     const hasta = fechaHasta ? new Date(fechaHasta + 'T23:59:59') : null;
     const filtrado = desde || hasta ? inventario.filter(item => {
-      const f = item.fechaRegistro ? new Date(item.fechaRegistro) : null;
+      const f = parseFechaRegistro(item.fechaRegistro);
       if (!f) return true;
       if (desde && f < desde) return false;
       if (hasta && f > hasta) return false;
@@ -77,8 +77,8 @@ export default function Dashboard() {
     const conteoMetodosPago = {};
     const tecStats = {};
 
-    const hoy = new Date().toISOString().slice(0, 10);
-    const ultimaSemana = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const hoy = new Date();
+    const ultimaSemanaTs = Date.now() - 7 * 24 * 60 * 60 * 1000;
     let registradosHoy = 0;
     let registradosSemana = 0;
     const recientes = [];
@@ -134,18 +134,20 @@ export default function Dashboard() {
       }
 
       if (item.fechaRegistro) {
-        const fStr = item.fechaRegistro.slice(0, 10);
-        if (fStr === hoy) registradosHoy++;
-        if (item.fechaRegistro >= ultimaSemana) registradosSemana++;
+        const fTs = fechaRegistroTs(item.fechaRegistro);
+        if (!isNaN(fTs)) {
+          const fD = new Date(fTs);
+          if (esMismoDia(fD, hoy)) registradosHoy++;
+          if (fTs >= ultimaSemanaTs) registradosSemana++;
+        }
       }
     });
 
     inventario.forEach(item => {
-      if (item.fechaRegistro && item.fechaRegistro >= ultimaSemana) {
-        recientes.push(item);
-      }
+      const fTs = fechaRegistroTs(item.fechaRegistro);
+      if (!isNaN(fTs) && fTs >= ultimaSemanaTs) recientes.push(item);
     });
-    recientes.sort((a, b) => (b.fechaRegistro || '').localeCompare(a.fechaRegistro || ''));
+    recientes.sort((a, b) => fechaRegistroTs(b.fechaRegistro) - fechaRegistroTs(a.fechaRegistro));
 
     let topPago = 'Ninguno';
     let maxPago = 0;
@@ -160,7 +162,8 @@ export default function Dashboard() {
     const mesesNombres = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     inventario.forEach(item => {
       if (!item.fechaRegistro) return;
-      const d = new Date(item.fechaRegistro);
+      const d = parseFechaRegistro(item.fechaRegistro);
+      if (!d) return;
       const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
       if (!meses[key]) meses[key] = 0;
       meses[key]++;
@@ -214,7 +217,10 @@ export default function Dashboard() {
 
     const antiguos = inventario
       .filter(i => !i.estado?.includes('🔴 VENDIDO') && i.fechaRegistro)
-      .map(i => ({ ...i, diasEnInventario: Math.floor((Date.now() - new Date(i.fechaRegistro).getTime()) / (1000*60*60*24)) }))
+      .map(i => {
+        const fTs = fechaRegistroTs(i.fechaRegistro);
+        return { ...i, diasEnInventario: isNaN(fTs) ? 0 : Math.floor((Date.now() - fTs) / (1000 * 60 * 60 * 24)) };
+      })
       .sort((a, b) => b.diasEnInventario - a.diasEnInventario)
       .slice(0, 10);
 
@@ -330,7 +336,7 @@ export default function Dashboard() {
                     <td className="py-2 text-slate-600">{item.modelo}</td>
                     <td className="py-2 text-slate-500">{item.tecnico}</td>
                     <td className="py-2"><span className="text-[10px] font-bold">{item.estado}</span></td>
-                    <td className="py-2 text-slate-400 font-mono">{item.fechaRegistro?.slice(0, 10)}</td>
+                    <td className="py-2 text-slate-400 font-mono">{formatearFechaRegistro(item.fechaRegistro)}</td>
                   </tr>
                 ))}
               </tbody>

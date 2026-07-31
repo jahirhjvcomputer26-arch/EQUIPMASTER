@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useInventario } from '../context/InventarioContext';
 import { useNotify } from '../componentes/Notification';
-import { CATEGORIAS, ESTADOS, RAM_OPTIONS, STORAGE_OPTIONS, TECNICOS, GENERACION_OPTIONS, TIPO_RAM_OPTIONS, RESOLUCION_OPTIONS, ANIO_OPTIONS, esEstadoML, generarCodigoSiguiente, buscarSku, buscarPorSku, aprenderSku, derivarModeloComercial } from '../utils/inventario';
+import { CATEGORIAS, ESTADOS, RAM_OPTIONS, STORAGE_OPTIONS, TECNICOS, GENERACION_OPTIONS, TIPO_RAM_OPTIONS, RESOLUCION_OPTIONS, ANIO_OPTIONS, esEstadoML, generarCodigoSiguiente, buscarSku, buscarPorSku, aprenderSku, derivarModeloComercial, nuevaFechaRegistro } from '../utils/inventario';
 import { getTemplate, CHECKLIST_ICONS } from '../utils/formTemplates';
 import SmartProgressBar from '../componentes/SmartProgressBar';
 import VisualChecklist from '../componentes/VisualChecklist';
@@ -307,7 +307,7 @@ export default function Inventario() {
       wifi: form.wifi,
       bluetooth: form.bluetooth,
       fotos: Object.keys(form.fotos).length > 0 ? form.fotos : existente?.fotos || {},
-      fechaRegistro: existente?.fechaRegistro || new Date().toLocaleString(),
+      fechaRegistro: existente?.fechaRegistro || nuevaFechaRegistro(),
       flujoSalida: existente?.flujoSalida || null,
       flujoVentaML: existente?.flujoVentaML || null,
       flujoDevolucion: existente?.flujoDevolucion || null,

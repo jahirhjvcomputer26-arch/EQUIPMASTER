@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useInventario } from '../context/InventarioContext';
 import { useNotify } from '../componentes/Notification';
-import { badgeEstado, ESTADOS } from '../utils/inventario';
+import { badgeEstado, ESTADOS, fechaRegistroTs } from '../utils/inventario';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import { SkeletonTable } from '../componentes/Skeleton';
 
@@ -180,7 +180,9 @@ export default function BaseDatos() {
         if (quickFilter === 'sin_serie') return !i.serie || i.serie.trim() === '' || i.serie === 'N/A';
         if (quickFilter === 'antiguedad_30' || quickFilter === 'antiguedad_60' || quickFilter === 'antiguedad_90') {
           if (!i.fechaRegistro) return false;
-          const dias = Math.floor((hoy - new Date(i.fechaRegistro)) / 86400000);
+          const fTs = fechaRegistroTs(i.fechaRegistro);
+          if (isNaN(fTs)) return false;
+          const dias = Math.floor((hoy - fTs) / 86400000);
           const min = quickFilter === 'antiguedad_30' ? 30 : quickFilter === 'antiguedad_60' ? 60 : 90;
           return dias >= min;
         }
@@ -195,6 +197,11 @@ export default function BaseDatos() {
         if (sortKey === 'codigo') {
           const na = parseInt(va.replace('inv-', ''), 10) || 0;
           const nb = parseInt(vb.replace('inv-', ''), 10) || 0;
+          return sortDir === 'asc' ? na - nb : nb - na;
+        }
+        if (sortKey === 'fechaRegistro') {
+          const na = fechaRegistroTs(a.fechaRegistro) || 0;
+          const nb = fechaRegistroTs(b.fechaRegistro) || 0;
           return sortDir === 'asc' ? na - nb : nb - na;
         }
         return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);

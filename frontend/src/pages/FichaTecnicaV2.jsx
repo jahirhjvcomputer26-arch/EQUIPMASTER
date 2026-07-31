@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ref, get } from 'firebase/database';
 import { db } from '../services/firebase';
-import { badgeEstado, derivarModeloComercial } from '../utils/inventario';
+import { badgeEstado, derivarModeloComercial, formatearFechaRegistro } from '../utils/inventario';
 import { CHECKLIST_ICONS } from '../utils/formTemplates';
 
 const CHECKLIST_ITEMS = [
@@ -217,7 +217,7 @@ export default function FichaTecnicaV2() {
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 print:shadow-none print:border-slate-300">
             <SectionTitle icon="fa-calendar" title="Fechas" color="text-indigo-500" />
             <div className="space-y-1">
-              <Row label="Registro" value={item.fechaRegistro || '—'} />
+              <Row label="Registro" value={formatearFechaRegistro(item.fechaRegistro) || '—'} />
               <Row label="Revisión" value={item.fechaRevision || '—'} />
             </div>
           </div>

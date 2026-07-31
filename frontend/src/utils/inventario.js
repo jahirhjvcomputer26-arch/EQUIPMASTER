@@ -16,6 +16,45 @@ export const TIPO_RAM_OPTIONS = ['DDR3', 'DDR4', 'DDR5', 'LPDDR3', 'LPDDR4', 'LP
 export const RESOLUCION_OPTIONS = ['HD', 'HD+', 'FHD', 'FHD+', 'QHD', 'QHD+', '4K', 'NO APLICA'];
 export const ANIO_OPTIONS = ['NO APLICA', ...Array.from({ length: 20 }, (_, i) => String(2010 + i)).reverse()];
 
+export function parseFechaRegistro(f) {
+  if (!f) return null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(f)) return new Date(f);
+  const m = f.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[, ]*\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?/i);
+  if (!m) return new Date(f);
+  const [, a, b, y, hh, mm, ss, ampm] = m;
+  let d, mo;
+  if (ampm) { mo = +a; d = +b; }
+  else if (+a > 12) { d = +a; mo = +b; }
+  else if (+b > 12) { d = +b; mo = +a; }
+  else { d = +a; mo = +b; }
+  let hr = +hh || 0;
+  if (ampm) { if (/pm/i.test(ampm) && hr < 12) hr += 12; if (/am/i.test(ampm) && hr === 12) hr = 0; }
+  const dt = new Date(+y, mo - 1, d, hr, +mm || 0, +ss || 0);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+export function fechaRegistroTs(f) {
+  const dt = parseFechaRegistro(f);
+  return dt ? dt.getTime() : NaN;
+}
+
+export function nuevaFechaRegistro() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+export function formatearFechaRegistro(f) {
+  const dt = parseFechaRegistro(f);
+  if (!dt) return f || '';
+  const p = n => String(n).padStart(2, '0');
+  return `${p(dt.getDate())}/${p(dt.getMonth() + 1)}/${dt.getFullYear()} ${p(dt.getHours())}:${p(dt.getMinutes())}`;
+}
+
+export function esMismoDia(ts, otra) {
+  return ts.getFullYear() === otra.getFullYear() && ts.getMonth() === otra.getMonth() && ts.getDate() === otra.getDate();
+}
+
 export function esEstadoML(estado) {
   return estado?.includes('🟢');
 }
