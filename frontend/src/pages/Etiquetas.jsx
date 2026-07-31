@@ -28,7 +28,9 @@ const printStyles = (sizeKey) => {
 
 function EtiquetaUnica({ item, size }) {
   const s = LABEL_SIZES.find(l => l.key === size) || LABEL_SIZES[1];
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(item.codigo)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+    window.location.origin + '/consulta?q=' + item.codigo
+  )}`;
 
   return (
     <div className="inline-block border border-slate-300 rounded-lg overflow-hidden bg-white print-label" style={{ width: s.w, height: s.h, padding: 8 }}>

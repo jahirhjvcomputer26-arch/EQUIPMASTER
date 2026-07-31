@@ -56,9 +56,9 @@ export default function QRScanner() {
     setScanning(false);
   };
 
-  const buscarEquipo = (codigo, serie) => {
-    const c = (codigo || '').toUpperCase().trim();
-    const s = normalizarSerie(serie);
+  const buscarEquipo = (q) => {
+    const c = (q || '').toUpperCase().trim();
+    const s = normalizarSerie(q);
     const item = inventario.find(i =>
       (i.codigo || '').toUpperCase() === c ||
       (i.sku || '').toUpperCase() === c ||
@@ -88,7 +88,7 @@ export default function QRScanner() {
     if (code.includes('/consulta?q=')) {
       const url = new URL(code.startsWith('http') ? code : window.location.origin + code);
       const q = url.searchParams.get('q');
-      const item = q ? buscarEquipo(null, q) : null;
+      const item = q ? buscarEquipo(q) : null;
       if (item) {
         setSmartItem(item);
         notify('Equipo encontrado', `Abriendo ficha rápida de ${item.codigo}`, 'success');

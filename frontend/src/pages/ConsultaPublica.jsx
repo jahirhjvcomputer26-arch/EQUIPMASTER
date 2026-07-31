@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ref, get } from 'firebase/database';
 import { db } from '../services/firebase';
-import { badgeEstado } from '../utils/inventario';
+import { badgeEstado, formatearFechaRegistro } from '../utils/inventario';
 
 export default function ConsultaPublica() {
   const [query, setQuery] = useState('');
@@ -9,9 +9,8 @@ export default function ConsultaPublica() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const buscar = async (e) => {
-    e.preventDefault();
-    const q = query.toUpperCase().trim();
+  const consultar = async (texto) => {
+    const q = (texto || '').toUpperCase().trim();
     if (!q) return;
     setLoading(true);
     setError('');
@@ -22,7 +21,9 @@ export default function ConsultaPublica() {
       if (!data) { setError('No hay equipos registrados'); return; }
       const items = Object.values(data);
       const found = items.find(i =>
-        i.codigo?.toUpperCase() === q || i.serie?.toUpperCase() === q
+        i.codigo?.toUpperCase() === q ||
+        i.serie?.toUpperCase() === q ||
+        i.sku?.toUpperCase() === q
       );
       if (!found) { setError('Equipo no encontrado con ese código o serie'); return; }
       setResultado(found);
@@ -31,6 +32,19 @@ export default function ConsultaPublica() {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('q');
+    if (q) {
+      setQuery(q);
+      consultar(q);
+    }
+  }, []);
+
+  const buscar = (e) => {
+    e.preventDefault();
+    consultar(query);
   };
 
   return (
@@ -54,10 +68,13 @@ export default function ConsultaPublica() {
           {error && <p className="text-rose-600 text-sm mt-4 font-medium">{error}</p>}
 
           {resultado && (
-            <div className="mt-6 border border-slate-200 rounded-2xl p-5 text-left space-y-2 animate-fade-in">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-400 uppercase">Estado</span>
-                <span className={"px-3 py-1 rounded-full text-xs font-bold " + badgeEstado(resultado.estado)}>
+            <div className="mt-6 border border-slate-200 rounded-2xl p-5 text-left space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="font-display font-bold text-slate-900 leading-tight">{resultado.marca} {resultado.modelo}</p>
+                  <p className="text-xs text-slate-500">{resultado.categoria}</p>
+                </div>
+                <span className={"px-3 py-1 rounded-full text-xs font-bold shrink-0 " + badgeEstado(resultado.estado)}>
                   {resultado.estado}
                 </span>
               </div>
@@ -65,13 +82,16 @@ export default function ConsultaPublica() {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div><span className="text-slate-400 text-xs">Código</span><p className="font-mono font-bold">{resultado.codigo}</p></div>
                 <div><span className="text-slate-400 text-xs">Serie</span><p className="font-mono">{resultado.serie}</p></div>
+                <div><span className="text-slate-400 text-xs">SKU</span><p className="font-mono">{resultado.sku || 'N/A'}</p></div>
+                <div><span className="text-slate-400 text-xs">Ingreso</span><p>{formatearFechaRegistro(resultado.fechaRegistro)}</p></div>
               </div>
-              <div><span className="text-slate-400 text-xs">Equipo</span><p className="font-bold">{resultado.marca} {resultado.modelo}</p></div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
-                <div><span className="block text-slate-400">Procesador</span>{resultado.procesador}</div>
-                <div><span className="block text-slate-400">RAM / Disco</span>{resultado.ram} / {resultado.almacenamiento}</div>
+              <hr className="border-slate-100" />
+              <div className="space-y-1.5 text-sm">
+                <div className="flex justify-between gap-2"><span className="text-slate-400 text-xs shrink-0">Procesador</span><span className="text-right font-medium">{resultado.procesador || 'N/A'}</span></div>
+                <div className="flex justify-between gap-2"><span className="text-slate-400 text-xs shrink-0">Memoria RAM</span><span className="text-right font-medium">{resultado.ram ? `${resultado.ram}${resultado.tipoRam ? ' · ' + resultado.tipoRam : ''}` : 'N/A'}</span></div>
+                <div className="flex justify-between gap-2"><span className="text-slate-400 text-xs shrink-0">Disco duro</span><span className="text-right font-medium">{resultado.almacenamiento ? `${resultado.almacenamiento}${resultado.tipoDisco ? ' · ' + resultado.tipoDisco : ''}` : 'N/A'}</span></div>
+                <div className="flex justify-between gap-2"><span className="text-slate-400 text-xs shrink-0">Gráfica</span><span className="text-right font-medium">{resultado.grafica || 'N/A'}</span></div>
               </div>
-              {resultado.fechaIngreso && <p className="text-[10px] text-slate-400">Registrado: {resultado.fechaIngreso}</p>}
             </div>
           )}
         </div>
