@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@custom-variant print (@media print);
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; }
+}
+
 @theme {
   --color-brand-50: #eef0ff;
   --color-brand-500: #0018B0;
