@@ -53,7 +53,12 @@ function estadoInfo(key) {
 
 function BadgeEstado({ estado }) {
   const e = estadoInfo(estado);
-  return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${e.text} ${e.border} ${e.bg} dark:!text-slate-100`}>{e.label}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${e.text} ${e.border} ${e.bg} dark:bg-slate-800 dark:border-slate-600 dark:!text-slate-100`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${e.dot}`} />
+      {e.label}
+    </span>
+  );
 }
 
 function BadgePrioridad({ prioridad }) {
