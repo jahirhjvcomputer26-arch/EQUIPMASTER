@@ -18,10 +18,10 @@ const ESTADOS = [
 ];
 
 const PRIORIDADES = {
-  critica: { label: 'Crítica', color: 'text-red-700 bg-red-50 border-red-200', icon: 'fa-fire' },
-  alta: { label: 'Alta', color: 'text-orange-600 bg-orange-50 border-orange-200', icon: 'fa-arrow-up' },
-  media: { label: 'Media', color: 'text-amber-600 bg-amber-50 border-amber-200', icon: 'fa-minus' },
-  baja: { label: 'Baja', color: 'text-slate-500 bg-slate-50 border-slate-200', icon: 'fa-arrow-down' },
+  critica: { label: 'Crítica', selected: 'bg-red-600 text-white border-red-600', color: 'text-red-700 bg-red-50 border-red-200', icon: 'fa-fire' },
+  alta: { label: 'Alta', selected: 'bg-orange-500 text-white border-orange-500', color: 'text-orange-600 bg-orange-50 border-orange-200', icon: 'fa-arrow-up' },
+  media: { label: 'Media', selected: 'bg-amber-500 text-white border-amber-500', color: 'text-amber-600 bg-amber-50 border-amber-200', icon: 'fa-minus' },
+  baja: { label: 'Baja', selected: 'bg-slate-600 text-white border-slate-600', color: 'text-slate-500 bg-slate-50 border-slate-200', icon: 'fa-arrow-down' },
 };
 
 const MAPA_LEGACY = { abierto: 'pendiente', en_proceso: 'en_reparacion', resuelto: 'reparado' };
@@ -416,7 +416,7 @@ export default function Tickets() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setModalOpen(false)}>
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg animate-slide-up" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <h3 className="text-lg font-bold text-slate-800 dark:!text-slate-100">
                 <i className={`fa-solid ${editando ? 'fa-pen' : 'fa-plus'} text-brand-500 mr-2`} />
@@ -444,10 +444,13 @@ export default function Tickets() {
                 <div className="grid grid-cols-2 gap-2">
                   {Object.entries(PRIORIDADES).map(([key, p]) => (
                     <button key={key} type="button" onClick={() => setForm(f => ({ ...f, prioridad: key }))}
-                      className={`py-2 rounded-xl text-sm font-bold border-2 transition ${
-                        form.prioridad === key ? `${p.color} border-current` : 'border-slate-200 dark:border-slate-600 text-slate-400 dark:!text-slate-400 hover:border-slate-300'
+                      className={`cursor-pointer py-2 rounded-xl text-sm font-bold border-2 transition flex items-center justify-center gap-1.5 ${
+                        form.prioridad === key
+                          ? p.selected
+                          : 'border-slate-200 dark:border-slate-600 text-slate-400 dark:!text-slate-400 hover:border-slate-300 hover:text-slate-600'
                       }`}>
-                      <i className={`fa-solid ${p.icon} mr-1`} />{p.label}
+                      {form.prioridad === key && <i className="fa-solid fa-check text-[10px]" />}
+                      <i className={`fa-solid ${p.icon}`} />{p.label}
                     </button>
                   ))}
                 </div>
