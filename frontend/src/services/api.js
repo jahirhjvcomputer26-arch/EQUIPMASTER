@@ -92,9 +92,12 @@ export const api = {
     const qs = new URLSearchParams(params).toString();
     return request(`/tickets${qs ? '?' + qs : ''}`);
   },
+  getTicket: (id) => request(`/tickets/${id}`),
+  getTecnicos: () => request('/tickets/tecnicos'),
   crearTicket: (body) => request('/tickets', { method: 'POST', body: JSON.stringify(body) }),
   actualizarTicket: (id, body) => request(`/tickets/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   agregarNotaTicket: (id, texto) => request(`/tickets/${id}/nota`, { method: 'POST', body: JSON.stringify({ texto }) }),
+  reabrirTicket: (id) => request(`/tickets/${id}/reabrir`, { method: 'POST' }),
   eliminarTicket: (id) => request(`/tickets/${id}`, { method: 'DELETE' }),
   detectHardware: () => request('/hardware/detect'),
   sendReportEmail: (body) => request('/reportes/email', { method: 'POST', body: JSON.stringify(body) }),

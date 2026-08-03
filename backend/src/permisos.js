@@ -30,7 +30,8 @@ export const PERMISOS_CATALOGO = [
 
   { key: 'ver_tickets', label: 'Ver Tickets', grupo: 'Tickets', desc: 'Consultar tickets y solicitudes' },
   { key: 'registrar_tickets', label: 'Crear Tickets', grupo: 'Tickets', desc: 'Levantar solicitudes de servicio' },
-  { key: 'gestionar_tickets', label: 'Gestionar Tickets', grupo: 'Tickets', desc: 'Asignar y cerrar tickets' },
+  { key: 'gestionar_tickets', label: 'Gestionar Tickets', grupo: 'Tickets', desc: 'Asignar, priorizar y cerrar tickets' },
+  { key: 'atender_tickets', label: 'Atender Tickets', grupo: 'Tickets', desc: 'Trabajar tickets asignados: diagnóstico, reparación, comentarios y estados' },
 
   { key: 'admin_usuarios', label: 'Administrar Usuarios', grupo: 'Usuarios', desc: 'Crear, editar, desactivar usuarios y roles' },
   { key: 'ver_auditoria', label: 'Ver Auditoría', grupo: 'Usuarios', desc: 'Consultar el historial de actividad' },
@@ -58,7 +59,7 @@ export const ROLES_DEFECTO = {
       ver_ventas: true, registrar_ventas: true, editar_ventas: true, eliminar_ventas: true,
       ver_prestamos: true, gestionar_prestamos: true,
       ver_reportes: true, exportar_excel: true,
-      ver_tickets: true, registrar_tickets: true, gestionar_tickets: true,
+      ver_tickets: true, registrar_tickets: true, gestionar_tickets: true, atender_tickets: true,
       subir_archivos: true,
     },
   },
@@ -72,7 +73,7 @@ export const ROLES_DEFECTO = {
       ver_reparaciones: true, aprobar_reparaciones: true,
       ver_prestamos: true, gestionar_prestamos: true,
       ver_reportes: true,
-      ver_tickets: true, registrar_tickets: true, gestionar_tickets: true,
+      ver_tickets: true, registrar_tickets: true, gestionar_tickets: false,
       subir_archivos: true,
     },
   },
@@ -93,7 +94,7 @@ export const ROLES_DEFECTO = {
       ver_inventario: true, ver_fichas: true,
       escanear_qr: true,
       ver_reparaciones: true, registrar_reparaciones: true, diagnostico_hardware: true,
-      ver_tickets: true, registrar_tickets: true,
+      ver_tickets: true, registrar_tickets: true, atender_tickets: true,
       subir_archivos: true,
     },
   },
@@ -166,13 +167,31 @@ export async function seedPermisos() {
     if (!rolesActuales) {
       await firebaseSet('roles', ROLES_DEFECTO);
     } else {
-      await firebaseSet('roles', { ...ROLES_DEFECTO, ...rolesActuales });
+      const merged = {};
+      for (const [key, def] of Object.entries(ROLES_DEFECTO)) {
+        const actual = rolesActuales[key] || {};
+        const pMerged = { ...(def.permisos || {}), ...(actual.permisos || {}) };
+        for (const [k, v] of Object.entries(def.permisos || {})) {
+          if (v === false) delete pMerged[k];
+        }
+        merged[key] = {
+          ...def,
+          ...actual,
+          permisos: pMerged,
+        };
+      }
+      for (const [key, val] of Object.entries(rolesActuales)) {
+        if (!merged[key]) merged[key] = val;
+      }
+      await firebaseSet('roles', merged);
     }
 
+    const catObj = {};
+    PERMISOS_CATALOGO.forEach(p => { catObj[p.key] = p; });
     if (!catalogActual) {
-      const catObj = {};
-      PERMISOS_CATALOGO.forEach(p => { catObj[p.key] = p; });
       await firebaseSet('permisosCatalog', catObj);
+    } else {
+      await firebaseSet('permisosCatalog', { ...catObj, ...catalogActual });
     }
 
     const users = await firebaseGet('usuarios');
