@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { loadPermisos, requirePerm, esSuperAdmin } from '../permisos.js';
+import { loadPermisos, requirePerm, esSuperAdmin, resolverPermisos } from '../permisos.js';
 import { firebaseGet, firebaseSet, firebaseDelete } from '../firebase.js';
 import { registrarActividad } from './actividad.js';
 
@@ -56,9 +56,13 @@ async function conHistorial(ticket, req, entry) {
 
 router.get('/tecnicos', requirePerm('ver_tickets'), async (_req, res) => {
   try {
-    const users = await firebaseGet('usuarios');
+    const [users, roles] = await Promise.all([firebaseGet('usuarios'), firebaseGet('roles')]);
     const lista = Object.entries(users || {})
-      .filter(([, u]) => u?.rol === 'tecnico' && u?.activo !== false)
+      .filter(([, u]) => {
+        if (u?.activo === false) return false;
+        const perms = resolverPermisos(u, roles);
+        return perms.all || perms.atender_tickets || perms.gestionar_tickets;
+      })
       .map(([claveU, u]) => ({ clave: claveU, nombre: u.nombre || claveU }));
     res.json(lista);
   } catch (err) {

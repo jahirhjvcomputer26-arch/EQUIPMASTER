@@ -492,7 +492,7 @@ export default function Tickets() {
                   {tecnicos.map(t => <option key={t.clave} value={t.clave}>{t.nombre}</option>)}
                 </select>
                 {tecnicos.length === 0 && (
-                  <p className="text-[10px] text-amber-600 mt-1">No hay usuarios con rol Técnico. Créalo en Administración de Usuarios.</p>
+                  <p className="text-[10px] text-amber-600 mt-1">No hay usuarios con permiso para atender tickets. Crea un rol Técnico o Admin en Administración de Usuarios.</p>
                 )}
               </div>
               <div>
