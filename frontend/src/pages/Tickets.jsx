@@ -572,9 +572,10 @@ export default function Tickets() {
                 <div className="flex flex-wrap items-center gap-2">
                   <select value={detail.estado} onChange={e => handleCambiarEstado(e.target.value)} disabled={saving}
                     className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:!text-slate-100 text-sm focus:ring-2 focus:ring-brand-300 outline-none">
-                    {(esAdmin ? ESTADOS : ESTADOS_TECNICO).map(e => (
-                      <option key={e} value={e}>{estadoActual(e).label}</option>
-                    ))}
+                    {(esAdmin ? ESTADOS : ESTADOS_TECNICO).map(e => {
+                      const clave = typeof e === 'string' ? e : e.key;
+                      return <option key={clave} value={clave}>{estadoActual(clave).label}</option>;
+                    })}
                   </select>
                   {esAdmin && (
                     <>
