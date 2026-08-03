@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm } from '../permisos.js';
 import { firebaseGet, firebaseSet } from '../firebase.js';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, loadPermisos());
 
 export async function registrarActividad(usuario, accion, detalle) {
   const id = `ACT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -18,7 +19,7 @@ export async function registrarActividad(usuario, accion, detalle) {
   return entrada;
 }
 
-router.get('/', async (req, res) => {
+router.get('/', requirePerm('ver_auditoria'), async (req, res) => {
   try {
     const data = await firebaseGet('actividad');
     const lista = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];

@@ -81,7 +81,7 @@ export default function Perfil() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-xl font-bold text-slate-900">{user?.nombre || 'Usuario'}</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${user?.rol === 'admin' ? 'bg-blue-100 text-blue-700' : user?.rol === 'ventas' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{user?.rol === 'admin' ? 'Administrador' : user?.rol === 'ventas' ? 'Ventas' : 'Técnico'}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${user?.rol === 'superadmin' || (user?.nivel ?? 0) >= 100 ? 'bg-purple-100 text-purple-700' : user?.rol === 'admin' ? 'bg-blue-100 text-blue-700' : user?.rol === 'ventas' ? 'bg-amber-100 text-amber-700' : user?.rol === 'supervisor' ? 'bg-orange-100 text-orange-700' : user?.rol === 'tecnico' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{user?.rol === 'superadmin' || (user?.nivel ?? 0) >= 100 ? 'Super Admin' : user?.rol === 'admin' ? 'Administrador' : user?.rol === 'ventas' ? 'Ventas' : user?.rol === 'supervisor' ? 'Supervisor' : user?.rol === 'tecnico' ? 'Técnico' : 'Usuario'}</span>
                   </div>
                   <p className="text-sm text-slate-500">
                     {info?.creado ? `Usuario desde ${new Date(info.creado).toLocaleDateString()}` : 'Miembro del sistema'}

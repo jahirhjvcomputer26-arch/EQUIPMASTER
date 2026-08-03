@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm } from '../permisos.js';
 import { firebaseGet, firebaseSet } from '../firebase.js';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, loadPermisos());
 
 const DEFAULT_CONFIG = {
   nombreEmpresa: 'JV COMPUTER',
@@ -20,7 +21,7 @@ const DEFAULT_CONFIG = {
   notasPie: 'Gracias por su preferencia',
 };
 
-router.get('/', async (req, res) => {
+router.get('/', requirePerm('config_sistema'), async (req, res) => {
   try {
     const config = await firebaseGet('configuracion/empresa');
     res.json({ ...DEFAULT_CONFIG, ...config });
@@ -44,7 +45,7 @@ router.get('/public', async (_req, res) => {
   }
 });
 
-router.put('/', async (req, res) => {
+router.put('/', requirePerm('config_sistema'), async (req, res) => {
   try {
     const allowed = ['nombreEmpresa', 'lema', 'direccion', 'telefono', 'email', 'website', 'rfc', 'logoBase64', 'colorPrimario', 'moneda', 'iva', 'notasPie'];
     const current = await firebaseGet('configuracion/empresa') || {};

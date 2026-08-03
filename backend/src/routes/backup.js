@@ -1,8 +1,11 @@
 import { Router } from 'express';
+import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm } from '../permisos.js';
 import { firebaseGet } from '../firebase.js';
 import { registrarActividad } from './actividad.js';
 
 const router = Router();
+router.use(authMiddleware, loadPermisos(), requirePerm('respaldos'));
 
 const PATHS = ['inventario', 'ventas', 'prestamos', 'reparaciones', 'actividad', 'usuarios', 'notificaciones'];
 

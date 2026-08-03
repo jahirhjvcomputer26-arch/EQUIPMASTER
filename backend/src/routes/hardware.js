@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm } from '../permisos.js';
 
 const router = Router();
+router.use(authMiddleware, loadPermisos());
 
-router.get('/detect', authMiddleware, async (req, res) => {
+router.get('/detect', requirePerm('diagnostico_hardware'), async (req, res) => {
   try {
     const hostname = require('os').hostname().toLowerCase();
     const cloudKeywords = ['render', 'aws', 'google', 'azure', 'heroku', 'railway', 'fly', 'docker', 'kubernetes'];

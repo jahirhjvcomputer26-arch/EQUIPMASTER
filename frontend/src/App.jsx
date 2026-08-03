@@ -36,6 +36,22 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" replace />;
 }
 
+function Guard({ perm, children }) {
+  const { can } = useAuth();
+  if (!can(perm)) {
+    return (
+      <section className="space-y-6 animate-fade-in">
+        <div className="panel p-12 text-center">
+          <i className="fa-solid fa-shield-halved text-4xl text-slate-300 dark:text-slate-600 mb-3" />
+          <p className="text-slate-500 dark:text-slate-400 font-bold">Acceso denegado (403)</p>
+          <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">No tienes permiso para ver esta sección.</p>
+        </div>
+      </section>
+    );
+  }
+  return children;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -48,23 +64,23 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
                 <Route index element={<Dashboard />} />
-                <Route path="inventario" element={<Inventario />} />
-                <Route path="ventas" element={<Ventas />} />
-                <Route path="mercadolibre" element={<MercadoLibre />} />
-                <Route path="devoluciones" element={<Devoluciones />} />
-                <Route path="prestamos" element={<Prestamos />} />
+                <Route path="inventario" element={<Guard perm="ver_inventario"><Inventario /></Guard>} />
+                <Route path="ventas" element={<Guard perm="ver_ventas"><Ventas /></Guard>} />
+                <Route path="mercadolibre" element={<Guard perm="ver_ventas"><MercadoLibre /></Guard>} />
+                <Route path="devoluciones" element={<Guard perm="ver_ventas"><Devoluciones /></Guard>} />
+                <Route path="prestamos" element={<Guard perm="ver_prestamos"><Prestamos /></Guard>} />
                 <Route path="perfil" element={<Perfil />} />
-                <Route path="reportes" element={<Reportes />} />
-                <Route path="alertas" element={<AlertasPanel />} />
-                <Route path="actividad" element={<Actividad />} />
-                <Route path="base-datos" element={<BaseDatos />} />
-                <Route path="reparaciones" element={<Reparaciones />} />
-                <Route path="centro-reparaciones" element={<CentroReparaciones />} />
-                <Route path="usuarios" element={<Usuarios />} />
-                <Route path="configuracion" element={<Configuracion />} />
-                <Route path="tickets" element={<Tickets />} />
-                <Route path="etiquetas" element={<Etiquetas />} />
-                <Route path="etiquetas/:codigo" element={<Etiquetas />} />
+                <Route path="reportes" element={<Guard perm="ver_reportes"><Reportes /></Guard>} />
+                <Route path="alertas" element={<Guard perm="ver_inventario"><AlertasPanel /></Guard>} />
+                <Route path="actividad" element={<Guard perm="ver_auditoria"><Actividad /></Guard>} />
+                <Route path="base-datos" element={<Guard perm="base_datos"><BaseDatos /></Guard>} />
+                <Route path="reparaciones" element={<Guard perm="ver_reparaciones"><Reparaciones /></Guard>} />
+                <Route path="centro-reparaciones" element={<Guard perm="ver_reparaciones"><CentroReparaciones /></Guard>} />
+                <Route path="usuarios" element={<Guard perm="admin_usuarios"><Usuarios /></Guard>} />
+                <Route path="configuracion" element={<Guard perm="config_sistema"><Configuracion /></Guard>} />
+                <Route path="tickets" element={<Guard perm="ver_tickets"><Tickets /></Guard>} />
+                <Route path="etiquetas" element={<Guard perm="generar_qr"><Etiquetas /></Guard>} />
+                <Route path="etiquetas/:codigo" element={<Guard perm="generar_qr"><Etiquetas /></Guard>} />
               </Route>
               <Route path="consulta" element={<ConsultaPublica />} />
               <Route path="ficha/:codigo" element={<FichaEquipo />} />

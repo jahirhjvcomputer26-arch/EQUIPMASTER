@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm } from '../permisos.js';
 import { firebaseGet, firebaseSet, firebaseUpdate, firebaseDelete } from '../firebase.js';
 import { registrarActividad } from './actividad.js';
 import * as XLSX from 'xlsx';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, loadPermisos());
 
 const NODE = 'centroReparaciones';
 
@@ -113,7 +114,7 @@ function normalizar(body, id) {
   };
 }
 
-router.get('/', async (_req, res) => {
+router.get('/', requirePerm('ver_reparaciones'), async (_req, res) => {
   try {
     const data = await firebaseGet(NODE);
     const list = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
@@ -123,7 +124,7 @@ router.get('/', async (_req, res) => {
   }
 });
 
-router.get('/plantilla', async (_req, res) => {
+router.get('/plantilla', requirePerm('ver_reparaciones'), async (_req, res) => {
   try {
     const filas = [{
       marca: 'LENOVO', modelo: 'THINKPAD T520', serie: 'R9-XXXX', categoria: 'Pantallas',
@@ -141,7 +142,7 @@ router.get('/plantilla', async (_req, res) => {
   }
 });
 
-router.post('/importar', async (req, res) => {
+router.post('/importar', requirePerm('registrar_reparaciones'), async (req, res) => {
   try {
     const { nombre, data } = req.body;
     if (!data) return res.status(400).json({ error: 'No se recibió ningún archivo' });
@@ -225,7 +226,7 @@ router.post('/importar', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requirePerm('registrar_reparaciones'), async (req, res) => {
   try {
     const { marca, modelo, serie } = req.body;
     if (!marca || !modelo || !serie) {
@@ -241,7 +242,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requirePerm('registrar_reparaciones'), async (req, res) => {
   try {
     const actual = await firebaseGet(`${NODE}/${req.params.id}`);
     if (!actual) return res.status(404).json({ error: 'Registro no encontrado' });
@@ -254,7 +255,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.post('/:id/finalizar', async (req, res) => {
+router.post('/:id/finalizar', requirePerm('aprobar_reparaciones'), async (req, res) => {
   try {
     const actual = await firebaseGet(`${NODE}/${req.params.id}`);
     if (!actual) return res.status(404).json({ error: 'Registro no encontrado' });
@@ -271,7 +272,7 @@ router.post('/:id/finalizar', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePerm('aprobar_reparaciones'), async (req, res) => {
   try {
     await firebaseDelete(`${NODE}/${req.params.id}`);
     res.json({ message: 'Registro eliminado' });

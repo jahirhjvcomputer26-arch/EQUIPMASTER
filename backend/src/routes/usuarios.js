@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm, esSuperAdmin, resolverPermisos, PERMISOS_CATALOGO } from '../permisos.js';
 import { claveUsuario, firebaseGet, firebaseSet, hashPassword } from '../firebase.js';
+import { registrarActividad } from './actividad.js';
 
 const router = Router();
 
@@ -28,15 +30,11 @@ function rateLimit(key, maxAttempts = 5, windowMs = 60000) {
   return { blocked: false };
 }
 
-router.post('/register', async (req, res) => {
-  const ip = req.ip || req.socket.remoteAddress;
-  const rl = rateLimit(`register:${ip}`, 3, 60000);
-  if (rl.blocked) return res.status(429).json({ error: `Demasiados intentos. Espera ${rl.retryAfter}s.` });
-
+router.post('/register', authMiddleware, loadPermisos(), requirePerm('admin_usuarios'), async (req, res) => {
   try {
-    const { usuario, password, confirmPassword } = req.body;
-    const nombre = (usuario || '').trim();
-    const clave = claveUsuario(nombre);
+    const { usuario, password, confirmPassword, nombre: nombreBody, rol, nivel, permisos } = req.body;
+    const nombre = (nombreBody || usuario || '').trim();
+    const clave = claveUsuario((usuario || nombre || '').trim());
 
     if (clave.length < 3) return res.status(400).json({ error: 'Usuario mínimo 3 caracteres' });
     if (!password || password.length < 4) return res.status(400).json({ error: 'Contraseña mínimo 4 caracteres' });
@@ -45,14 +43,23 @@ router.post('/register', async (req, res) => {
     const existente = await firebaseGet(`usuarios/${clave}`);
     if (existente) return res.status(409).json({ error: 'Ese usuario ya existe' });
 
+    const seraSuper = rol === 'superadmin' || Number(nivel) >= 100;
+    if (seraSuper && !esSuperAdmin(req.userRecord)) {
+      return res.status(403).json({ error: 'Solo el Super Administrador puede crear usuarios de nivel 100' });
+    }
+
     const datos = {
       nombre,
       password: await hashPassword(password),
-      rol: req.body.rol || 'tecnico',
+      rol: rol || 'usuario',
+      nivel: nivel !== undefined ? Number(nivel) : undefined,
+      activo: true,
+      permisos: permisos || {},
       creado: new Date().toISOString(),
     };
     await firebaseSet(`usuarios/${clave}`, datos);
-    res.status(201).json({ message: 'Cuenta creada', usuario: nombre });
+    registrarActividad(req.user?.nombre, 'USUARIO_CREADO', `${nombre} · rol: ${datos.rol}`);
+    res.status(201).json({ message: 'Usuario creado', usuario: nombre });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -71,6 +78,9 @@ router.post('/login', async (req, res) => {
     if (!registro || registro.password !== await hashPassword(password || '')) {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
     }
+    if (registro.activo === false) {
+      return res.status(403).json({ error: 'Tu cuenta está desactivada. Contacta al administrador.' });
+    }
 
     const token = jwt.sign(
       { usuario: clave, nombre: registro.nombre },
@@ -78,15 +88,30 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    res.json({ token, nombre: registro.nombre, usuario: registro.nombre, rol: registro.rol || 'tecnico' });
+    res.json({
+      token,
+      nombre: registro.nombre,
+      usuario: registro.nombre,
+      rol: registro.rol || 'usuario',
+      nivel: registro.nivel !== undefined ? Number(registro.nivel) : undefined,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-router.get('/me', authMiddleware, async (req, res) => {
+router.get('/me', authMiddleware, loadPermisos(), async (req, res) => {
   const registro = await firebaseGet(`usuarios/${req.user.usuario}`);
-  res.json({ nombre: req.user.nombre, usuario: req.user.nombre, rol: registro?.rol || 'tecnico', creado: registro?.creado || null });
+  res.json({
+    clave: req.user.usuario,
+    nombre: req.user.nombre,
+    usuario: req.user.nombre,
+    rol: registro?.rol || 'usuario',
+    nivel: registro?.nivel !== undefined ? Number(registro.nivel) : undefined,
+    activo: registro?.activo !== false,
+    permisos: req.permisos || {},
+    creado: registro?.creado || null,
+  });
 });
 
 router.post('/cambiar-password', authMiddleware, async (req, res) => {
@@ -134,33 +159,164 @@ router.put('/cambiar-nombre', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/list', authMiddleware, async (req, res) => {
-  const registro = await firebaseGet(`usuarios/${req.user.usuario}`);
-  if (!registro || registro.rol !== 'admin') return res.status(403).json({ error: 'Solo administradores' });
-  const all = await firebaseGet('usuarios');
+router.get('/roles', authMiddleware, loadPermisos(), requirePerm('admin_usuarios'), async (_req, res) => {
+  try {
+    const [roles, catalog] = await Promise.all([
+      firebaseGet('roles'),
+      firebaseGet('permisosCatalog'),
+    ]);
+    res.json({
+      roles: roles || {},
+      permisosCatalog: catalog ? Object.entries(catalog).map(([key, v]) => ({ key, ...v })) : PERMISOS_CATALOGO,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/roles/:rol', authMiddleware, loadPermisos(), requirePerm('admin_usuarios'), async (req, res) => {
+  try {
+    if (!esSuperAdmin(req.userRecord)) {
+      return res.status(403).json({ error: 'Solo el Super Administrador puede modificar roles y permisos' });
+    }
+    const { rol } = req.params;
+    const actual = await firebaseGet(`roles/${rol}`);
+    if (!actual) return res.status(404).json({ error: 'Rol no encontrado' });
+
+    const validKeys = new Set(PERMISOS_CATALOGO.map(p => p.key));
+    const permisos = {};
+    if (req.body.permisos) {
+      for (const [k, v] of Object.entries(req.body.permisos)) {
+        if (validKeys.has(k)) permisos[k] = !!v;
+      }
+    }
+
+    const rolesActuales = await firebaseGet('roles');
+    const rolesActualizados = { ...rolesActuales };
+    rolesActualizados[rol] = {
+      ...actual,
+      ...(req.body.nivel !== undefined && { nivel: Number(req.body.nivel) }),
+      ...(req.body.nombre !== undefined && { nombre: String(req.body.nombre).trim() }),
+      ...(req.body.color !== undefined && { color: String(req.body.color) }),
+      ...(req.body.descripcion !== undefined && { descripcion: String(req.body.descripcion) }),
+      ...(Object.keys(permisos).length > 0 && { permisos }),
+    };
+    await firebaseSet('roles', rolesActualizados);
+    registrarActividad(req.user?.nombre, 'ROL_EDITADO', `Rol ${rol} actualizado`);
+    res.json({ message: 'Rol actualizado', rol: rolesActualizados[rol] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/list', authMiddleware, loadPermisos(), requirePerm('admin_usuarios'), async (req, res) => {
+  const [all, roles] = await Promise.all([firebaseGet('usuarios'), firebaseGet('roles')]);
   const users = Object.entries(all || {}).map(([key, val]) => ({
-    usuario: key, nombre: val.nombre, rol: val.rol || 'tecnico', creado: val.creado,
-  }));
+    usuario: key,
+    nombre: val.nombre,
+    rol: val.rol || 'usuario',
+    nivel: val.nivel !== undefined ? Number(val.nivel) : undefined,
+    activo: val.activo !== false,
+    permisos: val.permisos || {},
+    creado: val.creado,
+  })).map(u => ({ ...u, permEfectivos: resolverPermisos(u, roles) }));
   res.json(users);
 });
 
-router.put('/rol', authMiddleware, async (req, res) => {
-  const registro = await firebaseGet(`usuarios/${req.user.usuario}`);
-  if (!registro || registro.rol !== 'admin') return res.status(403).json({ error: 'Solo administradores' });
+router.put('/update', authMiddleware, loadPermisos(), requirePerm('admin_usuarios'), async (req, res) => {
+  try {
+    const { usuario, nombre, rol, nivel, permisos, activo } = req.body;
+    const clave = claveUsuario((usuario || '').trim());
+    const target = await firebaseGet(`usuarios/${clave}`);
+    if (!target) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    const esSelf = clave === req.user.usuario;
+    const targetSuper = esSuperAdmin(target);
+    const nuevoSuper = (rol === 'superadmin') || (nivel !== undefined && Number(nivel) >= 100);
+
+    if (esSelf && (rol !== undefined || nivel !== undefined || permisos !== undefined || activo !== undefined)) {
+      return res.status(400).json({ error: 'No puedes modificar tu propio rango o estado desde aquí' });
+    }
+    if (targetSuper && !esSuperAdmin(req.userRecord)) {
+      return res.status(403).json({ error: 'No puedes modificar a un Super Administrador' });
+    }
+    if (nuevoSuper && !esSuperAdmin(req.userRecord)) {
+      return res.status(403).json({ error: 'Solo el Super Administrador puede promover a nivel 100' });
+    }
+
+    const validKeys = new Set(PERMISOS_CATALOGO.map(p => p.key));
+    const permisosFinal = {};
+    if (permisos) {
+      for (const [k, v] of Object.entries(permisos)) {
+        if (validKeys.has(k)) permisosFinal[k] = !!v;
+      }
+    }
+
+    const cambios = [];
+    const actualizado = { ...target };
+    if (nombre !== undefined && String(nombre).trim()) { actualizado.nombre = String(nombre).trim(); cambios.push('nombre'); }
+    if (rol !== undefined) { actualizado.rol = String(rol).trim(); cambios.push('rol'); }
+    if (nivel !== undefined) { actualizado.nivel = Number(nivel); cambios.push('nivel'); }
+    if (activo !== undefined) { actualizado.activo = !!activo; cambios.push(activo ? 'activación' : 'desactivación'); }
+    if (permisos) { actualizado.permisos = permisosFinal; cambios.push('permisos'); }
+
+    await firebaseSet(`usuarios/${clave}`, actualizado);
+    registrarActividad(req.user?.nombre, 'USUARIO_EDITADO', `${clave}: ${cambios.join(', ')}`);
+    res.json({ message: 'Usuario actualizado', cambios });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/reset-password', authMiddleware, loadPermisos(), requirePerm('admin_usuarios'), async (req, res) => {
+  try {
+    const { usuario, nueva, confirmar } = req.body;
+    const clave = claveUsuario((usuario || '').trim());
+    if (!nueva || nueva.length < 4) return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+    if (nueva !== confirmar) return res.status(400).json({ error: 'Las contraseñas no coinciden' });
+
+    const target = await firebaseGet(`usuarios/${clave}`);
+    if (!target) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (esSuperAdmin(target) && !esSuperAdmin(req.userRecord)) {
+      return res.status(403).json({ error: 'No puedes restablecer la contraseña de un Super Administrador' });
+    }
+
+    target.password = await hashPassword(nueva);
+    await firebaseSet(`usuarios/${clave}`, target);
+    registrarActividad(req.user?.nombre, 'PASSWORD_RESETEADO', `Contraseña restablecida para ${clave}`);
+    res.json({ message: 'Contraseña restablecida' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/rol', authMiddleware, loadPermisos(), requirePerm('admin_usuarios'), async (req, res) => {
   const { usuario, rol } = req.body;
-  if (!['admin', 'tecnico', 'ventas'].includes(rol)) return res.status(400).json({ error: 'Rol inválido' });
-  const target = await firebaseGet(`usuarios/${usuario}`);
+  const clave = claveUsuario((usuario || '').trim());
+  if (clave === req.user.usuario) return res.status(400).json({ error: 'No puedes cambiar tu propio rol' });
+  const target = await firebaseGet(`usuarios/${clave}`);
   if (!target) return res.status(404).json({ error: 'Usuario no encontrado' });
+  if (esSuperAdmin(target) && !esSuperAdmin(req.userRecord)) {
+    return res.status(403).json({ error: 'No puedes modificar a un Super Administrador' });
+  }
+  if ((rol === 'superadmin') && !esSuperAdmin(req.userRecord)) {
+    return res.status(403).json({ error: 'Solo el Super Administrador puede asignar ese rol' });
+  }
   target.rol = rol;
-  await firebaseSet(`usuarios/${usuario}`, target);
+  await firebaseSet(`usuarios/${clave}`, target);
+  registrarActividad(req.user?.nombre, 'USUARIO_EDITADO', `${clave}: rol ${rol}`);
   res.json({ message: 'Rol actualizado' });
 });
 
-router.delete('/:usuario', authMiddleware, async (req, res) => {
-  const registro = await firebaseGet(`usuarios/${req.user.usuario}`);
-  if (!registro || registro.rol !== 'admin') return res.status(403).json({ error: 'Solo administradores' });
-  if (req.params.usuario === req.user.usuario) return res.status(400).json({ error: 'No puedes eliminarte a ti mismo' });
-  await firebaseSet(`usuarios/${req.params.usuario}`, null);
+router.delete('/:usuario', authMiddleware, loadPermisos(), requirePerm('admin_usuarios'), async (req, res) => {
+  const clave = claveUsuario((req.params.usuario || '').trim());
+  if (clave === req.user.usuario) return res.status(400).json({ error: 'No puedes eliminarte a ti mismo' });
+  const target = await firebaseGet(`usuarios/${clave}`);
+  if (target && esSuperAdmin(target) && !esSuperAdmin(req.userRecord)) {
+    return res.status(403).json({ error: 'No puedes eliminar a un Super Administrador' });
+  }
+  await firebaseSet(`usuarios/${clave}`, null);
+  registrarActividad(req.user?.nombre, 'USUARIO_ELIMINADO', `Usuario ${clave} eliminado`);
   res.json({ message: 'Usuario eliminado' });
 });
 

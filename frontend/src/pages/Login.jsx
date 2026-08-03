@@ -6,12 +6,10 @@ import useDocumentTitle from '../utils/useDocumentTitle';
 
 export default function Login() {
   useDocumentTitle('Iniciar sesión');
-  const { user, login, register } = useAuth();
+  const { user, login } = useAuth();
   const { notify } = useNotify();
-  const [modo, setModo] = useState('login');
   const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -22,16 +20,8 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      if (modo === 'register') {
-        await register(usuario, password, confirm);
-        notify('Cuenta creada', 'Ya puedes iniciar sesión.', 'success');
-        setModo('login');
-        setPassword('');
-        setConfirm('');
-      } else {
-        await login(usuario, password);
-        notify('Bienvenido', `Hola, ${usuario}`, 'success');
-      }
+      await login(usuario, password);
+      notify('Bienvenido', `Sesión iniciada`, 'success');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -57,36 +47,24 @@ export default function Login() {
         <h1 className="font-display text-3xl font-extrabold text-slate-900">EquipMaster</h1>
         <p className="text-slate-500 text-sm mt-2">React + Node.js · Misma base Firebase</p>
 
-        <div className="flex rounded-xl bg-slate-100 p-1 mt-6 mb-6">
-          <button type="button" onClick={() => { setModo('login'); setError(''); }}
-            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition ${modo === 'login' ? 'bg-white shadow-sm text-brand-700' : 'text-slate-500'}`}>
-            Iniciar sesión
-          </button>
-          <button type="button" onClick={() => { setModo('register'); setError(''); }}
-            className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition ${modo === 'register' ? 'bg-white shadow-sm text-brand-700' : 'text-slate-500'}`}>
-            Registrarse
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="text-left space-y-4">
+        <form onSubmit={handleSubmit} className="text-left space-y-4 mt-6">
           <div>
             <label className="form-label">Usuario</label>
             <input className="form-input" value={usuario} onChange={e => setUsuario(e.target.value)} required autoComplete="username" placeholder="Tu nombre de usuario" />
           </div>
           <div>
             <label className="form-label">Contraseña</label>
-            <input type="password" className="form-input" value={password} onChange={e => setPassword(e.target.value)} required minLength={4} autoComplete={modo === 'login' ? 'current-password' : 'new-password'} placeholder="••••••••" />
+            <input type="password" className="form-input" value={password} onChange={e => setPassword(e.target.value)} required minLength={4} autoComplete="current-password" placeholder="••••••••" />
           </div>
-          {modo === 'register' && (
-            <div>
-              <label className="form-label">Confirmar contraseña</label>
-              <input type="password" className="form-input" value={confirm} onChange={e => setConfirm(e.target.value)} required minLength={4} placeholder="Repite la contraseña" />
+          {error && (
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-medium">
+              <i className={`fa-solid fa-triangle-exclamation mt-0.5 ${error.includes('desactivada') ? 'fa-ban' : ''}`} />
+              <span>{error}</span>
             </div>
           )}
-          {error && <p className="text-rose-600 text-sm font-medium">{error}</p>}
           <button type="submit" disabled={loading} className="btn-brand w-full text-white font-bold py-3.5 rounded-xl text-sm disabled:opacity-60">
-            <i className={`fa-solid ${modo === 'login' ? 'fa-arrow-right-to-bracket' : 'fa-user-plus'} mr-1`} />
-            {loading ? 'Procesando...' : modo === 'login' ? 'Entrar al sistema' : 'Crear cuenta'}
+            <i className="fa-solid fa-arrow-right-to-bracket mr-1" />
+            {loading ? 'Procesando...' : 'Entrar al sistema'}
           </button>
         </form>
         <p className="text-[11px] text-slate-400 mt-6">JV COMPUTER · EquipMaster v3.0</p>

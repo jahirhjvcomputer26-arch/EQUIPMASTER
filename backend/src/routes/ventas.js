@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm } from '../permisos.js';
 import { firebaseGet, firebaseSet } from '../firebase.js';
 import { registrarActividad } from './actividad.js';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, loadPermisos());
 
-router.post('/local', async (req, res) => {
+router.post('/local', requirePerm('registrar_ventas'), async (req, res) => {
   try {
     const { codigo, cliente, precio, metodoPago, fechaSalida, tecnicoEntrega, notasSalida } = req.body;
     const item = await firebaseGet(`inventario/${codigo}`);
@@ -32,7 +33,7 @@ router.post('/local', async (req, res) => {
   }
 });
 
-router.post('/mercadolibre', async (req, res) => {
+router.post('/mercadolibre', requirePerm('registrar_ventas'), async (req, res) => {
   try {
     const { serie, fechaVenta, notasVenta } = req.body;
     const serieNorm = (serie || '').toUpperCase().trim().replace(/\s+/g, '');
@@ -60,7 +61,7 @@ router.post('/mercadolibre', async (req, res) => {
   }
 });
 
-router.post('/devolucion', async (req, res) => {
+router.post('/devolucion', requirePerm('eliminar_ventas'), async (req, res) => {
   try {
     const { codigo, fechaDevolucion, motivo } = req.body;
     const item = await firebaseGet(`inventario/${codigo}`);
@@ -84,7 +85,7 @@ router.post('/devolucion', async (req, res) => {
   }
 });
 
-router.put('/local/:codigo', async (req, res) => {
+router.put('/local/:codigo', requirePerm('editar_ventas'), async (req, res) => {
   try {
     const { codigo } = req.params;
     const { cliente, precio, metodoPago, fechaSalida, tecnicoEntrega, notasSalida } = req.body;
@@ -110,7 +111,7 @@ router.put('/local/:codigo', async (req, res) => {
   }
 });
 
-router.delete('/local/:codigo', async (req, res) => {
+router.delete('/local/:codigo', requirePerm('eliminar_ventas'), async (req, res) => {
   try {
     const { codigo } = req.params;
     const item = await firebaseGet(`inventario/${codigo}`);

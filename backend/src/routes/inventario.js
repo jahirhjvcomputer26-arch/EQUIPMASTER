@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm, tienePermiso } from '../permisos.js';
 import { firebaseDelete, firebaseGet, firebaseSet } from '../firebase.js';
 import { registrarActividad } from './actividad.js';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, loadPermisos());
 
-router.get('/', async (_req, res) => {
+router.get('/', requirePerm('ver_inventario'), async (_req, res) => {
   try {
     const data = await firebaseGet('inventario');
     const lista = data ? Object.values(data) : [];
@@ -16,7 +17,7 @@ router.get('/', async (_req, res) => {
   }
 });
 
-router.get('/:codigo', async (req, res) => {
+router.get('/:codigo', requirePerm('ver_inventario'), async (req, res) => {
   try {
     const item = await firebaseGet(`inventario/${req.params.codigo}`);
     if (!item) return res.status(404).json({ error: 'Equipo no encontrado' });
@@ -31,6 +32,10 @@ router.put('/:codigo', async (req, res) => {
     let codigo = req.params.codigo;
     const existente = await firebaseGet(`inventario/${codigo}`);
     const esNuevo = !existente;
+    const perm = esNuevo ? 'crear_equipos' : 'editar_equipos';
+    if (!tienePermiso(req, perm)) {
+      return res.status(403).json({ error: `Acceso denegado: necesitas permiso de ${esNuevo ? 'crear' : 'editar'} equipos` });
+    }
     if (esNuevo && existente !== null) {
       const data = await firebaseGet('inventario');
       const items = data ? Object.keys(data) : [];
@@ -77,7 +82,7 @@ router.put('/:codigo', async (req, res) => {
   }
 });
 
-router.delete('/:codigo', async (req, res) => {
+router.delete('/:codigo', requirePerm('eliminar_equipos'), async (req, res) => {
   try {
     await firebaseDelete(`inventario/${req.params.codigo}`);
     registrarActividad(req.user?.nombre, 'EQUIPO_ELIMINADO', `Código ${req.params.codigo}`);

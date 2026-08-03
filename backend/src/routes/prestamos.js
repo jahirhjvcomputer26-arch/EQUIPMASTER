@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm } from '../permisos.js';
 import { firebaseGet, firebaseSet, firebaseDelete } from '../firebase.js';
 import { registrarActividad } from './actividad.js';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, loadPermisos());
 
-router.get('/', async (_req, res) => {
+router.get('/', requirePerm('ver_prestamos'), async (_req, res) => {
   try {
     const data = await firebaseGet('prestamos');
     const list = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
@@ -16,7 +17,7 @@ router.get('/', async (_req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requirePerm('gestionar_prestamos'), async (req, res) => {
   try {
     const { serie, modelo, procesador, responsable, area, fechaSalida, notas } = req.body;
     if (!serie || !responsable) return res.status(400).json({ error: 'Serie y responsable son obligatorios' });
@@ -42,7 +43,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requirePerm('gestionar_prestamos'), async (req, res) => {
   try {
     const { serie, modelo, procesador, responsable, area, fechaSalida, notas, activo } = req.body;
     const prestamo = {
@@ -64,7 +65,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.post('/:id/devolver', async (req, res) => {
+router.post('/:id/devolver', requirePerm('gestionar_prestamos'), async (req, res) => {
   try {
     const prestamo = await firebaseGet(`prestamos/${req.params.id}`);
     if (!prestamo) return res.status(404).json({ error: 'Préstamo no encontrado' });
@@ -81,7 +82,7 @@ router.post('/:id/devolver', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePerm('gestionar_prestamos'), async (req, res) => {
   try {
     await firebaseDelete(`prestamos/${req.params.id}`);
     res.json({ message: 'Préstamo eliminado' });

@@ -45,7 +45,7 @@ function resizeLogo(file) {
 
 export default function Configuracion() {
   useDocumentTitle('Configuración');
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const { notify } = useNotify();
   const [config, setConfig] = useState(DEFAULTS);
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ export default function Configuracion() {
   const fileRef = useRef(null);
 
   useEffect(() => {
-    if (user?.rol !== 'admin') return;
+    if (!can('config_sistema')) return;
     api.getConfiguracion()
       .then(c => setConfig({ ...DEFAULTS, ...c }))
       .catch(() => {})
@@ -92,14 +92,14 @@ export default function Configuracion() {
     }
   };
 
-  if (user?.rol !== 'admin') {
+  if (!can('config_sistema')) {
     return (
       <section className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-fade-in">
         <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-4">
           <i className="fa-solid fa-lock text-red-400 text-3xl" />
         </div>
         <h2 className="font-display text-xl font-bold text-slate-900">Acceso restringido</h2>
-        <p className="text-slate-500 text-sm mt-1">Solo los administradores pueden acceder a esta sección.</p>
+        <p className="text-slate-500 text-sm mt-1">No tienes permisos para acceder a esta sección.</p>
       </section>
     );
   }

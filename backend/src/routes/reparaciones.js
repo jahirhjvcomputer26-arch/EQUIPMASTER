@@ -1,14 +1,15 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm } from '../permisos.js';
 import { firebaseDelete, firebaseGet, firebaseSet } from '../firebase.js';
 import { registrarActividad } from './actividad.js';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, loadPermisos());
 
 const ESTADOS_REP = ['RECIBIDO', 'DIAGNÓSTICO', 'ESPERANDO PIEZAS', 'EN REPARACIÓN', 'EN PRUEBAS', 'FINALIZADO', 'ENTREGADO', 'CANCELADO'];
 
-router.get('/', async (_req, res) => {
+router.get('/', requirePerm('ver_reparaciones'), async (_req, res) => {
   try {
     const data = await firebaseGet('reparaciones');
     const lista = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
@@ -19,7 +20,7 @@ router.get('/', async (_req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', requirePerm('ver_reparaciones'), async (req, res) => {
   try {
     const item = await firebaseGet(`reparaciones/${req.params.id}`);
     if (!item) return res.status(404).json({ error: 'Orden no encontrada' });
@@ -29,7 +30,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requirePerm('registrar_reparaciones'), async (req, res) => {
   try {
     const id = `REP-${Date.now()}`;
     const orden = {
@@ -46,7 +47,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requirePerm('registrar_reparaciones'), async (req, res) => {
   try {
     const existente = await firebaseGet(`reparaciones/${req.params.id}`);
     if (!existente) return res.status(404).json({ error: 'Orden no encontrada' });
@@ -59,7 +60,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePerm('aprobar_reparaciones'), async (req, res) => {
   try {
     await firebaseDelete(`reparaciones/${req.params.id}`);
     registrarActividad(req.user?.nombre, 'REPARACION_ELIMINADA', `Orden ${req.params.id}`);

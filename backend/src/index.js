@@ -18,6 +18,7 @@ import storageRouter from './routes/storage.js';
 import ticketsRouter from './routes/tickets.js';
 import hardwareRouter from './routes/hardware.js';
 import { initStorage } from './storage.js';
+import { seedPermisos } from './permisos.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, '..', 'public');
@@ -48,6 +49,7 @@ app.use('/api/tickets', ticketsRouter);
 app.use('/api/hardware', hardwareRouter);
 
 initStorage();
+seedPermisos();
 
 const indexPath = path.join(publicDir, 'index.html');
 if (fs.existsSync(indexPath)) {

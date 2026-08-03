@@ -2,12 +2,13 @@ import { Router } from 'express';
 import * as XLSX from 'xlsx';
 import nodemailer from 'nodemailer';
 import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm } from '../permisos.js';
 import { firebaseGet } from '../firebase.js';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, loadPermisos());
 
-router.get('/filtros', async (req, res) => {
+router.get('/filtros', requirePerm('ver_reportes'), async (req, res) => {
   try {
     const data = await firebaseGet('inventario');
     const marcas = new Set();
@@ -34,7 +35,7 @@ router.get('/filtros', async (req, res) => {
   }
 });
 
-router.get('/avanzado', async (req, res) => {
+router.get('/avanzado', requirePerm('ver_reportes'), async (req, res) => {
   try {
     const data = await firebaseGet('inventario');
     let lista = data ? Object.values(data) : [];
@@ -60,7 +61,7 @@ router.get('/avanzado', async (req, res) => {
   }
 });
 
-router.get('/dashboard', async (_req, res) => {
+router.get('/dashboard', requirePerm('ver_reportes'), async (_req, res) => {
   try {
     const data = await firebaseGet('inventario');
     const lista = data ? Object.values(data) : [];
@@ -123,7 +124,7 @@ router.get('/dashboard', async (_req, res) => {
   }
 });
 
-router.get('/ventas', async (_req, res) => {
+router.get('/ventas', requirePerm('ver_reportes'), async (_req, res) => {
   try {
     const data = await firebaseGet('inventario');
     const lista = data ? Object.values(data) : [];
@@ -166,7 +167,7 @@ router.get('/ventas', async (_req, res) => {
   }
 });
 
-router.get('/reparaciones', async (_req, res) => {
+router.get('/reparaciones', requirePerm('ver_reportes'), async (_req, res) => {
   try {
     const data = await firebaseGet('inventario');
     const lista = data ? Object.values(data) : [];
@@ -193,7 +194,7 @@ router.get('/reparaciones', async (_req, res) => {
   }
 });
 
-router.get('/excel', async (_req, res) => {
+router.get('/excel', requirePerm('exportar_excel'), async (_req, res) => {
   try {
     const data = await firebaseGet('inventario');
     const lista = data ? Object.values(data) : [];
@@ -243,7 +244,7 @@ router.get('/excel', async (_req, res) => {
   }
 });
 
-router.post('/email', async (req, res) => {
+router.post('/email', requirePerm('ver_reportes'), async (req, res) => {
   try {
     const { para, asunto, tipo, filtros } = req.body;
     if (!para) return res.status(400).json({ error: 'El campo "para" (email destino) es requerido' });

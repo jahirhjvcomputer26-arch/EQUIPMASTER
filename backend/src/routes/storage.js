@@ -2,11 +2,12 @@ import { Router } from 'express';
 import { uploadToStorage, deleteFromStorage, makePublic, getPublicUrl, listStorageFiles } from '../storage.js';
 import { firebaseGet } from '../firebase.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm } from '../permisos.js';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, loadPermisos());
 
-router.post('/upload', async (req, res) => {
+router.post('/upload', requirePerm('subir_archivos'), async (req, res) => {
   try {
     const { codigo, categoria, tipo, archivo, esDocumento } = req.body;
     if (!codigo || !categoria || !archivo) {
@@ -43,7 +44,7 @@ router.post('/upload', async (req, res) => {
   }
 });
 
-router.delete('/delete', async (req, res) => {
+router.delete('/delete', requirePerm('subir_archivos'), async (req, res) => {
   try {
     const { path } = req.query;
     if (!path) return res.status(400).json({ error: 'Falta path' });
@@ -56,7 +57,7 @@ router.delete('/delete', async (req, res) => {
   }
 });
 
-router.post('/cleanup', async (req, res) => {
+router.post('/cleanup', requirePerm('subir_archivos'), async (req, res) => {
   try {
     const inventario = await firebaseGet('inventario');
     if (!inventario) return res.json({ eliminados: 0, razon: 'Sin inventario' });

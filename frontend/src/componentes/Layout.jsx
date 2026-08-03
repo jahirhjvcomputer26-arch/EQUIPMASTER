@@ -19,27 +19,27 @@ const menuGroups = [
     { to: '/', icon: 'fa-chart-pie', label: 'Dashboard', end: true },
   ]},
   { label: 'Movimientos', items: [
-    { to: '/ventas', icon: 'fa-store', label: 'Venta Local' },
-    { to: '/mercadolibre', icon: 'fa-warehouse', label: 'Venta ML' },
-    { to: '/devoluciones', icon: 'fa-rotate-left', label: 'Devoluciones' },
-    { to: '/prestamos', icon: 'fa-hand-holding', label: 'Préstamos' },
-    { to: 'http://192.168.100.198:5175', icon: 'fa-battery-three-quarters', label: 'Cargadores', external: true },
+    { to: '/ventas', icon: 'fa-store', label: 'Venta Local', perm: 'ver_ventas' },
+    { to: '/mercadolibre', icon: 'fa-warehouse', label: 'Venta ML', perm: 'ver_ventas' },
+    { to: '/devoluciones', icon: 'fa-rotate-left', label: 'Devoluciones', perm: 'ver_ventas' },
+    { to: '/prestamos', icon: 'fa-hand-holding', label: 'Préstamos', perm: 'ver_prestamos' },
+    { to: 'http://192.168.100.198:5175', icon: 'fa-battery-three-quarters', label: 'Cargadores', external: true, perm: 'ver_inventario' },
   ]},
   { label: 'Servicio', items: [
-    { to: '/reparaciones', icon: 'fa-toolbox', label: 'Reparaciones' },
-    { to: '/centro-reparaciones', icon: 'fa-screwdriver-wrench', label: 'Centro Reparaciones' },
-    { to: '/tickets', icon: 'fa-ticket', label: 'Tickets' },
-    { to: '/etiquetas', icon: 'fa-tag', label: 'Etiquetas' },
+    { to: '/reparaciones', icon: 'fa-toolbox', label: 'Reparaciones', perm: 'ver_reparaciones' },
+    { to: '/centro-reparaciones', icon: 'fa-screwdriver-wrench', label: 'Centro Reparaciones', perm: 'ver_reparaciones' },
+    { to: '/tickets', icon: 'fa-ticket', label: 'Tickets', perm: 'ver_tickets' },
+    { to: '/etiquetas', icon: 'fa-tag', label: 'Etiquetas', perm: 'generar_qr' },
   ]},
   { label: 'Control', items: [
-    { to: '/reportes', icon: 'fa-chart-simple', label: 'Reportes' },
-    { to: '/alertas', icon: 'fa-triangle-exclamation', label: 'Alertas' },
-    { to: '/actividad', icon: 'fa-clock-rotate-left', label: 'Historial' },
-    { to: '/base-datos', icon: 'fa-table-list', label: 'Base de Datos' },
+    { to: '/reportes', icon: 'fa-chart-simple', label: 'Reportes', perm: 'ver_reportes' },
+    { to: '/alertas', icon: 'fa-triangle-exclamation', label: 'Alertas', perm: 'ver_inventario' },
+    { to: '/actividad', icon: 'fa-clock-rotate-left', label: 'Historial', perm: 'ver_auditoria' },
+    { to: '/base-datos', icon: 'fa-table-list', label: 'Base de Datos', perm: 'base_datos' },
   ]},
-  { label: 'Admin', adminOnly: true, items: [
-    { to: '/usuarios', icon: 'fa-users-gear', label: 'Usuarios' },
-    { to: '/configuracion', icon: 'fa-gear', label: 'Configuración' },
+  { label: 'Admin', items: [
+    { to: '/usuarios', icon: 'fa-users-gear', label: 'Usuarios', perm: 'admin_usuarios' },
+    { to: '/configuracion', icon: 'fa-gear', label: 'Configuración', perm: 'config_sistema' },
   ]},
 ];
 
@@ -64,7 +64,7 @@ const ROUTE_LABELS = {
 };
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const { dark, toggle: toggleDark } = useDarkMode();
   const navigate = useNavigate();
   const location = useLocation();
@@ -251,7 +251,10 @@ export default function Layout() {
               <i className="fa-solid fa-plus-circle text-lg" />
             </NavLink>
           )}
-          {menuGroups.filter(g => !g.adminOnly || user?.rol === 'admin').map(group => (
+          {menuGroups
+            .map(group => ({ ...group, items: group.items.filter(l => !l.perm || can(l.perm)) }))
+            .filter(group => group.items.length > 0)
+            .map(group => (
             <div key={group.label}>
               {!collapsed && (
                 <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 pt-2.5 pb-1">{group.label}</p>
@@ -390,10 +393,10 @@ export default function Layout() {
         <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-around items-center px-1 py-1 shadow-lg">
           {[
             { to: '/', icon: 'fa-chart-pie', label: 'Inicio' },
-            { to: '/inventario', icon: 'fa-plus-circle', label: 'Registrar', accent: true },
-            { to: '/base-datos', icon: 'fa-table-list', label: 'Buscar' },
-            { to: '/alertas', icon: 'fa-triangle-exclamation', label: 'Alertas', badge: notificacionesLocales.length },
-          ].map(l => (
+            { to: '/inventario', icon: 'fa-plus-circle', label: 'Registrar', accent: true, perm: 'ver_inventario' },
+            { to: '/base-datos', icon: 'fa-table-list', label: 'Buscar', perm: 'base_datos' },
+            { to: '/alertas', icon: 'fa-triangle-exclamation', label: 'Alertas', perm: 'ver_inventario', badge: notificacionesLocales.length },
+          ].filter(l => !l.perm || can(l.perm)).map(l => (
             <NavLink key={l.to} to={l.to} end={l.to === '/'}
               className={({ isActive }) => `flex flex-col items-center px-2 py-1.5 rounded-xl text-[10px] font-bold transition ${l.accent ? 'text-white bg-brand-600 shadow-md -mt-3 px-3' : isActive ? 'text-brand-600' : 'text-slate-400'}`}>
               <div className="relative">

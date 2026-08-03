@@ -59,7 +59,12 @@ export const api = {
     URL.revokeObjectURL(url);
   },
   getUsuarios: () => request('/usuarios/list'),
+  crearUsuario: (body) => request('/usuarios/register', { method: 'POST', body: JSON.stringify(body) }),
+  actualizarUsuario: (body) => request('/usuarios/update', { method: 'PUT', body: JSON.stringify(body) }),
+  resetPassword: (body) => request('/usuarios/reset-password', { method: 'POST', body: JSON.stringify(body) }),
+  getPermisosRoles: () => request('/usuarios/roles'),
   updateRol: (body) => request('/usuarios/rol', { method: 'PUT', body: JSON.stringify(body) }),
+  updateRolPermisos: (rol, body) => request(`/usuarios/roles/${rol}`, { method: 'PUT', body: JSON.stringify(body) }),
   eliminarUsuario: (usuario) => request(`/usuarios/${usuario}`, { method: 'DELETE' }),
   downloadBackup: async () => {
     const token = localStorage.getItem('equipmaster_token');

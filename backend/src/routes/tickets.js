@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { loadPermisos, requirePerm } from '../permisos.js';
 import { firebaseGet, firebaseSet, firebaseDelete } from '../firebase.js';
 import { registrarActividad } from './actividad.js';
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, loadPermisos());
 
-router.get('/', async (req, res) => {
+router.get('/', requirePerm('ver_tickets'), async (req, res) => {
   try {
     const data = await firebaseGet('tickets');
     let list = data ? Object.entries(data).map(([id, v]) => ({ id, ...v })) : [];
@@ -30,11 +31,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requirePerm('registrar_tickets'), async (req, res) => {
   try {
     const { asunto, descripcion, prioridad } = req.body;
     if (!asunto) return res.status(400).json({ error: 'El asunto es obligatorio' });
-
     const id = `TK-${Date.now().toString(36).toUpperCase()}`;
     const ticket = {
       id,
@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requirePerm('gestionar_tickets'), async (req, res) => {
   try {
     const existing = await firebaseGet(`tickets/${req.params.id}`);
     if (!existing) return res.status(404).json({ error: 'Ticket no encontrado' });
@@ -97,7 +97,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.post('/:id/nota', async (req, res) => {
+router.post('/:id/nota', requirePerm('gestionar_tickets'), async (req, res) => {
   try {
     const existing = await firebaseGet(`tickets/${req.params.id}`);
     if (!existing) return res.status(404).json({ error: 'Ticket no encontrado' });
@@ -121,7 +121,7 @@ router.post('/:id/nota', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePerm('gestionar_tickets'), async (req, res) => {
   try {
     const existing = await firebaseGet(`tickets/${req.params.id}`);
     if (!existing) return res.status(404).json({ error: 'Ticket no encontrado' });
