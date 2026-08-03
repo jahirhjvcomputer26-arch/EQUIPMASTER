@@ -6,50 +6,7 @@ import { db } from '../services/firebase';
 import { useNotify } from '../componentes/Notification';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import { useInventario } from '../context/InventarioContext';
-import { nombreEquipo } from '../utils/inventario';
-
-const LABEL_SIZES = [
-  { key: 'small', label: 'Pequeña (54×25mm)', w: 198, h: 90, mm: '54mm 25mm', fontTitle: 8, fontSub: 6, fontCode: 7 },
-  { key: 'medium', label: 'Mediana (100×50mm)', w: 368, h: 182, mm: '100mm 50mm', fontTitle: 12, fontSub: 9, fontCode: 10 },
-  { key: 'large', label: 'Grande (100×70mm)', w: 368, h: 256, mm: '100mm 70mm', fontTitle: 14, fontSub: 10, fontCode: 12 },
-];
-
-const printStyles = (sizeKey) => {
-  const s = LABEL_SIZES.find(l => l.key === sizeKey) || LABEL_SIZES[1];
-  return `
-    @page { size: ${s.mm}; margin: 0; }
-    @media print {
-      html, body { margin: 0; padding: 0; width: 100%; }
-      * { box-sizing: border-box; }
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .print-label { display: block; margin: 0; break-inside: avoid; }
-      .print-label + .print-label { page-break-before: always; }
-    }
-  `;
-};
-
-function EtiquetaUnica({ item, size }) {
-  const s = LABEL_SIZES.find(l => l.key === size) || LABEL_SIZES[1];
-  const qrSize = Math.round(s.h * 0.62);
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&qzone=3&margin=2&data=${encodeURIComponent(
-    window.location.origin + '/consulta?q=' + item.codigo
-  )}`;
-
-  return (
-    <div className="inline-block border border-slate-300 rounded-lg overflow-hidden bg-white print-label" style={{ width: s.w, height: s.h, padding: 6 }}>
-      <div className="flex items-center gap-2 h-full">
-        <div className="bg-white shrink-0" style={{ width: qrSize, height: qrSize }}>
-          <img src={qrUrl} alt="QR" width={qrSize} height={qrSize} crossOrigin="anonymous" className="w-full h-full object-contain" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-bold text-slate-900 truncate" style={{ fontSize: s.fontTitle }}>{nombreEquipo(item.marca, item.modelo)}</p>
-          <p className="text-slate-500 truncate" style={{ fontSize: s.fontSub }}>{item.categoria} · {item.serie}</p>
-          <p className="font-mono text-brand-700 font-bold mt-0.5" style={{ fontSize: s.fontCode }}>{item.codigo}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { EtiquetaUnica, LABEL_SIZES, printStyles } from '../componentes/EtiquetaQR';
 
 function MultiEtiquetas({ items, size }) {
   return (
@@ -67,7 +24,7 @@ export default function Etiquetas() {
   const { notify: toast } = useNotify();
   const [item, setItem] = useState(null);
   const [selected, setSelected] = useState([]);
-  const [size, setSize] = useState('medium');
+  const [size, setSize] = useState('2b51x25');
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -125,7 +82,7 @@ export default function Etiquetas() {
           </div>
           <div className="no-print bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
             <p><b>Para impresora de etiquetas:</b></p>
-            <p>1. En el diálogo de impresión elige tu impresora térmica y selecciona el tamaño de papel {size === 'small' ? '54×25 mm' : size === 'large' ? '100×70 mm' : '100×50 mm'} (o papel personalizado).</p>
+            <p>1. En el diálogo de impresión elige tu impresora térmica y selecciona el tamaño de papel {(LABEL_SIZES.find(s => s.key === size) || {}).mm} (o papel personalizado). Debe mostrar 1 página.</p>
             <p>2. Escala al 100%, márgenes "Ninguno" y desactiva "Encabezados y pies de página".</p>
           </div>
           <div className="no-print bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex justify-center">

@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Chart as ChartJS, ArcElement, BarElement, CategoryScale, Legend, LinearScale, Tooltip, LineElement, PointElement, Filler } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { api } from '../services/api';
 import { useNotify } from '../componentes/Notification';
+import { useAuth } from '../context/AuthContext';
 import { useInventario } from '../context/InventarioContext';
 import { COLORES_ESTADO, ESTADOS_STOCK, TECNICOS, parseFechaRegistro, fechaRegistroTs, formatearFechaRegistro, esMismoDia } from '../utils/inventario';
 import useDocumentTitle from '../utils/useDocumentTitle';
@@ -51,13 +52,76 @@ const PRESETS = [
   { label: 'Todos', fn: () => '' },
 ];
 
+const TICKET_ESTADO = {
+  pendiente: { label: 'Pendiente', cls: 'bg-amber-50 text-amber-600 border-amber-200' },
+  asignado: { label: 'Asignado', cls: 'bg-blue-50 text-blue-600 border-blue-200' },
+  en_diagnostico: { label: 'En diagnóstico', cls: 'bg-violet-50 text-violet-600 border-violet-200' },
+  en_reparacion: { label: 'En reparación', cls: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
+  esperando_refacciones: { label: 'Esperando refacciones', cls: 'bg-orange-50 text-orange-600 border-orange-200' },
+  esperando_autorizacion: { label: 'Esperando autorización', cls: 'bg-pink-50 text-pink-600 border-pink-200' },
+  reparado: { label: 'Reparado', cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
+  entregado: { label: 'Entregado', cls: 'bg-teal-50 text-teal-600 border-teal-200' },
+  cerrado: { label: 'Cerrado', cls: 'bg-slate-50 text-slate-500 border-slate-200' },
+  cancelado: { label: 'Cancelado', cls: 'bg-red-50 text-red-600 border-red-200' },
+};
+const MAPA_LEGACY_ESTADO = { abierto: 'pendiente', en_proceso: 'en_reparacion', resuelto: 'reparado' };
+
+const TICKET_PRIORIDAD = {
+  critica: { label: 'Crítica', cls: 'text-red-700 bg-red-50 border-red-200' },
+  alta: { label: 'Alta', cls: 'text-orange-600 bg-orange-50 border-orange-200' },
+  media: { label: 'Media', cls: 'text-amber-600 bg-amber-50 border-amber-200' },
+  baja: { label: 'Baja', cls: 'text-slate-500 bg-slate-50 border-slate-200' },
+};
+
+function TiempoRelativoTickets({ fecha }) {
+  if (!fecha) return null;
+  const diff = Date.now() - new Date(fecha).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return <span>ahora</span>;
+  if (mins < 60) return <span>{mins}m</span>;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return <span>{hrs}h</span>;
+  return <span>{Math.floor(hrs / 24)}d</span>;
+}
+
 export default function Dashboard() {
   useDocumentTitle('Dashboard');
   const { inventario, loading } = useInventario();
   const { notify } = useNotify();
+  const { can } = useAuth();
+  const puedeVerTickets = can('ver_tickets');
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
   const [showCharts, setShowCharts] = useState(false);
+
+  const [tickets, setTickets] = useState([]);
+  const [ticketsLoading, setTicketsLoading] = useState(puedeVerTickets);
+
+  useEffect(() => {
+    if (!puedeVerTickets) return;
+    let activo = true;
+    const cargar = () => {
+      api.getTickets().then(d => { if (activo) setTickets(d); })
+        .catch(() => {})
+        .finally(() => { if (activo) setTicketsLoading(false); });
+    };
+    setTicketsLoading(true);
+    cargar();
+    const id = setInterval(cargar, 30000);
+    return () => { activo = false; clearInterval(id); };
+  }, [puedeVerTickets]);
+
+  const ticketsStats = useMemo(() => {
+    const contar = keys => tickets.filter(t => keys.includes(t.estado)).length;
+    return {
+      total: tickets.length,
+      pendientes: contar(['pendiente']),
+      asignados: contar(['asignado']),
+      enProceso: contar(['en_diagnostico', 'en_reparacion', 'esperando_refacciones', 'esperando_autorizacion']),
+      reparados: contar(['reparado']),
+      cerrados: contar(['entregado', 'cerrado', 'cancelado']),
+    };
+  }, [tickets]);
 
   const stats = useMemo(() => {
     const desde = fechaDesde ? new Date(fechaDesde) : null;
@@ -313,7 +377,69 @@ export default function Dashboard() {
         <QuickLink to="/reparaciones" icon="fa-wrench" color="bg-orange-50 text-orange-600" label="Reparaciones" />
         <QuickLink to="/mercadolibre" icon="fa-truck" color="bg-emerald-50 text-emerald-600" label="Mercado Libre" />
         <QuickLink to="/reportes" icon="fa-chart-bar" color="bg-purple-50 text-purple-600" label="Reportes" />
+        {puedeVerTickets && <QuickLink to="/tickets" icon="fa-ticket" color="bg-rose-50 text-rose-600" label="Tickets" count={ticketsStats.total} />}
       </div>
+
+      {puedeVerTickets && !ticketsLoading && tickets.length > 0 && (
+        <div className="panel p-5 animate-slide-up" style={{ animationDelay: '95ms' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-bold text-slate-700 uppercase flex items-center gap-2">
+              <i className="fa-solid fa-ticket text-rose-500" /> Tickets de Reparación
+            </h4>
+            <Link to="/tickets" className="text-[11px] font-bold text-brand-600 hover:underline">Ver todos →</Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="bg-amber-50 rounded-xl p-3">
+              <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Pendientes</p>
+              <p className="text-2xl font-extrabold text-amber-600">{ticketsStats.pendientes}</p>
+            </div>
+            <div className="bg-blue-50 rounded-xl p-3">
+              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Asignados</p>
+              <p className="text-2xl font-extrabold text-blue-600">{ticketsStats.asignados}</p>
+            </div>
+            <div className="bg-indigo-50 rounded-xl p-3">
+              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">En proceso</p>
+              <p className="text-2xl font-extrabold text-indigo-600">{ticketsStats.enProceso}</p>
+            </div>
+            <div className="bg-emerald-50 rounded-xl p-3">
+              <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Reparados</p>
+              <p className="text-2xl font-extrabold text-emerald-600">{ticketsStats.reparados}</p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead><tr className="text-left text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                <th className="pb-2 font-bold">Ticket</th><th className="pb-2 font-bold">Prioridad</th><th className="pb-2 font-bold">Estado</th><th className="pb-2 font-bold">Técnico</th><th className="pb-2 font-bold">Actualizado</th>
+              </tr></thead>
+              <tbody>
+                {[...tickets]
+                  .sort((a, b) => new Date(b.modificadoEn || b.creadoEn || 0) - new Date(a.modificadoEn || a.creadoEn || 0))
+                  .slice(0, 6)
+                  .map((t, i) => {
+                    const est = TICKET_ESTADO[MAPA_LEGACY_ESTADO[t.estado] || t.estado] || TICKET_ESTADO.pendiente;
+                    const pri = TICKET_PRIORIDAD[t.prioridad] || TICKET_PRIORIDAD.media;
+                    return (
+                      <tr key={t.id} className="border-b border-slate-50 table-row-enter" style={{ animationDelay: `${i * 40}ms` }}>
+                        <td className="py-2">
+                          <span className="font-mono font-bold text-brand-600 mr-1">{t.id}</span>
+                          <span className="text-slate-700 font-semibold line-clamp-1">{t.asunto}</span>
+                        </td>
+                        <td className="py-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${pri.cls}`}>{pri.label}</span></td>
+                        <td className="py-2"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${est.cls}`}>{est.label}</span></td>
+                        <td className="py-2">
+                          {t.tecnicoAsignadoNombre
+                            ? <span className="font-bold text-blue-600"><i className="fa-solid fa-user-check mr-1" />{t.tecnicoAsignadoNombre}</span>
+                            : <span className="text-slate-300 italic">Sin asignar</span>}
+                        </td>
+                        <td className="py-2 text-slate-400 font-mono"><TiempoRelativoTickets fecha={t.modificadoEn || t.creadoEn} /></td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {stats.recientes.length > 0 && (
         <div className="panel p-5 animate-slide-up" style={{ animationDelay: '100ms' }}>

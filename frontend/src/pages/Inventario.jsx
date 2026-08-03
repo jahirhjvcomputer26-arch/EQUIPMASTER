@@ -10,6 +10,7 @@ import VisualChecklist from '../componentes/VisualChecklist';
 import LivePreview from '../componentes/LivePreview';
 import ActionBar from '../componentes/ActionBar';
 import CameraCapture from '../componentes/CameraCapture';
+import ModalImprimirEtiqueta from '../componentes/EtiquetaQR';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import useUnsavedChanges from '../utils/useUnsavedChanges';
 
@@ -78,6 +79,7 @@ export default function Inventario() {
   const [cameraKey, setCameraKey] = useState(null);
   const [dirty, setDirty] = useState(false);
   const [skuManual, setSkuManual] = useState(false);
+  const [etiquetaModal, setEtiquetaModal] = useState(false);
   const multiRef = useRef(null);
 
   const tmpl = useMemo(() => getTemplate(form.categoria), [form.categoria]);
@@ -408,6 +410,10 @@ export default function Inventario() {
               </a>
             </div>
           )}
+          <button onClick={() => setEtiquetaModal(true)} title="Imprimir la etiqueta QR antes de guardar"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 transition">
+            <i className="fa-solid fa-qrcode" /> Imprimir QR
+          </button>
           <div className="flex items-center bg-slate-100 rounded-xl p-1">
             <button onClick={() => { setMode('quick'); setStep(1); }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${mode === 'quick' ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-500 hover:bg-white'}`}>
@@ -773,6 +779,14 @@ export default function Inventario() {
             setCameraKey(null);
           }}
           onClose={() => setCameraKey(null)}
+        />
+      )}
+
+      {etiquetaModal && (
+        <ModalImprimirEtiqueta
+          item={{ codigo: form.codigo, marca: form.marca, modelo: form.modelo, categoria: form.categoria, serie: form.serie }}
+          onClose={() => setEtiquetaModal(false)}
+          nota="Impreso antes de guardar. El código ya está reservado: el QR funcionará apenas guardes el equipo."
         />
       )}
     </section>
