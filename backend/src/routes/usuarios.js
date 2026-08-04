@@ -31,6 +31,9 @@ function rateLimit(key, maxAttempts = 5, windowMs = 60000) {
 }
 
 router.post('/register', authMiddleware, loadPermisos(), requirePerm('admin_usuarios'), async (req, res) => {
+  if (!esSuperAdmin(req.userRecord) && req.userRecord?.rol !== 'admin') {
+    return res.status(403).json({ error: 'Solo los administradores pueden crear usuarios' });
+  }
   try {
     const { usuario, password, confirmPassword, nombre: nombreBody, rol, nivel, permisos } = req.body;
     const nombre = (nombreBody || usuario || '').trim();
@@ -82,6 +85,25 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ error: 'Tu cuenta está desactivada. Contacta al administrador.' });
     }
 
+    const dispositivo = (req.body.dispositivo || '').trim();
+    const sesionActiva = registro.sesionActiva;
+    if (
+      sesionActiva &&
+      typeof sesionActiva.hasta === 'number' &&
+      Date.now() < sesionActiva.hasta &&
+      sesionActiva.dispositivo &&
+      sesionActiva.dispositivo !== dispositivo
+    ) {
+      return res.status(403).json({ error: 'Este usuario ya tiene una sesión activa en otro dispositivo. Cierra sesión en el dispositivo anterior o espera a que expire.' });
+    }
+
+    registro.sesionActiva = {
+      dispositivo: dispositivo || null,
+      desde: Date.now(),
+      hasta: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    };
+    await firebaseSet(`usuarios/${clave}`, registro);
+
     const token = jwt.sign(
       { usuario: clave, nombre: registro.nombre },
       process.env.JWT_SECRET,
@@ -95,6 +117,19 @@ router.post('/login', async (req, res) => {
       rol: registro.rol || 'usuario',
       nivel: registro.nivel !== undefined ? Number(registro.nivel) : undefined,
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/logout', authMiddleware, async (req, res) => {
+  try {
+    const registro = await firebaseGet(`usuarios/${req.user.usuario}`);
+    if (registro) {
+      delete registro.sesionActiva;
+      await firebaseSet(`usuarios/${req.user.usuario}`, registro);
+    }
+    res.json({ message: 'Sesión cerrada' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

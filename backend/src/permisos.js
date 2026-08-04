@@ -50,7 +50,7 @@ export const ROLES_DEFECTO = {
   },
   admin: {
     nivel: 80, nombre: 'Administrador', color: '#2563eb',
-    descripcion: 'Administra inventario, reparaciones, QR y reportes.',
+    descripcion: 'Administra inventario, reparaciones, QR, reportes y usuarios.',
     permisos: {
       ver_inventario: true, crear_equipos: true, editar_equipos: true, eliminar_equipos: true,
       ver_fichas: true, editar_fichas: true,
@@ -60,6 +60,7 @@ export const ROLES_DEFECTO = {
       ver_prestamos: true, gestionar_prestamos: true,
       ver_reportes: true, exportar_excel: true,
       ver_tickets: true, registrar_tickets: true, gestionar_tickets: true, atender_tickets: true,
+      admin_usuarios: true, ver_auditoria: true,
       subir_archivos: true,
     },
   },

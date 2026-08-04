@@ -266,6 +266,42 @@ export default function Inventario() {
     setStep(mode === 'quick' ? 1 : 1);
   };
 
+  const autoFillSku = (skuVal) => {
+    const val = (skuVal ?? form.sku).toUpperCase().trim();
+    if (editing || !val) return;
+    const normalizado = val.replace(/\s+/g, '');
+    const enInventario = inventario.find(i =>
+      i.sku && i.sku !== 'N/A' && (i.sku).toUpperCase().replace(/\s+/g, '') === normalizado
+    );
+    let encontrado = enInventario
+      ? {
+          modelo: enInventario.modelo,
+          procesador: enInventario.procesador,
+          marca: enInventario.marca,
+          ram: enInventario.ram || '',
+          almacenamiento: enInventario.almacenamiento || '',
+        }
+      : buscarPorSku(val);
+    if (!encontrado) {
+      notify('SKU no encontrado', 'No hay datos guardados para ese SKU.', 'info');
+      return;
+    }
+    let modelo = encontrado.modelo;
+    if (encontrado.marca === 'LENOVO') {
+      modelo = modelo.replace(/^LENOVO\s+/, '');
+      modelo = modelo.replace(/^(THINKPAD|THINKBOOK|WORKSTATION|YOGA|LEGION|IDEAPAD|THINKCENTRE|LOQ)\s+/, '');
+    }
+    const comercial = derivarModeloComercial(encontrado.marca, modelo);
+    setForm(prev => ({
+      ...prev, sku: val, marca: encontrado.marca, modelo,
+      procesador: encontrado.procesador, ram: encontrado.ram,
+      almacenamiento: encontrado.almacenamiento,
+      fichaV2: { ...prev.fichaV2, modeloComercial: comercial },
+    }));
+    setSkuManual(true);
+    notify('Auto-llenado', `${encontrado.marca} ${modelo} · ${encontrado.procesador}`, 'success');
+  };
+
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     if (esEstadoML(form.estado) && (!form.mlFechaEnvio || !form.mlEnviadoPor)) {
@@ -452,27 +488,7 @@ export default function Inventario() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div><label className="form-label">Número de serie *</label><input className="form-input font-mono uppercase" value={form.serie} onChange={e => markDirty('serie', e.target.value)} required placeholder="S/N grabado en el equipo" /></div>
-                <div><label className="form-label">SKU interno</label><input className="form-input font-mono uppercase" value={form.sku} onChange={e => { setSkuManual(true); markDirty('sku', e.target.value); }} onBlur={e => {
-                  const val = e.target.value.toUpperCase().trim();
-                  if (!editing && val) {
-                    const encontrado = buscarPorSku(val);
-                    if (encontrado) {
-                      let modelo = encontrado.modelo;
-                      if (encontrado.marca === 'LENOVO') {
-                        modelo = modelo.replace(/^LENOVO\s+/, '');
-                        modelo = modelo.replace(/^(THINKPAD|THINKBOOK|WORKSTATION|YOGA|LEGION|IDEAPAD|THINKCENTRE|LOQ)\s+/, '');
-                      }
-                      const comercial = derivarModeloComercial(encontrado.marca, modelo);
-                      setForm(prev => ({
-                        ...prev, sku: val, marca: encontrado.marca, modelo,
-                        procesador: encontrado.procesador, ram: encontrado.ram,
-                        almacenamiento: encontrado.almacenamiento,
-                        fichaV2: { ...prev.fichaV2, modeloComercial: comercial },
-                      }));
-                      setSkuManual(true);
-                    }
-                  }
-                }} placeholder="Escribí el SKU y se auto-rellena" /></div>
+                <div><label className="form-label">SKU interno</label><input className="form-input font-mono uppercase" value={form.sku} onChange={e => { setSkuManual(true); markDirty('sku', e.target.value); }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); autoFillSku(e.target.value); } }} onBlur={e => autoFillSku(e.target.value)} placeholder="Escribí el SKU y se auto-rellena (Enter)" /></div>
               </div>
             </div>
           )}

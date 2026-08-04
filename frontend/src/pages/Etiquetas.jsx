@@ -7,6 +7,7 @@ import { useNotify } from '../componentes/Notification';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import { useInventario } from '../context/InventarioContext';
 import { EtiquetaUnica, LABEL_SIZES, printStyles } from '../componentes/EtiquetaQR';
+import ModalImprimirEtiqueta from '../componentes/EtiquetaQR';
 
 function MultiEtiquetas({ items, size }) {
   return (
@@ -25,6 +26,7 @@ export default function Etiquetas() {
   const [item, setItem] = useState(null);
   const [selected, setSelected] = useState([]);
   const [size, setSize] = useState('2b51x25');
+  const [imprimirItem, setImprimirItem] = useState(null);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -155,6 +157,7 @@ export default function Etiquetas() {
                 <th className="p-3 font-bold text-slate-600">Equipo</th>
                 <th className="p-3 font-bold text-slate-600">Serie</th>
                 <th className="p-3 font-bold text-slate-600">Estado</th>
+                <th className="p-3 w-16 text-center font-bold text-slate-600">Etiqueta</th>
               </tr>
             </thead>
             <tbody>
@@ -166,6 +169,13 @@ export default function Etiquetas() {
                   <td className="p-3">{item.marca} {item.modelo}</td>
                   <td className="p-3 font-mono text-xs text-slate-500">{item.serie}</td>
                   <td className="p-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.estado?.includes('OK') ? 'bg-emerald-100 text-emerald-700' : item.estado?.includes('VENDIDO') ? 'bg-slate-100 text-slate-500' : 'bg-amber-100 text-amber-700'}`}>{item.estado}</span></td>
+                  <td className="p-3 text-center">
+                    <button onClick={e => { e.stopPropagation(); setImprimirItem(item); }}
+                      title={`Imprimir etiqueta de ${item.codigo}`}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 transition">
+                      <i className="fa-solid fa-print text-[10px]" /> Imprimir
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -181,6 +191,10 @@ export default function Etiquetas() {
         <MultiEtiquetas items={selectedItems} size={size} />
       </div>,
       document.body
+    )}
+
+    {imprimirItem && (
+      <ModalImprimirEtiqueta item={imprimirItem} onClose={() => setImprimirItem(null)} />
     )}
     </>
   );

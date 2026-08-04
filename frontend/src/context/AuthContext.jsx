@@ -74,9 +74,16 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    api.logout().catch(() => {});
     ['equipmaster_token', 'equipmaster_nombre', 'equipmaster_rol', PERMISOS_KEY, NIVEL_KEY].forEach(k => localStorage.removeItem(k));
     setUser(null);
   };
+
+  useEffect(() => {
+    const onUnauthorized = () => logout();
+    window.addEventListener('equipmaster:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('equipmaster:unauthorized', onUnauthorized);
+  }, []);
 
   const setNombre = (nombre) => {
     localStorage.setItem('equipmaster_nombre', nombre);

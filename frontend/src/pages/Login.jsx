@@ -29,8 +29,8 @@ export default function Login() {
     }
   };
 
-  const particles = Array.from({ length: 8 }, (_, i) => ({
-    id: i, size: 6 + (i % 3) * 4, left: 10 + (i * 13) % 80, delay: i * 1.2, duration: 6 + (i % 4) * 2,
+  const particles = [10, 20, 30, 40, 60, 70, 80, 90].map((left, i) => ({
+    id: i, size: [10, 8, 6, 12, 12, 6, 8, 10][i], left, delay: i * 0.9, duration: [6, 7, 8, 9, 9, 8, 7, 6][i],
   }));
 
   return (

@@ -1,5 +1,12 @@
 const API = import.meta.env.VITE_API_URL || '/api';
 
+const AUTH_KEYS = ['equipmaster_token', 'equipmaster_nombre', 'equipmaster_rol', 'equipmaster_permisos', 'equipmaster_nivel'];
+
+function cerrarSesionLocal() {
+  AUTH_KEYS.forEach(k => localStorage.removeItem(k));
+  window.dispatchEvent(new Event('equipmaster:unauthorized'));
+}
+
 function headers() {
   const token = localStorage.getItem('equipmaster_token');
   return {
@@ -8,8 +15,18 @@ function headers() {
   };
 }
 
+function dispositivoId() {
+  let d = localStorage.getItem('equipmaster_dispositivo');
+  if (!d) {
+    d = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
+    localStorage.setItem('equipmaster_dispositivo', d);
+  }
+  return d;
+}
+
 async function request(path, options = {}) {
   const res = await fetch(`${API}${path}`, { ...options, headers: { ...headers(), ...options.headers } });
+  if (res.status === 401 && !path.startsWith('/usuarios/login') && !path.startsWith('/usuarios/logout')) cerrarSesionLocal();
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Error en la solicitud');
   return data;
@@ -17,7 +34,8 @@ async function request(path, options = {}) {
 
 export const api = {
   register: (body) => request('/usuarios/register', { method: 'POST', body: JSON.stringify(body) }),
-  login: (body) => request('/usuarios/login', { method: 'POST', body: JSON.stringify(body) }),
+  login: (body) => request('/usuarios/login', { method: 'POST', body: JSON.stringify({ ...body, dispositivo: dispositivoId() }) }),
+  logout: () => request('/usuarios/logout', { method: 'POST' }),
   me: () => request('/usuarios/me'),
   getInventario: () => request('/inventario'),
   saveEquipo: (codigo, body) => request(`/inventario/${codigo}`, { method: 'PUT', body: JSON.stringify(body) }),
@@ -49,6 +67,7 @@ export const api = {
   descargarPlantillaCentro: async () => {
     const token = localStorage.getItem('equipmaster_token');
     const res = await fetch(`${API}/centro-reparaciones/plantilla`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.status === 401) cerrarSesionLocal();
     if (!res.ok) throw new Error('Error al descargar plantilla');
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -69,6 +88,7 @@ export const api = {
   downloadBackup: async () => {
     const token = localStorage.getItem('equipmaster_token');
     const res = await fetch(`${API}/backup`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.status === 401) cerrarSesionLocal();
     if (!res.ok) throw new Error('Error al descargar respaldo');
     const data = await res.json();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -104,6 +124,7 @@ export const api = {
   downloadExcel: async () => {
     const token = localStorage.getItem('equipmaster_token');
     const res = await fetch(`${API}/reportes/excel`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.status === 401) cerrarSesionLocal();
     if (!res.ok) throw new Error('Error al descargar Excel');
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);

@@ -318,8 +318,8 @@ export default function Layout() {
           <div className="flex-1" />
           <div className="relative" ref={notifRef}>
             <button onClick={() => setNotifOpen(!notifOpen)}
-              className="relative p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition">
-              <i className="fa-solid fa-bell text-lg" />
+              className="relative h-9 px-3 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-500 transition flex items-center justify-center">
+              <i className="fa-solid fa-bell text-sm" />
               {notificacionesLocales.length > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
                   {notificacionesLocales.filter(n => n.prioridad === 'critica').length || notificacionesLocales.length}
@@ -370,7 +370,7 @@ export default function Layout() {
               </div>
             )}
           </div>
-          <button onClick={() => setSearchOpen(true)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-400 hover:border-slate-300 hover:text-slate-500 transition">
+          <button onClick={() => setSearchOpen(true)} className="flex items-center gap-2 h-9 px-3 rounded-xl border border-slate-200 text-xs text-slate-400 hover:border-slate-300 hover:text-slate-500 transition">
             <i className="fa-solid fa-search" /> Buscar <kbd className="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono font-bold">Ctrl+K</kbd>
           </button>
         </header>
