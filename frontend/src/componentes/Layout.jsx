@@ -2,8 +2,6 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDarkMode } from '../context/DarkModeContext';
 import { useEffect, useRef, useState } from 'react';
-import { ref as dbRef, onValue, set, onDisconnect } from 'firebase/database';
-import { db } from '../services/firebase';
 import { api } from '../services/api';
 import { useNotify } from './Notification';
 import { useInventario } from '../context/InventarioContext';
@@ -30,6 +28,7 @@ const menuGroups = [
     { to: '/centro-reparaciones', icon: 'fa-screwdriver-wrench', label: 'Centro Reparaciones', perm: 'ver_reparaciones' },
     { to: '/tickets', icon: 'fa-ticket', label: 'Tickets', perm: 'ver_tickets' },
     { to: '/etiquetas', icon: 'fa-tag', label: 'Etiquetas', perm: 'generar_qr' },
+    { to: '/modelos', icon: 'fa-images', label: 'Fotos por Modelo' },
   ]},
   { label: 'Control', items: [
     { to: '/reportes', icon: 'fa-chart-simple', label: 'Reportes', perm: 'ver_reportes' },
@@ -54,6 +53,7 @@ const ROUTE_LABELS = {
   '/centro-reparaciones': 'Centro Reparaciones',
   '/tickets': 'Tickets',
   '/etiquetas': 'Etiquetas',
+  '/modelos': 'Fotos por Modelo',
   '/reportes': 'Reportes',
   '/alertas': 'Alertas',
   '/actividad': 'Historial',
@@ -81,9 +81,16 @@ export default function Layout() {
   const notifRef = useRef(null);
 
   useEffect(() => {
-    const connRef = dbRef(db, '.info/connected');
-    const unsub = onValue(connRef, (snap) => setConnected(snap.val()));
-    return () => unsub();
+    let alive = true;
+    const ping = async () => {
+      try {
+        const r = await fetch('/api/health', { cache: 'no-store' });
+        if (alive) setConnected(r.ok);
+      } catch { if (alive) setConnected(false); }
+    };
+    ping();
+    const id = setInterval(ping, 30000);
+    return () => { alive = false; clearInterval(id); };
   }, []);
 
   useEffect(() => {
@@ -106,24 +113,14 @@ export default function Layout() {
     return count;
   }
 
-  useEffect(() => {
-    const notifRef = dbRef(db, 'notificaciones');
-    const unsub = onValue(notifRef, (snap) => {
-      const data = snap.val();
-      if (!data) return;
-      const ahora = Date.now();
-      Object.entries(data).forEach(([id, n]) => {
-        if (n.leida || !n.timestamp) return;
-        if (ahora - n.timestamp > 60000) {
-          set(dbRef(db, `notificaciones/${id}/leida`), true).catch(() => {});
-          return;
-        }
-        toast(n.mensaje, n.detalle, 'info');
-        setTimeout(() => set(dbRef(db, `notificaciones/${id}/leida`), true).catch(() => {}), 1000);
-      });
-    });
-    return () => unsub();
-  }, []);
+  function avisarUnaVez(nid, mensaje, detalle) {
+    let avisos = new Set();
+    try { avisos = new Set(JSON.parse(localStorage.getItem('equipmaster_avisos') || '[]')); } catch {}
+    if (avisos.has(nid)) return;
+    avisos.add(nid);
+    try { localStorage.setItem('equipmaster_avisos', JSON.stringify([...avisos].slice(-200))); } catch {}
+    toast(mensaje, detalle, 'info');
+  }
 
   useEffect(() => {
     const check = async () => {
@@ -136,21 +133,9 @@ export default function Layout() {
           const diasHabiles = contarDiasHabiles(p.fechaSalida);
           const hoyKey = new Date().toISOString().split('T')[0];
           if (diasHabiles >= 5 && diasHabiles < 8) {
-            const nid = `prestamo-atencion-${p.id}-${hoyKey}`;
-            set(dbRef(db, `notificaciones/${nid}`), {
-              mensaje: '🔔 Préstamo requiere atención',
-              detalle: `${p.serie} · ${p.responsable} · ${diasHabiles} días hábiles`,
-              timestamp: Date.now(),
-              leida: false,
-            }).catch(() => {});
+            avisarUnaVez(`prestamo-atencion-${p.id}-${hoyKey}`, '🔔 Préstamo requiere atención', `${p.serie} · ${p.responsable} · ${diasHabiles} días hábiles`);
           } else if (diasHabiles >= 8) {
-            const nid = `prestamo-vencido-${p.id}-${hoyKey}`;
-            set(dbRef(db, `notificaciones/${nid}`), {
-              mensaje: '🔔 Préstamo vencido',
-              detalle: `${p.serie} · ${p.responsable} · ${diasHabiles} días hábiles sin devolver`,
-              timestamp: Date.now(),
-              leida: false,
-            }).catch(() => {});
+            avisarUnaVez(`prestamo-vencido-${p.id}-${hoyKey}`, '🔔 Préstamo vencido', `${p.serie} · ${p.responsable} · ${diasHabiles} días hábiles sin devolver`);
           }
         });
       } catch {}
@@ -311,7 +296,7 @@ export default function Layout() {
             <i className="fa-solid fa-bars text-lg" />
           </button>
           <div className="hidden lg:flex items-center gap-2">
-            <span className={"w-2.5 h-2.5 rounded-full transition-colors " + (connected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} title={connected ? 'Conectado a Firebase' : 'Sin conexión a Firebase'} />
+            <span className={"w-2.5 h-2.5 rounded-full transition-colors " + (connected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} title={connected ? 'Conectado al servidor' : 'Sin conexión al servidor'} />
             <h1 className="font-display font-bold text-brand-900">EquipMaster</h1>
             <span className="text-[10px] text-slate-400">JV COMPUTER</span>
           </div>

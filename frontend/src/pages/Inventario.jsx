@@ -80,6 +80,7 @@ export default function Inventario() {
   const [dirty, setDirty] = useState(false);
   const [skuManual, setSkuManual] = useState(false);
   const [etiquetaModal, setEtiquetaModal] = useState(false);
+  const [guardando, setGuardando] = useState(false);
   const multiRef = useRef(null);
 
   const tmpl = useMemo(() => getTemplate(form.categoria), [form.categoria]);
@@ -195,11 +196,14 @@ export default function Inventario() {
   };
 
   const handleFormPhotoDelete = async (categoria) => {
-    if (form.fotos[categoria]?.includes('storage.googleapis.com') || form.fotos[categoria]?.includes('firebasestorage')) {
+    const url = form.fotos[categoria];
+    if (url?.includes('storage.googleapis.com') || url?.includes('firebasestorage')) {
       try {
-        const ext = (form.fotos[categoria].split('.').pop()?.split('?')[0]) || 'jpg';
+        const ext = (url.split('.').pop()?.split('?')[0]) || 'jpg';
         await api.deleteFile(`fotos/${form.codigo}/${categoria}.${ext}`);
       } catch {}
+    } else if (url?.startsWith('/archivos/')) {
+      try { await api.deleteFile(url.slice('/archivos/'.length)); } catch {}
     }
     setDirty(true);
     setForm(prev => { const f = { ...prev.fotos }; delete f[categoria]; return { ...prev, fotos: f }; });
@@ -308,16 +312,19 @@ export default function Inventario() {
       notify('Datos ML incompletos', 'Completa fecha y responsable del envío.', 'error');
       return;
     }
+    if (guardando) return;
+    setGuardando(true);
 
-    setDirty(false);
-    const existente = inventario.find(i => i.codigo === form.codigo);
-    if (!editing) {
-      const dup = inventario.find(i => i.serie.toUpperCase().trim() === form.serie.toUpperCase().trim() && i.codigo !== form.codigo);
-      if (dup) {
-        notify('Duplicado', `Ya existe un equipo con la serie ${form.serie} (${dup.codigo} · ${dup.marca} ${dup.modelo}).`, 'error');
-        return;
+    try {
+      setDirty(false);
+      const existente = inventario.find(i => i.codigo === form.codigo);
+      if (!editing) {
+        const dup = inventario.find(i => i.serie.toUpperCase().trim() === form.serie.toUpperCase().trim() && i.codigo !== form.codigo);
+        if (dup) {
+          notify('Duplicado', `Ya existe un equipo con la serie ${form.serie} (${dup.codigo} · ${dup.marca} ${dup.modelo}).`, 'error');
+          return;
+        }
       }
-    }
     const payload = {
       codigo: form.codigo.toUpperCase().trim(),
       categoria: form.categoria,
@@ -371,8 +378,7 @@ export default function Inventario() {
       payload.fechaRevision = fv.fechaRevision || undefined;
     }
 
-    try {
-      const result = await api.saveEquipo(payload.codigo, payload);
+    const result = await api.saveEquipo(payload.codigo, payload);
       const codigoReal = result.codigo || payload.codigo;
       if (editing && payload.sku && payload.sku !== 'N/A') {
         try {
@@ -386,15 +392,19 @@ export default function Inventario() {
           }
         } catch { /* propagación falló, no bloquea */ }
       }
-      localStorage.setItem('em_last_brand', form.marca);
-      localStorage.setItem('em_last_technician', form.tecnico);
       notify('¡Procesado!', editing ? 'Equipo actualizado.' : 'Equipo registrado en Firebase.', 'success');
-      if (!editing && payload.sku && payload.sku !== 'N/A') {
-        aprenderSku(payload.sku, `${payload.marca} ${payload.modelo}`, payload.procesador, payload.ram, payload.almacenamiento);
-      }
       cancelar(!editing ? codigoReal : null);
+      try {
+        try { localStorage.setItem('em_last_brand', form.marca); } catch { /* no bloquea */ }
+        try { localStorage.setItem('em_last_technician', form.tecnico); } catch { /* no bloquea */ }
+        if (!editing && payload.sku && payload.sku !== 'N/A') {
+          try { aprenderSku(payload.sku, `${payload.marca} ${payload.modelo}`, payload.procesador, payload.ram, payload.almacenamiento); } catch { /* no bloquea */ }
+        }
+      } catch { /* no bloquea */ }
     } catch (err) {
       notify('Error', err.message, 'error');
+    } finally {
+      setGuardando(false);
     }
   };
 
@@ -774,6 +784,7 @@ export default function Inventario() {
             stepIndex={currentStepIndex}
             totalSteps={totalSteps}
             editing={editing}
+            disabled={guardando}
             onPrev={goPrev}
             onNext={goNext}
             onSubmit={handleSubmit}

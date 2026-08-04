@@ -22,6 +22,7 @@ import ConsultaPublica from './pages/ConsultaPublica';
 import FichaEquipo from './pages/FichaEquipo';
 import FichaTecnicaV2 from './pages/FichaTecnicaV2';
 import Galeria from './pages/Galeria';
+import GaleriaModelos from './pages/GaleriaModelos';
 import Etiquetas from './pages/Etiquetas';
 import Usuarios from './pages/Usuarios';
 import CentroDocumentacion from './pages/CentroDocumentacion';
@@ -81,6 +82,7 @@ export default function App() {
                 <Route path="tickets" element={<Guard perm="ver_tickets"><Tickets /></Guard>} />
                 <Route path="etiquetas" element={<Guard perm="generar_qr"><Etiquetas /></Guard>} />
                 <Route path="etiquetas/:codigo" element={<Guard perm="generar_qr"><Etiquetas /></Guard>} />
+                <Route path="modelos" element={<GaleriaModelos />} />
               </Route>
               <Route path="consulta" element={<ConsultaPublica />} />
               <Route path="ficha/:codigo" element={<FichaEquipo />} />

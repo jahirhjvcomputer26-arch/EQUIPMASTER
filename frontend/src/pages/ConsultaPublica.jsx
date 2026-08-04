@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ref, get } from 'firebase/database';
-import { db } from '../services/firebase';
+import { api } from '../services/api';
 import { badgeEstado, formatearFechaRegistro, nombreEquipo } from '../utils/inventario';
 
 export default function ConsultaPublica() {
@@ -16,19 +15,10 @@ export default function ConsultaPublica() {
     setError('');
     setResultado(null);
     try {
-      const snap = await get(ref(db, 'inventario'));
-      const data = snap.val();
-      if (!data) { setError('No hay equipos registrados'); return; }
-      const items = Object.values(data);
-      const found = items.find(i =>
-        i.codigo?.toUpperCase() === q ||
-        i.serie?.toUpperCase() === q ||
-        i.sku?.toUpperCase() === q
-      );
-      if (!found) { setError('Equipo no encontrado con ese código o serie'); return; }
+      const found = await api.consultaPublica(q);
       setResultado(found);
     } catch (err) {
-      setError('Error al consultar: ' + err.message);
+      setError(err.message || 'Equipo no encontrado con ese código o serie');
     } finally {
       setLoading(false);
     }

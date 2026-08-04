@@ -535,7 +535,7 @@ function getSkusAprendidos() {
 }
 
 function guardarSkusAprendidos(lista) {
-  localStorage.setItem(LS_KEY, JSON.stringify(lista));
+  try { localStorage.setItem(LS_KEY, JSON.stringify(lista)); } catch { /* no bloquea el guardado */ }
 }
 
 function cargarSkusAprendidos() {

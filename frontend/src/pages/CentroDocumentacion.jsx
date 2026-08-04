@@ -1,7 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ref as dbRef, get } from 'firebase/database';
-import { db } from '../services/firebase';
 import { api } from '../services/api';
 import { useNotify } from '../componentes/Notification';
 import useDocumentTitle from '../utils/useDocumentTitle';
@@ -43,13 +41,10 @@ export default function CentroDocumentacion() {
   const loadItem = useCallback(async () => {
     if (!codigo) return;
     try {
-      const snap = await get(dbRef(db, `inventario/${codigo.toUpperCase()}`));
-      if (snap.exists()) {
-        const data = snap.val();
-        setItem(data);
-        setDocs(data.documentos || {});
-      } else setError('Equipo no encontrado');
-    } catch { setError('Error al cargar'); }
+      const data = await api.getEquipo(codigo.toUpperCase());
+      setItem(data);
+      setDocs(data.documentos || {});
+    } catch { setError('Equipo no encontrado'); }
   }, [codigo]);
 
   useEffect(() => { loadItem(); }, [loadItem]);

@@ -1,7 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ref as dbRef, get } from 'firebase/database';
-import { db } from '../services/firebase';
 import { api } from '../services/api';
 import { useNotify } from '../componentes/Notification';
 import useDocumentTitle from '../utils/useDocumentTitle';
@@ -60,15 +58,10 @@ export default function Galeria() {
 
   const loadItem = useCallback(async () => {
     try {
-      const snap = await get(dbRef(db, `inventario/${codigo?.toUpperCase()}`));
-      if (snap.exists()) {
-        const data = snap.val();
-        setItem(data);
-        setFotos(data.fotos || {});
-      } else {
-        setError('Equipo no encontrado');
-      }
-    } catch { setError('Error al cargar equipo'); }
+      const data = await api.getEquipo(codigo?.toUpperCase());
+      setItem(data);
+      setFotos(data.fotos || {});
+    } catch { setError('Equipo no encontrado'); }
   }, [codigo]);
 
   useEffect(() => { if (codigo) loadItem(); }, [codigo, loadItem]);
@@ -92,11 +85,14 @@ export default function Galeria() {
   const handleDelete = async (categoria) => {
     if (!window.confirm(`¿Eliminar foto de ${categoria}?`)) return;
     try {
-      if (fotos[categoria]?.includes('storage.googleapis.com') || fotos[categoria]?.includes('firebasestorage')) {
+      const url = fotos[categoria];
+      if (url?.includes('storage.googleapis.com') || url?.includes('firebasestorage')) {
         try {
-          const ext = (fotos[categoria].split('.').pop()?.split('?')[0]) || 'jpg';
+          const ext = (url.split('.').pop()?.split('?')[0]) || 'jpg';
           await api.deleteFile(`fotos/${codigo.toUpperCase()}/${categoria}.${ext}`);
         } catch {}
+      } else if (url?.startsWith('/archivos/')) {
+        try { await api.deleteFile(url.slice('/archivos/'.length)); } catch {}
       }
       const newFotos = { ...fotos };
       delete newFotos[categoria];

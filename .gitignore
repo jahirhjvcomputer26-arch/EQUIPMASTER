@@ -5,3 +5,6 @@ service-account.json
 backend/.env
 *.log
 .DS_Store
+backend/scripts/dump-firebase.json
+backend/public/archivos/
+deploy/*.zip

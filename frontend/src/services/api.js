@@ -38,6 +38,13 @@ export const api = {
   logout: () => request('/usuarios/logout', { method: 'POST' }),
   me: () => request('/usuarios/me'),
   getInventario: () => request('/inventario'),
+  getEquipo: (codigo) => request(`/inventario/${encodeURIComponent(codigo)}`),
+  consultaPublica: async (q) => {
+    const res = await fetch(`${API}/inventario/public/consulta?q=${encodeURIComponent(q)}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Equipo no encontrado');
+    return data;
+  },
   saveEquipo: (codigo, body) => request(`/inventario/${codigo}`, { method: 'PUT', body: JSON.stringify(body) }),
   eliminarEquipo: (codigo) => request(`/inventario/${codigo}`, { method: 'DELETE' }),
   ventaLocal: (body) => request('/ventas/local', { method: 'POST', body: JSON.stringify(body) }),
@@ -108,6 +115,11 @@ export const api = {
   uploadFile: (body) => request('/storage/upload', { method: 'POST', body: JSON.stringify(body) }),
   deleteFile: (path) => request(`/storage/delete?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),
   cleanupStorage: () => request('/storage/cleanup', { method: 'POST' }),
+  modelosFotos: () => request('/modelos-fotos'),
+  getModeloFotos: (clave) => request(`/modelos-fotos/${clave}`),
+  subirFotoModelo: (body) => request('/modelos-fotos', { method: 'POST', body: JSON.stringify(body) }),
+  borrarFotoModelo: (clave, fotoId) => request(`/modelos-fotos/${clave}/${fotoId}`, { method: 'DELETE' }),
+  borrarModelo: (clave) => request(`/modelos-fotos/${clave}`, { method: 'DELETE' }),
   getTickets: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return request(`/tickets${qs ? '?' + qs : ''}`);

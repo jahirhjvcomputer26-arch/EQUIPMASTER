@@ -1,12 +1,22 @@
+import { sqlGet, sqlSet, sqlUpdate, sqlDelete } from './db.js';
+
 const DB_URL = process.env.FIREBASE_DB_URL || 'https://inventarioequip-default-rtdb.firebaseio.com';
 
+// Modo dual: si DB_SERVER está configurado se usa SQL Server;
+// si además se define USE_FIREBASE=1, se fuerza el modo Firebase.
+function usarSql() {
+  return !!process.env.DB_SERVER && !process.env.USE_FIREBASE;
+}
+
 export async function firebaseGet(path) {
+  if (usarSql()) return sqlGet(path);
   const res = await fetch(`${DB_URL}/${path}.json`);
   if (!res.ok) throw new Error(`Firebase GET error: ${res.status}`);
   return res.json();
 }
 
 export async function firebaseSet(path, data) {
+  if (usarSql()) return sqlSet(path, data);
   const res = await fetch(`${DB_URL}/${path}.json`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -17,6 +27,7 @@ export async function firebaseSet(path, data) {
 }
 
 export async function firebaseUpdate(path, data) {
+  if (usarSql()) return sqlUpdate(path, data);
   const res = await fetch(`${DB_URL}/${path}.json`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -27,6 +38,7 @@ export async function firebaseUpdate(path, data) {
 }
 
 export async function firebaseDelete(path) {
+  if (usarSql()) return sqlDelete(path);
   const res = await fetch(`${DB_URL}/${path}.json`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Firebase DELETE error: ${res.status}`);
   return res.json();

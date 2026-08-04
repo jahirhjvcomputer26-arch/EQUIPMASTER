@@ -5,6 +5,25 @@ import { firebaseDelete, firebaseGet, firebaseSet } from '../firebase.js';
 import { registrarActividad } from './actividad.js';
 
 const router = Router();
+
+router.get('/public/consulta', async (req, res) => {
+  try {
+    const q = (req.query.q || '').toUpperCase().trim();
+    if (!q) return res.status(400).json({ error: 'Parámetro q requerido' });
+    const data = await firebaseGet('inventario');
+    const items = data ? Object.values(data) : [];
+    const found = items.find(i =>
+      i.codigo?.toUpperCase() === q ||
+      i.serie?.toUpperCase() === q ||
+      i.sku?.toUpperCase() === q
+    );
+    if (!found) return res.status(404).json({ error: 'Equipo no encontrado con ese código o serie' });
+    res.json(found);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.use(authMiddleware, loadPermisos());
 
 router.get('/', requirePerm('ver_inventario'), async (_req, res) => {

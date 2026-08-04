@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ref as dbRef, get } from 'firebase/database';
-import { db } from '../services/firebase';
+import { api } from '../services/api';
 import { useNotify } from '../componentes/Notification';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import { useInventario } from '../context/InventarioContext';
@@ -32,10 +31,9 @@ export default function Etiquetas() {
 
   useEffect(() => {
     if (!codigo) return;
-    get(dbRef(db, `inventario/${codigo.toUpperCase()}`)).then(snap => {
-      if (snap.exists()) setItem({ ...snap.val(), codigo: snap.key });
-      else setError('Equipo no encontrado');
-    }).catch(() => setError('Error al cargar'));
+    api.getEquipo(codigo.toUpperCase())
+      .then(data => setItem(data))
+      .catch(() => setError('Equipo no encontrado'));
   }, [codigo]);
 
   useEffect(() => {

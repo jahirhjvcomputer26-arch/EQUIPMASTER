@@ -1,4 +1,4 @@
-export default function ActionBar({ stepIndex, totalSteps, editing, onPrev, onNext, onSubmit, onCancel }) {
+export default function ActionBar({ stepIndex, totalSteps, editing, disabled, onPrev, onNext, onSubmit, onCancel }) {
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === totalSteps - 1;
 
@@ -26,16 +26,16 @@ export default function ActionBar({ stepIndex, totalSteps, editing, onPrev, onNe
           {isFirst && <div />}
 
           {!isLast ? (
-            <button type="button" onClick={onNext}
-              className="btn-brand flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold">
+            <button type="button" onClick={onNext} disabled={disabled}
+              className="btn-brand flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed">
               Siguiente
               <i className="fa-solid fa-arrow-right text-xs" />
             </button>
           ) : (
-            <button type="button" onClick={onSubmit}
-              className="btn-brand flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold">
+            <button type="button" onClick={onSubmit} disabled={disabled}
+              className="btn-brand flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed">
               <i className={`fa-solid ${editing ? 'fa-save' : 'fa-plus'} text-xs`} />
-              {editing ? 'Guardar Cambios' : 'Registrar Equipo'}
+              {disabled ? 'Guardando…' : (editing ? 'Guardar Cambios' : 'Registrar Equipo')}
             </button>
           )}
         </div>

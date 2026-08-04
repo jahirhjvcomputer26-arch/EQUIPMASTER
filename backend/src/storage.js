@@ -4,6 +4,17 @@ import { fileURLToPath } from 'url';
 import { GoogleAuth } from 'google-auth-library';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ARCHIVOS_ROOT = path.join(__dirname, '..', 'public', 'archivos');
+
+// Modo local: cuando hay DB_SERVER (y no USE_FIREBASE=1) los archivos se
+// guardan en disco (backend/public/archivos) y las URLs son relativas (/archivos/...).
+function usarLocal() {
+  return !!process.env.DB_SERVER && !process.env.USE_FIREBASE;
+}
+
+function localPath(objectPath) {
+  return path.join(ARCHIVOS_ROOT, ...objectPath.split('/'));
+}
 
 let authClient = null;
 let googleAuth = null;
@@ -62,6 +73,13 @@ function storageApiUrl(objectPath) {
 }
 
 export async function uploadToStorage(objectPath, buffer, contentType) {
+  if (usarLocal()) {
+    const dest = localPath(objectPath);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, buffer);
+    return { name: objectPath };
+  }
+
   const auth = getGoogleAuth();
   if (!auth) throw new Error('Storage no disponible');
 
@@ -84,7 +102,24 @@ export async function uploadToStorage(objectPath, buffer, contentType) {
   return res.json();
 }
 
+function limpiarDirectoriosVacios(objectPath) {
+  let dir = path.dirname(localPath(objectPath));
+  while (dir !== ARCHIVOS_ROOT && dir.startsWith(ARCHIVOS_ROOT + path.sep)) {
+    let vacio = false;
+    try { vacio = fs.readdirSync(dir).length === 0; } catch { return; }
+    if (!vacio) return;
+    try { fs.rmdirSync(dir); } catch { return; }
+    dir = path.dirname(dir);
+  }
+}
+
 export async function deleteFromStorage(objectPath) {
+  if (usarLocal()) {
+    try { fs.unlinkSync(localPath(objectPath)); } catch { /* ya no existe */ }
+    limpiarDirectoriosVacios(objectPath);
+    return true;
+  }
+
   const auth = getGoogleAuth();
   if (!auth) throw new Error('Storage no disponible');
 
@@ -104,6 +139,8 @@ export async function deleteFromStorage(objectPath) {
 }
 
 export async function makePublic(objectPath) {
+  if (usarLocal()) return true;
+
   const auth = getGoogleAuth();
   if (!auth) return;
 
@@ -122,10 +159,29 @@ export async function makePublic(objectPath) {
 }
 
 export function getPublicUrl(objectPath) {
+  if (usarLocal()) return `/archivos/${objectPath}`;
   return `https://storage.googleapis.com/${BUCKET}/${objectPath}`;
 }
 
 export async function listStorageFiles(prefix) {
+  if (usarLocal()) {
+    const dir = path.join(ARCHIVOS_ROOT, ...prefix.split('/'));
+    if (!fs.existsSync(dir)) return [];
+    const out = [];
+    const walk = (d) => {
+      for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+        const full = path.join(d, e.name);
+        if (e.isDirectory()) walk(full);
+        else {
+          const st = fs.statSync(full);
+          out.push({ name: path.relative(ARCHIVOS_ROOT, full).split(path.sep).join('/'), size: st.size, updated: st.mtime.toISOString() });
+        }
+      }
+    };
+    walk(dir);
+    return out;
+  }
+
   const auth = getGoogleAuth();
   if (!auth) return [];
 

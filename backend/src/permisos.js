@@ -40,6 +40,7 @@ export const PERMISOS_CATALOGO = [
   { key: 'base_datos', label: 'Base de Datos', grupo: 'Sistema', desc: 'Administrar la base de datos' },
   { key: 'respaldos', label: 'Respaldos', grupo: 'Sistema', desc: 'Descargar respaldos del sistema' },
   { key: 'subir_archivos', label: 'Subir / Eliminar Archivos', grupo: 'Sistema', desc: 'Subir fotografías y documentos' },
+  { key: 'gestionar_modelos', label: 'Fotos por Modelo', grupo: 'Inventario', desc: 'Subir y eliminar fotografías del catálogo de modelos (marca/modelo)' },
 ];
 
 export const ROLES_DEFECTO = {
@@ -61,7 +62,7 @@ export const ROLES_DEFECTO = {
       ver_reportes: true, exportar_excel: true,
       ver_tickets: true, registrar_tickets: true, gestionar_tickets: true, atender_tickets: true,
       admin_usuarios: true, ver_auditoria: true,
-      subir_archivos: true,
+      subir_archivos: true, gestionar_modelos: true,
     },
   },
   supervisor: {
@@ -97,6 +98,14 @@ export const ROLES_DEFECTO = {
       ver_reparaciones: true, registrar_reparaciones: true, diagnostico_hardware: true,
       ver_tickets: true, registrar_tickets: true, atender_tickets: true,
       subir_archivos: true,
+    },
+  },
+  marketing: {
+    nivel: 50, nombre: 'Marketing', color: '#db2777',
+    descripcion: 'Sube y administra las fotografías por marca y modelo de los equipos.',
+    permisos: {
+      ver_inventario: true, ver_fichas: true, ver_reportes: true,
+      gestionar_modelos: true,
     },
   },
   usuario: {

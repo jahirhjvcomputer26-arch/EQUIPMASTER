@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ref, get } from 'firebase/database';
-import { db } from '../services/firebase';
+import { api } from '../services/api';
 import { badgeEstado } from '../utils/inventario';
 
 export default function FichaEquipo() {
@@ -11,11 +10,9 @@ export default function FichaEquipo() {
 
   useEffect(() => {
     if (!codigo) return;
-    get(ref(db, 'inventario/' + codigo.toUpperCase())).then(snap => {
-      const data = snap.val();
-      if (!data) { setError('Equipo no encontrado'); return; }
-      setItem(data);
-    }).catch(() => setError('Error al cargar'));
+    api.getEquipo(codigo.toUpperCase())
+      .then(data => setItem(data))
+      .catch(() => setError('Equipo no encontrado'));
   }, [codigo]);
 
   useEffect(() => {

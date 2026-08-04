@@ -15,6 +15,7 @@ import centroReparacionesRouter from './routes/centroReparaciones.js';
 import backupRouter from './routes/backup.js';
 import configuracionRouter from './routes/configuracion.js';
 import storageRouter from './routes/storage.js';
+import modelosFotosRouter from './routes/modelosFotos.js';
 import ticketsRouter from './routes/tickets.js';
 import hardwareRouter from './routes/hardware.js';
 import { initStorage } from './storage.js';
@@ -45,6 +46,7 @@ app.use('/api/centro-reparaciones', centroReparacionesRouter);
 app.use('/api/backup', backupRouter);
 app.use('/api/configuracion', configuracionRouter);
 app.use('/api/storage', storageRouter);
+app.use('/api/modelos-fotos', modelosFotosRouter);
 app.use('/api/tickets', ticketsRouter);
 app.use('/api/hardware', hardwareRouter);
 
