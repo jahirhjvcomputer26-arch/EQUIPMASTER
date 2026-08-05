@@ -282,6 +282,41 @@ export default function FichaTecnicaV2() {
           </div>
         </div>
 
+        {/* Línea de tiempo */}
+        {(() => {
+          const eventos = [];
+          if (item.fechaRegistro) eventos.push({ fecha: item.fechaRegistro, icono: 'fa-plus-circle', color: 'text-brand-600', texto: 'Equipo registrado' });
+          (item.historial || []).forEach(h => {
+            eventos.push({ fecha: h.fecha, icono: 'fa-pen-to-square', color: 'text-blue-500', texto: `Editado por ${h.usuario || 'SISTEMA'}: ${h.cambios || ''}` });
+          });
+          if (item.flujoSalida) eventos.push({ fecha: item.flujoSalida.fecha || item.fechaRegistro, icono: 'fa-store', color: 'text-emerald-500', texto: `Venta Local · ${item.flujoSalida.cliente || 'Sin cliente'} · $${Intl.NumberFormat('es-MX').format(parseInt((item.flujoSalida.precio || '0').replace(/[^0-9]/g, '')) || 0)}` });
+          if (item.flujoVentaML) eventos.push({ fecha: item.flujoVentaML.fecha || item.fechaRegistro, icono: 'fa-truck', color: 'text-amber-500', texto: 'Venta Mercado Libre' });
+          if (item.flujoDevolucion) eventos.push({ fecha: item.flujoDevolucion.fecha || item.fechaRegistro, icono: 'fa-rotate-left', color: 'text-red-500', texto: `Devolución · ${item.flujoDevolucion.motivo || 'Sin motivo'}` });
+          eventos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+          if (eventos.length === 0) return null;
+          return (
+            <div className="border-t-2 border-slate-100 pt-6 mt-6">
+              <SectionTitle icon="fa-timeline" title="Línea de tiempo" color="text-brand-600" />
+              <div className="space-y-0">
+                {eventos.map((e, i) => (
+                  <div key={i} className="flex gap-3 items-start">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 ${e.color} text-sm`}>
+                        <i className={`fa-solid ${e.icono}`} />
+                      </div>
+                      {i < eventos.length - 1 && <div className="w-0.5 h-6 bg-slate-200" />}
+                    </div>
+                    <div className="pb-2 pt-1.5">
+                      <p className="text-xs text-slate-800">{e.texto}</p>
+                      <p className="text-[10px] text-slate-400">{e.fecha ? new Date(e.fecha).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Print buttons */}
         <p className="text-center text-xs text-slate-400 no-print">
           Presiona <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-xs font-mono">Ctrl+P</kbd> o{' '}

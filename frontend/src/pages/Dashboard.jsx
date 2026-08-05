@@ -279,6 +279,9 @@ export default function Dashboard() {
     const catCount = {};
     filtrado.forEach(item => { const c = (item.categoria || 'OTRA').toUpperCase().trim(); catCount[c] = (catCount[c] || 0) + 1; });
 
+    const soCount = {};
+    filtrado.forEach(item => { const s = (item.sistemaOperativo || 'SIN SO').trim(); soCount[s] = (soCount[s] || 0) + 1; });
+
     const antiguos = inventario
       .filter(i => !i.estado?.includes('🔴 VENDIDO') && i.fechaRegistro)
       .map(i => {
@@ -298,6 +301,7 @@ export default function Dashboard() {
       porMarca, porProcesador, porRam, porAlmacenamiento, porAnio,
       totalIngresos, tasaConversion,
       porCategoria: { labels: Object.keys(catCount), data: Object.values(catCount) },
+      porSO: { labels: Object.keys(soCount).slice(0, 8), data: Object.values(soCount).slice(0, 8) },
       registradosHoy, registradosSemana, recientes: recientes.slice(0, 8),
       antiguos,
     };
@@ -331,7 +335,7 @@ export default function Dashboard() {
       <div className="animate-slide-up flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-2xl font-bold text-slate-900">Dashboard de Control</h2>
-          <p className="text-slate-500 text-sm">Métricas en tiempo real desde Firebase</p>
+          <p className="text-slate-500 text-sm">Métricas desde SQL Server</p>
         </div>
         <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-xs">
           {PRESETS.map(p => (
@@ -560,6 +564,23 @@ export default function Dashboard() {
                 <div className="flex-1 flex items-center justify-center">
                   <div className="w-full max-w-[220px]">
                     <Doughnut data={doughnutData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }} />
+                  </div>
+                </div>
+              </div>
+              <div className="panel p-6 min-h-[380px] flex flex-col">
+                <h4 className="text-sm font-bold text-slate-700 uppercase mb-4">
+                  <i className="fa-solid fa-windows text-brand-500 mr-1" /> Sistemas Operativos
+                </h4>
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-full max-w-[220px]">
+                    <Doughnut data={{
+                      labels: stats.porSO.labels,
+                      datasets: [{
+                        data: stats.porSO.data,
+                        backgroundColor: ['#0018B0', '#0284c7', '#7c3aed', '#db2777', '#16a34a', '#ca8a04', '#dc2626', '#64748b'],
+                        borderWidth: 1.5
+                      }]
+                    }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }} />
                   </div>
                 </div>
               </div>

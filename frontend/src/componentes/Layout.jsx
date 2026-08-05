@@ -76,6 +76,8 @@ export default function Layout() {
   const notify = useBrowserNotifications();
   const { notify: toast } = useNotify();
   const { inventario } = useInventario();
+  const inventarioRef = useRef(inventario);
+  useEffect(() => { inventarioRef.current = inventario; }, [inventario]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notificacionesLocales, setNotificacionesLocales] = useState([]);
   const notifRef = useRef(null);
@@ -116,25 +118,45 @@ export default function Layout() {
   useEffect(() => {
     const check = async () => {
       try {
+        const hoyKey = new Date().toISOString().split('T')[0];
+        const ahora = Date.now();
+
+        // Préstamos
         const prestamos = await api.getPrestamos();
         prestamos.forEach(p => {
           if (!p.activo) return;
           const salida = new Date(p.fechaSalida);
           if (isNaN(salida)) return;
           const diasHabiles = contarDiasHabiles(p.fechaSalida);
-          const hoyKey = new Date().toISOString().split('T')[0];
           if (diasHabiles >= 5 && diasHabiles < 8) {
-            api.crearNotificacion({
-              id: `prestamo-atencion-${p.id}-${hoyKey}`,
-              mensaje: '🔔 Préstamo requiere atención',
-              detalle: `${p.serie} · ${p.responsable} · ${diasHabiles} días hábiles`,
-            }).catch(() => {});
+            api.crearNotificacion({ id: `prestamo-atencion-${p.id}-${hoyKey}`, mensaje: '🔔 Préstamo requiere atención', detalle: `${p.serie} · ${p.responsable} · ${diasHabiles} días hábiles` }).catch(() => {});
           } else if (diasHabiles >= 8) {
-            api.crearNotificacion({
-              id: `prestamo-vencido-${p.id}-${hoyKey}`,
-              mensaje: '🔔 Préstamo vencido',
-              detalle: `${p.serie} · ${p.responsable} · ${diasHabiles} días hábiles sin devolver`,
-            }).catch(() => {});
+            api.crearNotificacion({ id: `prestamo-vencido-${p.id}-${hoyKey}`, mensaje: '🔔 Préstamo vencido', detalle: `${p.serie} · ${p.responsable} · ${diasHabiles} días hábiles sin devolver` }).catch(() => {});
+          }
+        });
+
+        // Tickets atrasados
+        try {
+          const tickets = await api.getTickets();
+          tickets.forEach(t => {
+            const finales = ['entregado','cerrado','cancelado','reparado'];
+            if (finales.includes(t.estado)) return;
+            const tsMod = new Date(t.modificadoEn || t.creadoEn || 0).getTime();
+            const dias = Math.floor((ahora - tsMod) / 86400000);
+            if (dias >= 3) {
+              api.crearNotificacion({ id: `ticket-atrasado-${t.id}-${hoyKey}`, mensaje: '🎫 Ticket sin actualizar', detalle: `${t.id}: ${t.asunto} · ${dias}d sin cambios` }).catch(() => {});
+            }
+          });
+        } catch {}
+
+        // Equipos estancados en revisión
+        inventarioRef.current.forEach(i => {
+          if (!i.estado?.includes('🟠') && !i.estado?.includes('🟡')) return;
+          const fTs = fechaRegistroTs(i.fechaRegistro);
+          if (isNaN(fTs)) return;
+          const dias = Math.floor((ahora - fTs) / 86400000);
+          if (dias >= 7) {
+            api.crearNotificacion({ id: `equipo-estancado-${i.codigo}-${hoyKey}`, mensaje: '⏳ Equipo estancado', detalle: `${i.codigo} · ${i.marca} ${i.modelo} · ${dias}d en ${i.estado}` }).catch(() => {});
           }
         });
       } catch {}
