@@ -57,12 +57,12 @@ export default function AIChat() {
 
   return (
     <>
-      <button onClick={() => setOpen(!open)} className="fixed bottom-32 sm:bottom-20 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-brand-600 to-indigo-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center text-xl" title="Asistente IA">
+      <button onClick={() => setOpen(!open)} className="fixed bottom-44 sm:bottom-28 right-5 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-brand-600 to-indigo-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center text-xl" title="Asistente IA">
         <i className={`fa-solid ${open ? 'fa-xmark' : 'fa-robot'}`} />
       </button>
 
       {open && (
-        <div className="fixed bottom-48 sm:bottom-36 right-5 z-50 w-80 sm:w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-slide-up">
+        <div className="fixed bottom-60 sm:bottom-44 right-5 z-50 w-80 sm:w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-slide-up">
           <div className="bg-gradient-to-r from-brand-600 to-indigo-600 px-4 py-3 flex items-center gap-3">
             <i className="fa-solid fa-robot text-white text-lg" />
             <div>
