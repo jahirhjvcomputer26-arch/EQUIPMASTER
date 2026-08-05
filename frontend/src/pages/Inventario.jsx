@@ -217,12 +217,18 @@ export default function Inventario() {
 
   useUnsavedChanges(dirty);
 
+  const lastEditCodigo = useRef(null);
+
   useEffect(() => {
     const codigo = params.get('editar');
-    if (codigo && inventario.length) {
+    if (codigo && inventario.length && codigo !== lastEditCodigo.current) {
       const item = inventario.find(i => i.codigo === codigo);
-      if (item) cargarEdicion(item);
+      if (item) {
+        lastEditCodigo.current = codigo;
+        cargarEdicion(item);
+      }
     }
+    if (!codigo) lastEditCodigo.current = null;
   }, [params, inventario]);
 
   useEffect(() => {
@@ -412,6 +418,7 @@ export default function Inventario() {
   };
 
   const cancelar = (ultimoCodigo = null) => {
+    lastEditCodigo.current = null;
     const nextCodigo = ultimoCodigo
       ? `INV-${parseInt(ultimoCodigo.replace('INV-', ''), 10) + 1}`
       : generarCodigoSiguiente(inventario);
