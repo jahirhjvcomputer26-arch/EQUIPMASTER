@@ -217,12 +217,15 @@ export default function Inventario() {
 
   useUnsavedChanges(dirty);
 
+  const formInitialized = useRef(false);
+
   useEffect(() => {
     const codigo = params.get('editar');
     if (codigo) {
       const item = inventario.find(i => i.codigo === codigo);
       if (item) cargarEdicion(item);
-    } else if (!editing) {
+    } else if (!editing && !formInitialized.current) {
+      formInitialized.current = true;
       const hoy = new Date().toISOString().split('T')[0];
       setForm(f => {
         const lastBrand = localStorage.getItem('em_last_brand') || '';
@@ -409,6 +412,7 @@ export default function Inventario() {
   };
 
   const cancelar = (ultimoCodigo = null) => {
+    formInitialized.current = false;
     const nextCodigo = ultimoCodigo
       ? `INV-${parseInt(ultimoCodigo.replace('INV-', ''), 10) + 1}`
       : generarCodigoSiguiente(inventario);
