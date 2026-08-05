@@ -10,6 +10,7 @@ import OfflineBanner from './OfflineBanner';
 import SearchModal from './SearchModal';
 import QRScanner from './QRScanner';
 import ScrollToTop from './ScrollToTop';
+import AIChat from './AIChat';
 import useBrowserNotifications from '../utils/useBrowserNotifications';
 
 const menuGroups = [
@@ -433,6 +434,7 @@ export default function Layout() {
           ))}
         </nav>
       </div>
+      <AIChat />
     </div>
   );
 }

@@ -21,6 +21,7 @@ import modelosFotosRouter from './routes/modelosFotos.js';
 import ticketsRouter from './routes/tickets.js';
 import hardwareRouter from './routes/hardware.js';
 import notificacionesRouter from './routes/notificaciones.js';
+import iaRouter from './routes/ia.js';
 import { initStorage } from './storage.js';
 import { seedPermisos } from './permisos.js';
 
@@ -53,6 +54,7 @@ app.use('/api/modelos-fotos', modelosFotosRouter);
 app.use('/api/tickets', ticketsRouter);
 app.use('/api/hardware', hardwareRouter);
 app.use('/api/notificaciones', notificacionesRouter);
+app.use('/api/ia', iaRouter);
 
 initStorage();
 seedPermisos();
