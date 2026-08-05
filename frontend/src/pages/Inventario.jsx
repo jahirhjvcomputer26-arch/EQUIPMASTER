@@ -69,7 +69,7 @@ function SectionHeader({ icon, title, color, children }) {
 
 export default function Inventario() {
   useDocumentTitle('Entrada de equipos');
-  const { inventario } = useInventario();
+  const { inventario, refresh } = useInventario();
   const { notify } = useNotify();
   const [params] = useSearchParams();
   const [mode, setMode] = useState(() => localStorage.getItem('em_capture_mode') || 'full');
@@ -402,6 +402,7 @@ export default function Inventario() {
         } catch { /* propagación falló, no bloquea */ }
       }
       notify('¡Procesado!', editing ? 'Equipo actualizado.' : 'Equipo registrado en Firebase.', 'success');
+      refresh();
       cancelar(!editing ? codigoReal : null);
       try {
         try { localStorage.setItem('em_last_brand', form.marca); } catch { /* no bloquea */ }
