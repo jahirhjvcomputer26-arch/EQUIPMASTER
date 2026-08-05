@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { nombreEquipo } from '../utils/inventario';
+import { APP_URL } from '../config.js';
 
 export const LABEL_SIZES = [
   { key: '2b51x25', label: '4Barcode 51×25mm', w: 178, h: 90, mm: '51mm 25mm', fontTitle: 10, fontSub: 7, fontCode: 8 },
@@ -27,7 +28,7 @@ export function EtiquetaUnica({ item, size }) {
   const s = LABEL_SIZES.find(l => l.key === size) || LABEL_SIZES[0];
   const qrSize = Math.round(s.h * (s.solo ? 0.78 : 0.55));
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=L&qzone=3&margin=2&data=${encodeURIComponent(
-    window.location.origin + '/consulta?q=' + item.codigo
+    APP_URL + '/consulta?q=' + item.codigo
   )}`;
 
   if (s.solo) {

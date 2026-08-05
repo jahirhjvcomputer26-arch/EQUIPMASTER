@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { badgeEstado } from '../utils/inventario';
+import { APP_URL } from '../config.js';
 
 export default function FichaEquipo() {
   const { codigo } = useParams();
@@ -32,7 +33,7 @@ export default function FichaEquipo() {
   );
 
   const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(
-    window.location.origin + '/consulta?q=' + item.serie
+    APP_URL + '/consulta?q=' + item.serie
   );
 
   return (

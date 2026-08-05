@@ -1,4 +1,5 @@
 import { sqlGet, sqlSet, sqlUpdate, sqlDelete } from './db.js';
+import bcrypt from 'bcryptjs';
 
 const DB_URL = process.env.FIREBASE_DB_URL || 'https://inventarioequip-default-rtdb.firebaseio.com';
 
@@ -49,6 +50,16 @@ export function claveUsuario(usuario) {
 }
 
 export async function hashPassword(password) {
+  return bcrypt.hash(password, 10);
+}
+
+export async function verifyPassword(password, hash) {
+  if (hash.startsWith('$2a$') || hash.startsWith('$2b$')) {
+    const match = await bcrypt.compare(password, hash);
+    return { match, rehash: false };
+  }
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const sha = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const match = sha === hash;
+  return { match, rehash: match };
 }

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { authMiddleware } from '../middleware/auth.js';
 import { loadPermisos, requirePerm, esSuperAdmin, resolverPermisos, PERMISOS_CATALOGO } from '../permisos.js';
-import { claveUsuario, firebaseGet, firebaseSet, hashPassword } from '../firebase.js';
+import { claveUsuario, firebaseGet, firebaseSet, hashPassword, verifyPassword } from '../firebase.js';
 import { registrarActividad } from './actividad.js';
 
 const router = Router();
@@ -78,8 +78,16 @@ router.post('/login', async (req, res) => {
     const clave = claveUsuario((usuario || '').trim());
     const registro = await firebaseGet(`usuarios/${clave}`);
 
-    if (!registro || registro.password !== await hashPassword(password || '')) {
+    if (!registro) {
       return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    }
+    const verif = await verifyPassword(password || '', registro.password);
+    if (!verif.match) {
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    }
+    if (verif.rehash) {
+      registro.password = await hashPassword(password);
+      await firebaseSet(`usuarios/${clave}`, registro);
     }
     if (registro.activo === false) {
       return res.status(403).json({ error: 'Tu cuenta está desactivada. Contacta al administrador.' });
@@ -158,7 +166,8 @@ router.post('/cambiar-password', authMiddleware, async (req, res) => {
 
     const registro = await firebaseGet(`usuarios/${req.user.usuario}`);
     if (!registro) return res.status(404).json({ error: 'Usuario no encontrado' });
-    if (registro.password !== await hashPassword(actual)) {
+    const verif = await verifyPassword(actual, registro.password);
+    if (!verif.match) {
       return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
     }
 

@@ -113,15 +113,6 @@ export default function Layout() {
     return count;
   }
 
-  function avisarUnaVez(nid, mensaje, detalle) {
-    let avisos = new Set();
-    try { avisos = new Set(JSON.parse(localStorage.getItem('equipmaster_avisos') || '[]')); } catch {}
-    if (avisos.has(nid)) return;
-    avisos.add(nid);
-    try { localStorage.setItem('equipmaster_avisos', JSON.stringify([...avisos].slice(-200))); } catch {}
-    toast(mensaje, detalle, 'info');
-  }
-
   useEffect(() => {
     const check = async () => {
       try {
@@ -133,15 +124,38 @@ export default function Layout() {
           const diasHabiles = contarDiasHabiles(p.fechaSalida);
           const hoyKey = new Date().toISOString().split('T')[0];
           if (diasHabiles >= 5 && diasHabiles < 8) {
-            avisarUnaVez(`prestamo-atencion-${p.id}-${hoyKey}`, '🔔 Préstamo requiere atención', `${p.serie} · ${p.responsable} · ${diasHabiles} días hábiles`);
+            api.crearNotificacion({
+              id: `prestamo-atencion-${p.id}-${hoyKey}`,
+              mensaje: '🔔 Préstamo requiere atención',
+              detalle: `${p.serie} · ${p.responsable} · ${diasHabiles} días hábiles`,
+            }).catch(() => {});
           } else if (diasHabiles >= 8) {
-            avisarUnaVez(`prestamo-vencido-${p.id}-${hoyKey}`, '🔔 Préstamo vencido', `${p.serie} · ${p.responsable} · ${diasHabiles} días hábiles sin devolver`);
+            api.crearNotificacion({
+              id: `prestamo-vencido-${p.id}-${hoyKey}`,
+              mensaje: '🔔 Préstamo vencido',
+              detalle: `${p.serie} · ${p.responsable} · ${diasHabiles} días hábiles sin devolver`,
+            }).catch(() => {});
           }
         });
       } catch {}
     };
     check();
     const id = setInterval(check, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const notifs = await api.getNotificaciones();
+        notifs.forEach(n => {
+          toast(n.mensaje, n.detalle, 'info');
+          api.marcarLeidaNotificacion(n.id).catch(() => {});
+        });
+      } catch {}
+    };
+    poll();
+    const id = setInterval(poll, 10000);
     return () => clearInterval(id);
   }, []);
 

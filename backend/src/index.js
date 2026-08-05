@@ -2,6 +2,8 @@ import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
 import fs from 'fs';
+import http from 'http';
+import https from 'https';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import usuariosRouter from './routes/usuarios.js';
@@ -18,6 +20,7 @@ import storageRouter from './routes/storage.js';
 import modelosFotosRouter from './routes/modelosFotos.js';
 import ticketsRouter from './routes/tickets.js';
 import hardwareRouter from './routes/hardware.js';
+import notificacionesRouter from './routes/notificaciones.js';
 import { initStorage } from './storage.js';
 import { seedPermisos } from './permisos.js';
 
@@ -49,6 +52,7 @@ app.use('/api/storage', storageRouter);
 app.use('/api/modelos-fotos', modelosFotosRouter);
 app.use('/api/tickets', ticketsRouter);
 app.use('/api/hardware', hardwareRouter);
+app.use('/api/notificaciones', notificacionesRouter);
 
 initStorage();
 seedPermisos();
@@ -60,6 +64,16 @@ if (fs.existsSync(indexPath)) {
   });
 }
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`EquipMaster API → http://0.0.0.0:${PORT} (LAN)`);
-});
+const certPfx = process.env.HTTPS_PFX ? path.join(__dirname, '..', process.env.HTTPS_PFX) : null;
+if (certPfx && fs.existsSync(certPfx)) {
+  https.createServer({
+    pfx: fs.readFileSync(certPfx),
+    passphrase: process.env.HTTPS_PASSPHRASE || '',
+  }, app).listen(PORT, '0.0.0.0', () => {
+    console.log(`EquipMaster API → https://0.0.0.0:${PORT} (HTTPS)`);
+  });
+} else {
+  http.createServer(app).listen(PORT, '0.0.0.0', () => {
+    console.log(`EquipMaster API → http://0.0.0.0:${PORT} (LAN)`);
+  });
+}

@@ -28,7 +28,7 @@ export function InventarioProvider({ children }) {
     timerRef.current = setInterval(() => {
       setActualizando(true);
       cargar();
-    }, 30000);
+    }, 5000);
     return () => clearInterval(timerRef.current);
   }, [cargar]);
 

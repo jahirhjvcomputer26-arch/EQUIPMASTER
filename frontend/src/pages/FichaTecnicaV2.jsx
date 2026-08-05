@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { badgeEstado, derivarModeloComercial, formatearFechaRegistro } from '../utils/inventario';
+import { APP_URL } from '../config.js';
 import { CHECKLIST_ICONS } from '../utils/formTemplates';
 
 const CHECKLIST_ITEMS = [
@@ -44,7 +45,7 @@ export default function FichaTecnicaV2() {
 
   const docNum = `DOC-FV2-${item.codigo}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}`;
   const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(
-    window.location.origin + '/consulta?q=' + item.serie
+    APP_URL + '/consulta?q=' + item.serie
   );
 
   const estetica = item.condicionEstetica || {};
