@@ -10,7 +10,7 @@ const TIPOS = ['marcas', 'modelos', 'areas', 'sucursales', 'tiposEquipo', 'estad
 const DEFAULTS = {
   marcas: [], modelos: [], areas: [], sucursales: [], tiposEquipo: ['LAPTOP', 'MINI PC', 'DESKTOP', 'ALL-IN-ONE', 'WORKSTATION', 'TABLET', 'MONITOR', 'ACCESORIO', 'OTRO'],
   estados: ['🔵 OK', '🟢 FULL (ML)', '🟡 Detalles', '🟠 Revisión', '🔴 TKF', '🔴 VENDIDO'], fabricantes: [], procesadores: [], sistemasOperativos: [],
-  ram: ['N/A', '4 GB', '8 GB', '16 GB', '32 GB', '64 GB', '128 GB'], capacidades: ['N/A', '128 GB', '256 GB', '512 GB', '1 TB', '2 TB', '4 TB'], tiposRam: ['DDR3', 'DDR4', 'DDR5', 'LPDDR4', 'LPDDR5'], tiposDisco: ['N/A', 'M.2 NVME', 'SSD', 'HDD'], resoluciones: ['HD', 'FHD', 'FHD+', 'QHD', '4K'], generaciones: [], tecnicos: [],
+  ram: ['N/A', '4 GB', '8 GB', '16 GB', '24 GB', '32 GB', '64 GB', '128 GB'], capacidades: ['N/A', '128 GB', '256 GB', '512 GB', '1 TB', '2 TB', '4 TB'], tiposRam: ['DDR3', 'DDR4', 'DDR5', 'LPDDR4', 'LPDDR5'], tiposDisco: ['N/A', 'M.2 NVME', 'SSD', 'HDD'], resoluciones: ['HD', 'FHD', 'FHD+', 'QHD', '4K'], generaciones: [], tecnicos: [],
 };
 
 router.get('/', async (_req, res) => {
