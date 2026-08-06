@@ -56,6 +56,14 @@ const QUICK_FILTERS = [
 ];
 
 const PAGE_SIZE = 15;
+const ESTADO_FILTERS = [
+  { key: '🔵', label: 'OK', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  { key: '🟢', label: 'FULL / ML', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  { key: '🟡', label: 'Detalles', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+  { key: '🟠', label: 'Revisión', color: 'bg-orange-100 text-orange-700 border-orange-200' },
+  { key: '🔴 TKF', label: 'TKF', color: 'bg-red-100 text-red-700 border-red-200' },
+  { key: 'VENDIDO', label: 'Vendido', color: 'bg-slate-100 text-slate-600 border-slate-200' },
+];
 
 export default function BaseDatos() {
   useDocumentTitle('Base de Datos');
@@ -72,6 +80,7 @@ export default function BaseDatos() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [quickFilter, setQuickFilter] = useState('');
+  const [estadoFiltro, setEstadoFiltro] = useState([]);
 
   const exportExcel = async () => {
     try {
@@ -190,6 +199,10 @@ export default function BaseDatos() {
       });
     }
 
+    if (estadoFiltro.length) {
+      items = items.filter(i => estadoFiltro.some(estado => (i.estado || '').includes(estado)));
+    }
+
     if (sortKey) {
       items.sort((a, b) => {
         let va = (a[sortKey] || '').toString().toLowerCase();
@@ -208,7 +221,7 @@ export default function BaseDatos() {
       });
     }
     return items;
-  }, [inventario, search, sortKey, sortDir, quickFilter]);
+  }, [inventario, search, sortKey, sortDir, quickFilter, estadoFiltro]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -232,7 +245,7 @@ export default function BaseDatos() {
       <div className="panel p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-slide-up">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Inventario General Compartido</h2>
-          <p className="text-slate-500 text-sm">{filtered.length} equipo{filtered.length !== 1 ? 's' : ''} · {inventario.length} totales{quickFilter && <span className="ml-1 font-bold text-brand-600">(filtro activo)</span>}</p>
+          <p className="text-slate-500 text-sm">{filtered.length} equipo{filtered.length !== 1 ? 's' : ''} · {inventario.length} totales{(quickFilter || estadoFiltro.length > 0) && <span className="ml-1 font-bold text-brand-600">(filtro activo)</span>}</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
           <div className="relative flex-1 sm:flex-none">
@@ -263,6 +276,23 @@ export default function BaseDatos() {
             <i className="fa-solid fa-xmark" /> Limpiar
           </button>
         )}
+      </div>
+
+      <div className="panel px-4 py-3 animate-slide-up" style={{ animationDelay: '60ms' }}>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-bold text-slate-400 uppercase mr-1">Filtrar por estado:</span>
+          {ESTADO_FILTERS.map(f => {
+            const count = inventario.filter(i => (i.estado || '').includes(f.key)).length;
+            const activo = estadoFiltro.includes(f.key);
+            return (
+              <button key={f.key} onClick={() => { setEstadoFiltro(prev => prev.includes(f.key) ? prev.filter(v => v !== f.key) : [...prev, f.key]); setPage(1); }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${activo ? 'bg-brand-600 text-white border-brand-600 shadow scale-105' : f.color}`}>
+                {f.label}<span className={`px-1.5 rounded-full text-[10px] ${activo ? 'bg-white/20' : 'bg-white/60'}`}>{count}</span>
+              </button>
+            );
+          })}
+          {estadoFiltro.length > 0 && <button onClick={() => { setEstadoFiltro([]); setPage(1); }} className="text-xs font-bold text-slate-400 hover:text-red-500 ml-auto"><i className="fa-solid fa-xmark mr-1" />Limpiar estados</button>}
+        </div>
       </div>
 
       {selected.length > 0 && (
