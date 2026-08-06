@@ -17,6 +17,7 @@
 | 2d — Catálogos dinámicos | ✔ API `/api/catalogos`, administración desde Configuración y formulario principal conectado a catálogos SQL (`Configuracion`) |
 | 2e — Garantías y mantenimientos | ✔ tablas SQL `Garantias`/`Mantenimientos`, API, permisos, pantalla de gestión y aplicación automática del esquema en el instalador |
 | 2f — Optimización inicial | ✔ compresión HTTP, caché seguro de assets/fotos y endpoint opcional de búsqueda/paginación de inventario |
+| 2g — Seguridad de cierre | ✔ Helmet, rate limiting general, CORS configurable y firma de Express desactivada; HTTPS queda listo mediante certificado/dominio |
 | 3 — Migración de datos | ✔ 701 registros (actividad 467, inventario 152, permisos 31, notifs 18, usuarios 13, préstamos 12, roles 7, tickets 1); verificado contra RTDB y API E2E |
 | 4 — Despliegue en Windows Server | ✔ desplegado en `C:\EquipMaster\backend` (servicio/Tarea Programada) y verificado: login, 152 equipos, fotos `/archivos/...` (200 image/jpeg), tickets, respaldo diario 02:30 en `C:\Backups\EquipMaster`; backup con `RESTORE VERIFYONLY` y prueba temporal disponibles |
 | 5 — QA y corte | ⬜ pendiente |

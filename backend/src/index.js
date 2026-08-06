@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import cors from 'cors';
 import compression from 'compression';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import express from 'express';
 import fs from 'fs';
 import http from 'http';
@@ -34,7 +36,23 @@ const publicDir = path.join(__dirname, '..', 'public');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({ origin: true, credentials: true }));
+app.disable('x-powered-by');
+app.use(helmet({ contentSecurityPolicy: false }));
+const corsOrigins = (process.env.CORS_ORIGINS || '').split(',').map(v => v.trim()).filter(Boolean);
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || corsOrigins.length === 0 || corsOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Origen no permitido'));
+  },
+  credentials: true,
+}));
+app.use('/api', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 600,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skip: req => req.path === '/health',
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(compression());

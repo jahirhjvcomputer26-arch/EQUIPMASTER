@@ -73,6 +73,7 @@ if (-not (Test-Path $envFile)) {
   $secret = -join ((48..57)+(65..90)+(97..122) | Get-Random -Count 48 | ForEach-Object { [char]$_ })
   @"
 PORT=3001
+CORS_ORIGINS=http://192.168.100.182:3001
 JWT_SECRET=$secret
 FIREBASE_DB_URL=https://inventarioequip-default-rtdb.firebaseio.com
 DB_SERVER=$DB_SERVER
