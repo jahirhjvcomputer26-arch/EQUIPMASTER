@@ -227,8 +227,8 @@ export default function BaseDatos() {
   const safePage = Math.min(page, totalPages);
   const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const Th = ({ k, children }) => (
-    <th className="px-6 py-4 text-xs font-bold uppercase cursor-pointer select-none hover:text-brand-600 transition-colors" onClick={() => toggleSort(k)}>
+  const Th = ({ k, children, className = '' }) => (
+    <th className={`px-4 py-4 text-xs font-bold uppercase cursor-pointer select-none hover:text-brand-600 transition-colors ${className}`} onClick={() => toggleSort(k)}>
       {children}<SortIcon k={k} />
     </th>
   );
@@ -338,45 +338,45 @@ export default function BaseDatos() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className={"min-w-full text-left text-sm table-responsive " + (compact ? 'table-compact' : '')}>
+              <table className={"min-w-[980px] 2xl:min-w-[1250px] w-full text-left text-sm table-responsive table-fixed " + (compact ? 'table-compact' : '')}>
                 <thead className="bg-slate-50 text-slate-600">
                   <tr>
                     <th className="px-3 py-4 w-10">
                       <input type="checkbox" checked={selected.length === paginated.length && paginated.length > 0} onChange={toggleSelectAll} className="rounded border-slate-300" />
                     </th>
-                    <Th k="codigo">Código</Th>
-                    <Th k="sku">SKU</Th>
-                    <Th k="marca">Equipo</Th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase">Hardware</th>
-                    <Th k="estado">Estado</Th>
-                    <Th k="tecnico">Técnico</Th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase">Flujo / Venta</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase text-center">Acciones</th>
+                    <Th k="codigo" className="w-32">Código</Th>
+                    <Th k="sku" className="hidden 2xl:table-cell w-32">SKU</Th>
+                    <Th k="marca" className="w-64">Equipo</Th>
+                    <th className="px-4 py-4 text-xs font-bold uppercase w-48">Hardware</th>
+                    <Th k="estado" className="w-40">Estado</Th>
+                    <Th k="tecnico" className="w-40">Técnico</Th>
+                    <th className="hidden 2xl:table-cell px-4 py-4 text-xs font-bold uppercase w-56">Flujo / Venta</th>
+                    <th className="px-4 py-4 text-xs font-bold uppercase text-center w-28">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                     {paginated.map((item, idx) => (
-                    <tr key={item.codigo} className="hover:bg-slate-50 transition-colors table-row-enter" style={{ animationDelay: `${idx * 30}ms` }}>
+                    <tr key={item.codigo} className="hover:bg-slate-50 transition-colors table-row-enter align-top" style={{ animationDelay: `${idx * 30}ms` }}>
                     <td className="px-3 py-4" onClick={e => e.stopPropagation()}>
                       <input type="checkbox" checked={selected.includes(item.codigo)} onChange={() => toggleSelect(item.codigo)} className="rounded border-slate-300" />
                     </td>
                     <td className="px-6 py-4 font-mono font-bold text-brand-600" data-label="Código">{item.codigo}<CopyBtn text={item.codigo} /></td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-500" data-label="SKU">{item.sku || '—'}<CopyBtn text={item.sku} /></td>
-                    <td className="px-6 py-4" data-label="Equipo">
+                    <td className="hidden 2xl:table-cell px-4 py-4 font-mono text-xs text-slate-500" data-label="SKU">{item.sku || '—'}<CopyBtn text={item.sku} /></td>
+                    <td className="px-4 py-4" data-label="Equipo">
                       <span className="font-bold">{item.marca}</span>
                       <p className="text-slate-500 text-xs">{item.modelo} · {item.categoria}</p>
                       <p className="text-slate-400 text-[10px] font-mono">S/N: {item.serie}<CopyBtn text={item.serie} /></p>
                     </td>
-                    <td className="px-6 py-4 text-xs text-slate-600" data-label="Hardware">{item.procesador}<br />{item.ram} / {item.almacenamiento}</td>
-                    <td className="px-6 py-4" data-label="Estado"><span className={`px-2.5 py-1 rounded-full text-xs font-bold ${badgeEstado(item.estado)}`}>{item.estado}</span></td>
-                    <td className="px-6 py-4 text-xs text-slate-500" data-label="Técnico">{item.tecnico || '—'}</td>
-                    <td className="px-6 py-4 text-xs text-slate-500" data-label="Flujo">
+                    <td className="px-4 py-4 text-xs text-slate-600 leading-5" data-label="Hardware">{item.procesador}<br />{item.ram} / {item.almacenamiento}</td>
+                    <td className="px-4 py-4" data-label="Estado"><span className={`px-2.5 py-1 rounded-full text-xs font-bold ${badgeEstado(item.estado)}`}>{item.estado}</span></td>
+                    <td className="px-4 py-4 text-xs text-slate-500" data-label="Técnico">{item.tecnico || '—'}</td>
+                    <td className="hidden 2xl:table-cell px-4 py-4 text-xs text-slate-500" data-label="Flujo">
                       {item.flujoSalida && <p>Venta: {item.flujoSalida.cliente} · {item.flujoSalida.precio}</p>}
                       {item.flujoVentaML && <p>ML: {item.flujoVentaML.fechaVenta}</p>}
                       {item.flujoMercadoLibre && !item.flujoVentaML && <p>En ML desde {item.flujoMercadoLibre.fechaEnvio}</p>}
                       {item.flujoDevolucion && <p className="text-orange-600">Devolución: {item.flujoDevolucion.motivo}</p>}
                     </td>
-                    <td className="px-6 py-4 text-center" data-label="">
+                    <td className="px-4 py-4 text-center" data-label="">
                       <div className="flex items-center justify-center gap-2">
                         <Link to={`/inventario?editar=${item.codigo}`} title="Editar equipo" className="text-brand-600 hover:text-brand-800 font-bold text-xs transition-colors">
                           <i className="fa-solid fa-pen-to-square" />
