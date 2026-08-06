@@ -134,8 +134,10 @@ if (-not $existing) {
 # ---------- 7) Respaldo diario ----------
 $bakScript = "$BASE\respaldo-sql.ps1"
 Copy-Item (Join-Path $PSScriptRoot 'respaldo-sql.ps1') $bakScript -Force
+Copy-Item (Join-Path $PSScriptRoot 'probar-restauracion.ps1') "$BASE\probar-restauracion.ps1" -Force
 schtasks /Create /TN "EquipMaster Respaldo" /TR "powershell -NoProfile -ExecutionPolicy Bypass -File `"$bakScript`"" /SC DAILY /ST 02:30 /RU SYSTEM /RL HIGHEST /F | Out-Null
-OK 'Respaldo diario programado (02:30): SQL .bak + copia de archivos.'
+OK 'Respaldo diario programado (02:30): SQL .bak + VERIFYONLY + copia de archivos.'
+OK "Prueba manual de restauración disponible en $BASE\probar-restauracion.ps1"
 
 # ---------- 8) Arrancar y verificar ----------
 if ($existing) { Restart-Service -Name $serviceName -ErrorAction SilentlyContinue }

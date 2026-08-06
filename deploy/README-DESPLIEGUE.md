@@ -11,6 +11,7 @@ como servicio con respaldo diario automático.
 | `EquipMaster-backend.zip` | Código del backend (src, public con el frontend compilado, scripts, 225 fotos) — sin node_modules |
 | `instalar-servidor.ps1` | Script de instalación (ejecutar como administrador) |
 | `respaldo-sql.ps1` | Respaldo diario de SQL + archivos (lo instala el script) |
+| `probar-restauracion.ps1` | Restaura el último `.bak` a una base temporal, valida registros y la elimina |
 
 ## Pasos
 
@@ -32,6 +33,7 @@ como servicio con respaldo diario automático.
    - Instala **NSSM** y crea el servicio `EquipMasterAPI` (reinicio automático).
      Si no puede descargar NSSM, crea una Tarea Programada al arranque.
    - Programa el **respaldo diario a las 02:30** (`C:\Backups\EquipMaster`).
+   - Valida cada `.bak` con `RESTORE VERIFYONLY` y copia las fotos/documentos.
 
 ## Verificación
 
@@ -47,6 +49,8 @@ como servicio con respaldo diario automático.
 - **Logs**: `C:\EquipMaster\logs\api.log` y `api-error.log` (rotan a 10 MB).
 - **Respaldo**: último resultado en `C:\Backups\EquipMaster\ultimo-respaldo.log`;
   se conservan 7 `.bak` y un espejo de las fotos en `C:\Backups\EquipMaster\archivos`.
+- **Prueba de restauración**: ejecuta como Administrador `powershell -ExecutionPolicy Bypass -File C:\EquipMaster\probar-restauracion.ps1`.
+  Crea `EquipMaster_RestoreTest`, comprueba `dbo.Inventario` y la elimina al terminar.
 - **Desinstalar** (si algo falla y quieres limpiar):
   ```powershell
   nssm remove EquipMasterAPI confirm   # o: schtasks /Delete /TN "EquipMaster API" /F
