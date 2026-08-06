@@ -26,7 +26,7 @@ router.get('/', async (_req, res) => {
       tecnicos: [...new Set(items.map(i => i.tecnico).filter(Boolean))],
     };
     const result = {};
-    for (const tipo of TIPOS) result[tipo] = [...new Set([...(saved[tipo] || DEFAULTS[tipo] || []), ...(discovered[tipo] || [])])].sort();
+    for (const tipo of TIPOS) result[tipo] = [...new Set([...(DEFAULTS[tipo] || []), ...(saved[tipo] || []), ...(discovered[tipo] || [])])].sort();
     res.json(result);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
