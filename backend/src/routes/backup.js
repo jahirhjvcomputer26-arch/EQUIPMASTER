@@ -7,7 +7,7 @@ import { registrarActividad } from './actividad.js';
 const router = Router();
 router.use(authMiddleware, loadPermisos(), requirePerm('respaldos'));
 
-const PATHS = ['inventario', 'ventas', 'prestamos', 'reparaciones', 'actividad', 'usuarios', 'notificaciones'];
+const PATHS = ['inventario', 'ventas', 'prestamos', 'reparaciones', 'actividad', 'usuarios', 'notificaciones', 'garantias', 'mantenimientos'];
 
 router.get('/', async (req, res) => {
   try {

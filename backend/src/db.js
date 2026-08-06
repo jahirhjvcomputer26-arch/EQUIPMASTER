@@ -180,6 +180,8 @@ const TABLES = {
   ventas: { table: 'Ventas', idCol: 'Id', mode: 'json', fechaCol: 'Fecha' },
   notificaciones: { table: 'Notificaciones', idCol: 'Id', mode: 'json' },
   modelosFotos: { table: 'ModelosFotos', idCol: 'Id', mode: 'json' },
+  garantias: { table: 'Garantias', idCol: 'Id', mode: 'json' },
+  mantenimientos: { table: 'Mantenimientos', idCol: 'Id', mode: 'json' },
   configuracion: { table: 'Configuracion', idCol: 'Clave', mode: 'config' },
 };
 

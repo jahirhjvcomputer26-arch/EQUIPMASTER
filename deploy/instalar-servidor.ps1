@@ -86,6 +86,15 @@ DB_PASSWORD=$DB_PASS
   Warn "$envFile ya existe, no se sobreescribe. Verifica DB_* y PORT=3001."
 }
 
+# ---------- 4b) Aplicar cambios idempotentes del esquema ----------
+Info 'Aplicando esquema SQL idempotente...'
+Push-Location $BACKEND
+cmd /c "node scripts/init-sql.mjs 2>&1"
+$schemaOk = $LASTEXITCODE -eq 0
+Pop-Location
+if (-not $schemaOk) { Fail 'No se pudo aplicar el esquema SQL.' }
+OK 'Esquema SQL actualizado.'
+
 # ---------- 5) Firewall ----------
 $rule = netsh advfirewall firewall show rule name="EquipMaster API 3001"
 if ($LASTEXITCODE -ne 0 -or $rule -notmatch 'EquipMaster') {

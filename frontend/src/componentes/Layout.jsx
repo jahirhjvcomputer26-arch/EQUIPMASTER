@@ -30,9 +30,10 @@ const menuGroups = [
     { to: '/etiquetas', icon: 'fa-tag', label: 'Etiquetas', perm: 'generar_qr' },
     { to: '/modelos', icon: 'fa-images', label: 'Fotos por Modelo' },
   ]},
-  { label: 'Control', items: [
-    { to: '/reportes', icon: 'fa-chart-simple', label: 'Reportes', perm: 'ver_reportes' },
-    { to: '/alertas', icon: 'fa-triangle-exclamation', label: 'Alertas', perm: 'ver_inventario' },
+    { label: 'Control', items: [
+      { to: '/reportes', icon: 'fa-chart-simple', label: 'Reportes', perm: 'ver_reportes' },
+      { to: '/garantias', icon: 'fa-shield-halved', label: 'Garantías / Mantenimiento', perm: 'ver_garantias' },
+      { to: '/alertas', icon: 'fa-triangle-exclamation', label: 'Alertas', perm: 'ver_inventario' },
     { to: '/actividad', icon: 'fa-clock-rotate-left', label: 'Historial', perm: 'ver_auditoria' },
     { to: '/base-datos', icon: 'fa-table-list', label: 'Base de Datos', perm: 'base_datos' },
   ]},
@@ -55,6 +56,7 @@ const ROUTE_LABELS = {
   '/etiquetas': 'Etiquetas',
   '/modelos': 'Fotos por Modelo',
   '/reportes': 'Reportes',
+  '/garantias': 'Garantías y Mantenimientos',
   '/alertas': 'Alertas',
   '/actividad': 'Historial',
   '/base-datos': 'Base de Datos',

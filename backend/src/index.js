@@ -22,6 +22,7 @@ import ticketsRouter from './routes/tickets.js';
 import hardwareRouter from './routes/hardware.js';
 import notificacionesRouter from './routes/notificaciones.js';
 import catalogosRouter from './routes/catalogos.js';
+import { garantiasRouter, mantenimientosRouter } from './routes/seguimiento.js';
 import { auditContext } from './middleware/auditContext.js';
 import { initStorage } from './storage.js';
 import { seedPermisos } from './permisos.js';
@@ -57,6 +58,8 @@ app.use('/api/tickets', ticketsRouter);
 app.use('/api/hardware', hardwareRouter);
 app.use('/api/notificaciones', notificacionesRouter);
 app.use('/api/catalogos', catalogosRouter);
+app.use('/api/garantias', garantiasRouter);
+app.use('/api/mantenimientos', mantenimientosRouter);
 
 initStorage();
 seedPermisos();

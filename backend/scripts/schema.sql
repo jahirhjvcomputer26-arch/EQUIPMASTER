@@ -225,4 +225,16 @@ CREATE TABLE dbo.ModelosFotos (
     Id NVARCHAR(64) NOT NULL PRIMARY KEY,
     Datos NVARCHAR(MAX) NOT NULL               -- JSON
 );
+
+-- Garantías y mantenimientos ligados a inventario por Código
+IF OBJECT_ID(N'dbo.Garantias', N'U') IS NULL
+CREATE TABLE dbo.Garantias (
+    Id NVARCHAR(64) NOT NULL PRIMARY KEY,
+    Datos NVARCHAR(MAX) NOT NULL
+);
+IF OBJECT_ID(N'dbo.Mantenimientos', N'U') IS NULL
+CREATE TABLE dbo.Mantenimientos (
+    Id NVARCHAR(64) NOT NULL PRIMARY KEY,
+    Datos NVARCHAR(MAX) NOT NULL
+);
 GO

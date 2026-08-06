@@ -41,6 +41,8 @@ export const PERMISOS_CATALOGO = [
   { key: 'respaldos', label: 'Respaldos', grupo: 'Sistema', desc: 'Descargar respaldos del sistema' },
   { key: 'subir_archivos', label: 'Subir / Eliminar Archivos', grupo: 'Sistema', desc: 'Subir fotografías y documentos' },
   { key: 'gestionar_modelos', label: 'Fotos por Modelo', grupo: 'Inventario', desc: 'Subir y eliminar fotografías del catálogo de modelos (marca/modelo)' },
+  { key: 'ver_garantias', label: 'Ver Garantías y Mantenimientos', grupo: 'Mantenimiento', desc: 'Consultar garantías y mantenimientos' },
+  { key: 'gestionar_garantias', label: 'Gestionar Garantías y Mantenimientos', grupo: 'Mantenimiento', desc: 'Registrar y actualizar garantías y mantenimientos' },
 ];
 
 export const ROLES_DEFECTO = {
@@ -63,6 +65,7 @@ export const ROLES_DEFECTO = {
       ver_tickets: true, registrar_tickets: true, gestionar_tickets: true, atender_tickets: true,
       admin_usuarios: true, ver_auditoria: true,
       subir_archivos: true, gestionar_modelos: true,
+      ver_garantias: true, gestionar_garantias: true,
     },
   },
   supervisor: {

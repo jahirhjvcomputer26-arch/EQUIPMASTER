@@ -27,6 +27,7 @@ import Etiquetas from './pages/Etiquetas';
 import Usuarios from './pages/Usuarios';
 import CentroDocumentacion from './pages/CentroDocumentacion';
 import Configuracion from './pages/Configuracion';
+import GarantiasMantenimiento from './pages/GarantiasMantenimiento';
 import AlertasPanel from './pages/AlertasPanel';
 import Tickets from './pages/Tickets';
 import LoadingScreen from './componentes/LoadingScreen';
@@ -78,7 +79,8 @@ export default function App() {
                 <Route path="reparaciones" element={<Guard perm="ver_reparaciones"><Reparaciones /></Guard>} />
                 <Route path="centro-reparaciones" element={<Guard perm="ver_reparaciones"><CentroReparaciones /></Guard>} />
                 <Route path="usuarios" element={<Guard perm="admin_usuarios"><Usuarios /></Guard>} />
-                <Route path="configuracion" element={<Guard perm="config_sistema"><Configuracion /></Guard>} />
+                 <Route path="configuracion" element={<Guard perm="config_sistema"><Configuracion /></Guard>} />
+                 <Route path="garantias" element={<Guard perm="ver_garantias"><GarantiasMantenimiento /></Guard>} />
                 <Route path="tickets" element={<Guard perm="ver_tickets"><Tickets /></Guard>} />
                 <Route path="etiquetas" element={<Guard perm="generar_qr"><Etiquetas /></Guard>} />
                 <Route path="etiquetas/:codigo" element={<Guard perm="generar_qr"><Etiquetas /></Guard>} />
