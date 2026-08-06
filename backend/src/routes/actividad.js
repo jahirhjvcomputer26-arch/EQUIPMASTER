@@ -2,18 +2,24 @@ import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import { loadPermisos, requirePerm } from '../permisos.js';
 import { firebaseGet, firebaseSet } from '../firebase.js';
+import { getAuditContext } from '../middleware/auditContext.js';
 
 const router = Router();
 router.use(authMiddleware, loadPermisos());
 
-export async function registrarActividad(usuario, accion, detalle) {
+export async function registrarActividad(usuario, accion, detalle, extra = {}) {
   const id = `ACT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const contexto = getAuditContext();
   const entrada = {
     usuario: usuario || 'SISTEMA',
     accion,
     detalle: (detalle || '').toString(),
     fecha: new Date().toISOString(),
     timestamp: Date.now(),
+    ip: contexto.ip || null,
+    dispositivo: contexto.dispositivo || null,
+    userAgent: contexto.userAgent || null,
+    ...extra,
   };
   await firebaseSet(`actividad/${id}`, entrada).catch(() => {});
   return entrada;

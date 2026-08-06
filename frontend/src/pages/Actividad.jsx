@@ -60,7 +60,7 @@ export default function Actividad() {
                     <th className="px-6 py-4 text-xs font-bold uppercase">Fecha / Hora</th>
                     <th className="px-6 py-4 text-xs font-bold uppercase">Usuario</th>
                     <th className="px-6 py-4 text-xs font-bold uppercase">Acción</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase">Detalle</th>
+                    <th className="px-6 py-4 text-xs font-bold uppercase">Detalle / Registro</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -75,7 +75,23 @@ export default function Actividad() {
                           {LABEL_ACCION[item.accion] || item.accion}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-xs text-slate-600" data-label="Detalle">{item.detalle}</td>
+                      <td className="px-6 py-4 text-xs text-slate-600" data-label="Detalle">
+                        <p>{item.detalle}</p>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-400">
+                          {item.registro && <span><i className="fa-solid fa-database mr-1" />{item.registro}</span>}
+                          {item.ip && <span><i className="fa-solid fa-network-wired mr-1" />{item.ip}</span>}
+                          {item.dispositivo && <span><i className="fa-solid fa-desktop mr-1" />{String(item.dispositivo).slice(0, 18)}</span>}
+                        </div>
+                        {(item.antes || item.despues) && (
+                          <details className="mt-2 text-[10px]">
+                            <summary className="cursor-pointer text-brand-600 font-semibold">Ver cambios</summary>
+                            <div className="mt-1 grid grid-cols-1 lg:grid-cols-2 gap-2">
+                              {item.antes && <pre className="p-2 bg-red-50 rounded-lg overflow-auto max-h-32">{JSON.stringify(item.antes, null, 2)}</pre>}
+                              {item.despues && <pre className="p-2 bg-emerald-50 rounded-lg overflow-auto max-h-32">{JSON.stringify(item.despues, null, 2)}</pre>}
+                            </div>
+                          </details>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

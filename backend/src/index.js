@@ -21,6 +21,7 @@ import modelosFotosRouter from './routes/modelosFotos.js';
 import ticketsRouter from './routes/tickets.js';
 import hardwareRouter from './routes/hardware.js';
 import notificacionesRouter from './routes/notificaciones.js';
+import { auditContext } from './middleware/auditContext.js';
 import { initStorage } from './storage.js';
 import { seedPermisos } from './permisos.js';
 
@@ -33,6 +34,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(auditContext);
 
 app.use(express.static(publicDir));
 

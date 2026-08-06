@@ -9,9 +9,11 @@ function cerrarSesionLocal() {
 
 function headers() {
   const token = localStorage.getItem('equipmaster_token');
+  const dispositivo = localStorage.getItem('equipmaster_dispositivo');
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(dispositivo ? { 'X-Device-ID': dispositivo } : {}),
   };
 }
 

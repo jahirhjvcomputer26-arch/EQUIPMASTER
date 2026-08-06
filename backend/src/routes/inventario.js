@@ -94,7 +94,11 @@ router.put('/:codigo', async (req, res) => {
 
     await firebaseSet(`inventario/${codigo}`, req.body);
     registrarActividad(req.user?.nombre, esNuevo ? 'EQUIPO_REGISTRADO' : 'EQUIPO_EDITADO',
-      `${codigo} · ${req.body.marca || ''} ${req.body.modelo || ''}`);
+      `${codigo} · ${req.body.marca || ''} ${req.body.modelo || ''}`, {
+        registro: `inventario/${codigo}`,
+        antes: existente || null,
+        despues: req.body,
+      });
     res.json({ message: 'Equipo guardado', codigo });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -103,8 +107,13 @@ router.put('/:codigo', async (req, res) => {
 
 router.delete('/:codigo', requirePerm('eliminar_equipos'), async (req, res) => {
   try {
+    const existente = await firebaseGet(`inventario/${req.params.codigo}`);
     await firebaseDelete(`inventario/${req.params.codigo}`);
-    registrarActividad(req.user?.nombre, 'EQUIPO_ELIMINADO', `Código ${req.params.codigo}`);
+    registrarActividad(req.user?.nombre, 'EQUIPO_ELIMINADO', `Código ${req.params.codigo}`, {
+      registro: `inventario/${req.params.codigo}`,
+      antes: existente || null,
+      despues: null,
+    });
     res.json({ message: 'Equipo eliminado' });
   } catch (err) {
     res.status(500).json({ error: err.message });
