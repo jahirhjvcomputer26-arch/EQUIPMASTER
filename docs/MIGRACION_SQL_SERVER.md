@@ -14,6 +14,7 @@
 | 2 — Fotos GCS → disco | ✔ 225 archivos → `backend/public/archivos/`; URLs reescritas a `/archivos/...` |
 | 2b — Almacenamiento dual (upload local) | ✔ `storage.js` con modo local (`DB_SERVER` sin `USE_FIREBASE`): subir/borrar/listar van a `backend/public/archivos/`; URLs `/archivos/...`; proxy de Vite para `/archivos`; verificado con upload → disco → servir → delete (fotos y modelosFotos) |
 | 2c — Auditoría avanzada | ✔ contexto automático por request: IP, dispositivo, navegador; inventario registra valores antes/después en `Actividad.Extra`; vista Historial muestra detalle expandible |
+| 2d — Catálogos dinámicos | ✔ API `/api/catalogos`, administración desde Configuración y formulario principal conectado a catálogos SQL (`Configuracion`) |
 | 3 — Migración de datos | ✔ 701 registros (actividad 467, inventario 152, permisos 31, notifs 18, usuarios 13, préstamos 12, roles 7, tickets 1); verificado contra RTDB y API E2E |
 | 4 — Despliegue en Windows Server | ✔ desplegado en `C:\EquipMaster\backend` (servicio/Tarea Programada) y verificado: login, 152 equipos, fotos `/archivos/...` (200 image/jpeg), tickets, respaldo diario 02:30 en `C:\Backups\EquipMaster`; backup con `RESTORE VERIFYONLY` y prueba temporal disponibles |
 | 5 — QA y corte | ⬜ pendiente |

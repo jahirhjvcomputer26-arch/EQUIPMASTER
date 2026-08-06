@@ -112,6 +112,8 @@ export const api = {
   getReporteVentas: () => request('/reportes/ventas'),
   getReporteReparaciones: () => request('/reportes/reparaciones'),
   getConfiguracion: () => request('/configuracion'),
+  getCatalogos: () => request('/catalogos'),
+  saveCatalogo: (tipo, valores) => request(`/catalogos/${tipo}`, { method: 'PUT', body: JSON.stringify({ valores }) }),
   saveConfiguracion: (body) => request('/configuracion', { method: 'PUT', body: JSON.stringify(body) }),
   getConfigPublic: () => fetch(`${API}/configuracion/public`).then(r => r.json()),
   uploadFile: (body) => request('/storage/upload', { method: 'POST', body: JSON.stringify(body) }),

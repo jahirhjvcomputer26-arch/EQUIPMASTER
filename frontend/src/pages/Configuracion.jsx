@@ -50,6 +50,9 @@ export default function Configuracion() {
   const [config, setConfig] = useState(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [catalogos, setCatalogos] = useState({});
+  const [catalogoTipo, setCatalogoTipo] = useState('marcas');
+  const [catalogoNuevo, setCatalogoNuevo] = useState('');
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -57,6 +60,7 @@ export default function Configuracion() {
     api.getConfiguracion()
       .then(c => setConfig({ ...DEFAULTS, ...c }))
       .catch(() => {})
+      .finally(() => api.getCatalogos().then(setCatalogos).catch(() => {}))
       .finally(() => setLoading(false));
   }, [user]);
 
@@ -90,6 +94,26 @@ export default function Configuracion() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const guardarCatalogo = async () => {
+    const valor = catalogoNuevo.trim();
+    if (!valor) return;
+    try {
+      const valores = [...new Set([...(catalogos[catalogoTipo] || []), valor])].sort();
+      const res = await api.saveCatalogo(catalogoTipo, valores);
+      setCatalogos(prev => ({ ...prev, [catalogoTipo]: res.valores }));
+      setCatalogoNuevo('');
+      notify('Catálogo actualizado', 'El valor fue agregado correctamente.', 'success');
+    } catch (err) { notify('Error', err.message, 'error'); }
+  };
+
+  const quitarDeCatalogo = async (valor) => {
+    try {
+      const valores = (catalogos[catalogoTipo] || []).filter(v => v !== valor);
+      const res = await api.saveCatalogo(catalogoTipo, valores);
+      setCatalogos(prev => ({ ...prev, [catalogoTipo]: res.valores }));
+    } catch (err) { notify('Error', err.message, 'error'); }
   };
 
   if (!can('config_sistema')) {
@@ -214,6 +238,28 @@ export default function Configuracion() {
             <label className="form-label">Contraseña / App Password</label>
             <input type="password" className="form-input" value={config.smtp?.pass || ''} onChange={e => handleChange('smtp', { ...config.smtp, pass: e.target.value })} placeholder="••••••••" />
           </div>
+        </div>
+      </div>
+
+      <div className="panel p-6 space-y-4 animate-slide-up" style={{ animationDelay: '175ms' }}>
+        <h3 className="font-bold text-slate-900 flex items-center gap-2">
+          <i className="fa-solid fa-list-check text-brand-500" /> Catálogos del Sistema
+        </h3>
+        <p className="text-xs text-slate-400">Administra valores disponibles en los formularios sin modificar código.</p>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <select className="form-input sm:w-56" value={catalogoTipo} onChange={e => setCatalogoTipo(e.target.value)}>
+            {Object.keys(catalogos).map(tipo => <option key={tipo} value={tipo}>{tipo}</option>)}
+          </select>
+          <input className="form-input flex-1" value={catalogoNuevo} onChange={e => setCatalogoNuevo(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') guardarCatalogo(); }} placeholder="Nuevo valor" />
+          <button type="button" onClick={guardarCatalogo} className="px-4 py-2 rounded-xl bg-brand-50 text-brand-700 font-bold text-sm hover:bg-brand-100"><i className="fa-solid fa-plus mr-1" />Agregar</button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(catalogos[catalogoTipo] || []).map(valor => (
+            <span key={valor} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
+              {valor}
+              <button type="button" onClick={() => quitarDeCatalogo(valor)} className="text-slate-400 hover:text-red-500"><i className="fa-solid fa-xmark" /></button>
+            </span>
+          ))}
         </div>
       </div>
 

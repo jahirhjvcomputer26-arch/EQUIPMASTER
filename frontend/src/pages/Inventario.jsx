@@ -82,6 +82,20 @@ export default function Inventario() {
   const [etiquetaModal, setEtiquetaModal] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const multiRef = useRef(null);
+  const [catalogos, setCatalogos] = useState({});
+
+  useEffect(() => {
+    api.getCatalogos().then(setCatalogos).catch(() => {});
+  }, []);
+
+  const lista = (tipo, fallback) => catalogos[tipo]?.length ? catalogos[tipo] : fallback;
+  const categorias = lista('tiposEquipo', CATEGORIAS);
+  const ramOptions = lista('ram', RAM_OPTIONS);
+  const capacidades = lista('capacidades', STORAGE_OPTIONS);
+  const tiposRam = lista('tiposRam', TIPO_RAM_OPTIONS);
+  const resoluciones = lista('resoluciones', RESOLUCION_OPTIONS);
+  const generaciones = lista('generaciones', GENERACION_OPTIONS);
+  const tecnicos = lista('tecnicos', TECNICOS);
 
   const tmpl = useMemo(() => getTemplate(form.categoria), [form.categoria]);
 
@@ -496,7 +510,7 @@ export default function Inventario() {
                 <div><label className="form-label">Categoría *</label>
                   <select className="form-input" value={form.categoria} onChange={e => markDirty('categoria', e.target.value)} required>
                     <option value="">Selecciona...</option>
-                    {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
+                    {categorias.map(c => <option key={c} value={c}>{c}</option>)}
                   </select></div>
                 <div><label className="form-label">Año</label>
                   <select className="form-input" value={form.anio} onChange={e => markDirty('anio', e.target.value)}>
@@ -555,16 +569,16 @@ export default function Inventario() {
                 {tmpl.step2.includes('generacion') && <div><label className="form-label">Generación</label>
                   <select className="form-input" value={form.generacion} onChange={e => markDirty('generacion', e.target.value)}>
                     <option value="">Selecciona...</option>
-                    {GENERACION_OPTIONS.map(g => <option key={g}>{g}</option>)}
+                      {generaciones.map(g => <option key={g}>{g}</option>)}
                   </select></div>}
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {tmpl.step2.includes('ram') && <div><label className="form-label">RAM *</label>
-                  <select className="form-input" value={form.ram} onChange={e => markDirty('ram', e.target.value)}>{RAM_OPTIONS.map(r => <option key={r}>{r}</option>)}</select></div>}
+                    <select className="form-input" value={form.ram} onChange={e => markDirty('ram', e.target.value)}>{ramOptions.map(r => <option key={r}>{r}</option>)}</select></div>}
                 {tmpl.step2.includes('tipoRam') && <div><label className="form-label">Tipo RAM</label>
-                  <select className="form-input" value={form.tipoRam} onChange={e => markDirty('tipoRam', e.target.value)}>{TIPO_RAM_OPTIONS.map(t => <option key={t}>{t}</option>)}</select></div>}
+                    <select className="form-input" value={form.tipoRam} onChange={e => markDirty('tipoRam', e.target.value)}>{tiposRam.map(t => <option key={t}>{t}</option>)}</select></div>}
                 {tmpl.step2.includes('almacenamiento') && <div><label className="form-label">Almacenamiento *</label>
-                  <select className="form-input" value={form.almacenamiento} onChange={e => markDirty('almacenamiento', e.target.value)}>{STORAGE_OPTIONS.map(s => <option key={s}>{s}</option>)}</select></div>}
+                    <select className="form-input" value={form.almacenamiento} onChange={e => markDirty('almacenamiento', e.target.value)}>{capacidades.map(s => <option key={s}>{s}</option>)}</select></div>}
                 {tmpl.step2.includes('tipoDisco') && <div><label className="form-label">Tipo disco *</label><input className="form-input uppercase" value={form.tipoDisco} onChange={e => markDirty('tipoDisco', e.target.value)} required placeholder="M.2 NVME, SSD SATA..." /></div>}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -575,7 +589,7 @@ export default function Inventario() {
                   <div><label className="form-label">Resolución</label>
                     <select className="form-input" value={form.resolucion} onChange={e => markDirty('resolucion', e.target.value)}>
                       <option value="">Selecciona...</option>
-                      {RESOLUCION_OPTIONS.map(r => <option key={r}>{r}</option>)}
+                      {resoluciones.map(r => <option key={r}>{r}</option>)}
                     </select></div>
                 )}
               </div>
@@ -612,7 +626,7 @@ export default function Inventario() {
               <div className={`grid grid-cols-1 gap-4 ${tmpl.step3.includes('bateria') && tmpl.step3.includes('cargador') ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
                 <div><label className="form-label">Técnico *</label>
                   <select className="form-input" value={form.tecnico} onChange={e => markDirty('tecnico', e.target.value)} required>
-                    <option value="">Selecciona...</option>{TECNICOS.map(t => <option key={t}>{t}</option>)}
+                    <option value="">Selecciona...</option>{tecnicos.map(t => <option key={t}>{t}</option>)}
                   </select></div>
                 {tmpl.step3.includes('bateria') && <div><label className="form-label">Batería *</label><input className="form-input uppercase" value={form.bateria} onChange={e => markDirty('bateria', e.target.value)} required placeholder="100%, 80%, SIN BATERÍA" /></div>}
                 {tmpl.step3.includes('cargador') && <div><label className="form-label">Cargador</label><input className="form-input uppercase" value={form.cargador} onChange={e => markDirty('cargador', e.target.value)} placeholder="ORIGINAL 65W, GENÉRICO" /></div>}
@@ -627,7 +641,7 @@ export default function Inventario() {
                   <div><label className="form-label text-emerald-800">ID Publicación</label><input className="form-input uppercase" value={form.mlPublicacionId} onChange={e => markDirty('mlPublicacionId', e.target.value)} /></div>
                   <div><label className="form-label text-emerald-800">Enviado por *</label><select className="form-input" value={form.mlEnviadoPor} onChange={e => markDirty('mlEnviadoPor', e.target.value)} required>
                     <option value="">Selecciona...</option>
-                    {TECNICOS.filter(t => t !== 'VALERIA BARRUETA').map(t => <option key={t}>{t}</option>)}
+                    {tecnicos.filter(t => t !== 'VALERIA BARRUETA').map(t => <option key={t}>{t}</option>)}
                   </select></div>
                 </div>
               )}
