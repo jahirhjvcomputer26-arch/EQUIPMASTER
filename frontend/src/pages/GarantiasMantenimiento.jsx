@@ -23,6 +23,7 @@ export default function GarantiasMantenimiento() {
     try {
       if (typeof api.getGarantias !== 'function' || typeof api.getMantenimientos !== 'function') throw new Error('La aplicación del servidor está desactualizada.');
       const [g, m] = await Promise.all([api.getGarantias(), api.getMantenimientos()]);
+      if (!Array.isArray(g) || !Array.isArray(m)) throw new Error('El backend de pruebas no tiene activadas las rutas de garantías.');
       setGarantias(g);
       setMantenimientos(m);
     } catch (err) { setError(err.message || 'No se pudieron cargar los registros.'); }
