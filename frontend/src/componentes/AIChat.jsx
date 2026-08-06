@@ -29,7 +29,7 @@ export default function AIChat() {
       if (!res.ok) throw new Error(data.error);
       setMensajes(m => [...m, { rol: 'ia', texto: data.respuesta }]);
     } catch (err) {
-      setMensajes(m => [...m, { rol: 'ia', texto: 'Lo siento, ocurrió un error. ¿Está configurada GEMINI_API_KEY?' }]);
+      setMensajes(m => [...m, { rol: 'ia', texto: err.message || 'Error al conectar con Gemini.' }]);
     }
     setLoading(false);
   };
@@ -49,8 +49,8 @@ export default function AIChat() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setMensajes(m => [...m, { rol: 'ia', texto: data.diagnostico }]);
-    } catch {
-      setMensajes(m => [...m, { rol: 'ia', texto: 'Error al obtener diagnóstico.' }]);
+    } catch (err) {
+      setMensajes(m => [...m, { rol: 'ia', texto: err.message || 'Error al obtener diagnóstico.' }]);
     }
     setLoading(false);
   };
