@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import cors from 'cors';
+import compression from 'compression';
 import express from 'express';
 import fs from 'fs';
 import http from 'http';
@@ -36,9 +37,18 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(compression());
 app.use(auditContext);
 
-app.use(express.static(publicDir));
+app.use(express.static(publicDir, {
+  setHeaders(res, filePath) {
+    if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (filePath.includes(`${path.sep}archivos${path.sep}`)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+  },
+}));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, app: 'EquipMaster API' }));
 

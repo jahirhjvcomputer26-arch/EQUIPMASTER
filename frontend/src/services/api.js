@@ -40,6 +40,7 @@ export const api = {
   logout: () => request('/usuarios/logout', { method: 'POST' }),
   me: () => request('/usuarios/me'),
   getInventario: () => request('/inventario'),
+  buscarInventario: (params = {}) => request(`/inventario/buscar?${new URLSearchParams(params)}`),
   getEquipo: (codigo) => request(`/inventario/${encodeURIComponent(codigo)}`),
   consultaPublica: async (q) => {
     const res = await fetch(`${API}/inventario/public/consulta?q=${encodeURIComponent(q)}`);

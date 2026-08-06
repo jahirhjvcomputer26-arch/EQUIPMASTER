@@ -36,6 +36,22 @@ router.get('/', requirePerm('ver_inventario'), async (_req, res) => {
   }
 });
 
+router.get('/buscar', requirePerm('ver_inventario'), async (req, res) => {
+  try {
+    const data = await firebaseGet('inventario');
+    const q = String(req.query.q || '').trim().toLowerCase();
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 25));
+    const fields = ['codigo', 'serie', 'sku', 'marca', 'modelo', 'procesador', 'ram', 'almacenamiento', 'tipoDisco', 'grafica', 'tecnico', 'estado', 'sistemaOperativo', 'color'];
+    const lista = (data ? Object.values(data) : []).filter(item => {
+      if (!q) return true;
+      return fields.some(field => String(item[field] || '').toLowerCase().includes(q));
+    });
+    const inicio = (page - 1) * limit;
+    res.json({ data: lista.slice(inicio, inicio + limit), total: lista.length, page, limit });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.get('/:codigo', requirePerm('ver_inventario'), async (req, res) => {
   try {
     const item = await firebaseGet(`inventario/${req.params.codigo}`);
