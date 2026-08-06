@@ -97,7 +97,7 @@ export default function AIChat() {
             <button type="button" onClick={diagnosticoRapido} title="Diagnóstico rápido" className="shrink-0 w-9 h-9 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 flex items-center justify-center text-sm transition" disabled={loading}>
               <i className="fa-solid fa-stethoscope" />
             </button>
-            <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} placeholder="Pregunta algo..." className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-400" disabled={loading} />
+            <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} placeholder="Pregunta algo..." className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 bg-white placeholder:text-slate-400 outline-none focus:border-brand-400" disabled={loading} />
             <button type="submit" className="shrink-0 w-9 h-9 rounded-xl bg-brand-600 text-white hover:bg-brand-700 flex items-center justify-center text-sm transition" disabled={loading || !input.trim()}>
               <i className="fa-solid fa-paper-plane" />
             </button>
