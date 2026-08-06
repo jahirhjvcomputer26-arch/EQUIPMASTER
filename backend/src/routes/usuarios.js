@@ -8,6 +8,14 @@ import { registrarActividad } from './actividad.js';
 const router = Router();
 
 const rateLimitMap = new Map();
+const MAX_SESSIONS = 2;
+const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
+
+function sesionesNormalizadas(value) {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === 'object') return [value];
+  return [];
+}
 
 setInterval(() => {
   const now = Date.now();
@@ -93,23 +101,20 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({ error: 'Tu cuenta está desactivada. Contacta al administrador.' });
     }
 
-    const dispositivo = (req.body.dispositivo || '').trim();
-    const sesionActiva = registro.sesionActiva;
-    if (
-      sesionActiva &&
-      typeof sesionActiva.hasta === 'number' &&
-      Date.now() < sesionActiva.hasta &&
-      sesionActiva.dispositivo &&
-      sesionActiva.dispositivo !== dispositivo
-    ) {
-      return res.status(403).json({ error: 'Este usuario ya tiene una sesión activa en otro dispositivo. Cierra sesión en el dispositivo anterior o espera a que expire.' });
+    const dispositivo = (req.body.dispositivo || req.headers['x-device-id'] || `ip:${ip}`).trim();
+    const ahora = Date.now();
+    const sesiones = sesionesNormalizadas(registro.sesionActiva)
+      .filter(s => typeof s.hasta === 'number' && s.hasta > ahora);
+    const sesion = { dispositivo, desde: ahora, hasta: ahora + SESSION_MS };
+    const indice = sesiones.findIndex(s => s.dispositivo === dispositivo);
+    if (indice >= 0) sesiones[indice] = sesion;
+    else {
+      if (sesiones.length >= MAX_SESSIONS) {
+        return res.status(403).json({ error: `Este usuario ya tiene ${MAX_SESSIONS} sesiones activas. Cierra una sesión antes de entrar desde otro dispositivo.` });
+      }
+      sesiones.push(sesion);
     }
-
-    registro.sesionActiva = {
-      dispositivo: dispositivo || null,
-      desde: Date.now(),
-      hasta: Date.now() + 7 * 24 * 60 * 60 * 1000,
-    };
+    registro.sesionActiva = sesiones;
     await firebaseSet(`usuarios/${clave}`, registro);
 
     const token = jwt.sign(
@@ -134,7 +139,13 @@ router.post('/logout', authMiddleware, async (req, res) => {
   try {
     const registro = await firebaseGet(`usuarios/${req.user.usuario}`);
     if (registro) {
-      delete registro.sesionActiva;
+      const dispositivo = (req.headers['x-device-id'] || '').trim();
+      if (!dispositivo) delete registro.sesionActiva;
+      else {
+        const sesiones = sesionesNormalizadas(registro.sesionActiva)
+          .filter(s => s.dispositivo !== dispositivo && s.hasta > Date.now());
+        registro.sesionActiva = sesiones;
+      }
       await firebaseSet(`usuarios/${req.user.usuario}`, registro);
     }
     res.json({ message: 'Sesión cerrada' });
