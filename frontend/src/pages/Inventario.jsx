@@ -54,7 +54,7 @@ const emptyForm = {
 function SectionHeader({ icon, title, color, children }) {
   return (
     <div className="border-t border-slate-200 pt-5">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex flex-wrap items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs ${color}`}>
             <i className={`fa-solid ${icon}`} />
@@ -602,7 +602,7 @@ export default function Inventario() {
                     <span className="text-[10px] font-bold text-slate-400">
                       {connFields.filter(o => form[o.key]).length}/{connFields.length} activas
                     </span>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-1">
+                    <div className="w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-1">
                       {connFields.map(({ key, label, icon }) => (
                         <button key={key} type="button" onClick={() => markDirty(key, !form[key])}
                           className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
@@ -671,7 +671,7 @@ export default function Inventario() {
                   <span className="text-[10px] font-bold text-slate-400">
                     {tmpl.ficha.condicion.filter(c => form.fichaV2.condicionEstetica[c]).length}/{tmpl.ficha.condicion.length} evaluadas
                   </span>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-1">
+                   <div className="w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-1">
                     {tmpl.ficha.condicion.map(parte => (
                       <div key={parte}>
                         <label className="form-label">{CONDICION_LABELS[parte] || parte}</label>
@@ -686,7 +686,7 @@ export default function Inventario() {
 
               {tmpl.ficha.bateria.length > 0 && (
                 <SectionHeader icon="fa-battery-three-quarters" title="Batería (Detalle)" color="bg-green-50 text-green-600">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-1">
+                   <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 mt-1">
                     <div><label className="form-label">Porcentaje</label>
                       <select className="form-input" value={form.fichaV2.bateriaDetalle.porcentaje} onChange={e => markFichaV2('bateriaDetalle.porcentaje', e.target.value)}>
                         <option value="">—</option>
@@ -711,7 +711,7 @@ export default function Inventario() {
                   }`}>
                     {tmpl.ficha.checklist.filter(t => form.fichaV2.checklistPruebas[t] === 'OK').length}/{tmpl.ficha.checklist.length}
                   </span>
-                  <VisualChecklist items={tmpl.ficha.checklist} results={form.fichaV2.checklistPruebas} onToggle={toggleChecklist} compact />
+                   <div className="w-full"><VisualChecklist items={tmpl.ficha.checklist} results={form.fichaV2.checklistPruebas} onToggle={toggleChecklist} compact /></div>
                 </SectionHeader>
               )}
 
@@ -759,7 +759,7 @@ export default function Inventario() {
                     })();
                     e.target.value = '';
                   }} />
-                  <div className="grid grid-cols-3 gap-2 mt-1">
+                   <div className="w-full grid grid-cols-3 gap-2 mt-1">
                     {[
                       { key: 'frente', label: 'Frente', icon: 'fa-laptop' },
                       { key: 'posterior', label: 'Posterior', icon: 'fa-rotate-left' },
