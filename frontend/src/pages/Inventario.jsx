@@ -46,6 +46,7 @@ const emptyForm = {
   anio: '', procesador: '', generacion: '', ram: '16 GB', tipoRam: 'DDR4', almacenamiento: '512 GB', tipoDisco: 'M.2 NVME', grafica: 'INTEGRADA',
   resolucion: '', pantallaTactil: false, retroiluminacion: false, lectorHuellas: false, camaraIR: false, wifi: true, bluetooth: true,
   tecnico: '', bateria: '', cargador: '', estado: '🔵 OK', observaciones: '',
+  publicado: false, precioPublico: '', descripcionPublica: '',
   mlFechaEnvio: '', mlPublicacionId: '', mlEnviadoPor: '',
   fichaV2: emptyFichaV2,
   fotos: {},
@@ -275,6 +276,7 @@ export default function Inventario() {
       wifi: item.wifi !== false, bluetooth: item.bluetooth !== false,
       tecnico: item.tecnico, bateria: item.bateria, cargador: item.cargador || '',
       estado: item.estado, observaciones: item.observaciones || '',
+      publicado: item.publicado === true, precioPublico: item.precioPublico || '', descripcionPublica: item.descripcionPublica || '',
       mlFechaEnvio: item.flujoMercadoLibre?.fechaEnvio || '',
       mlPublicacionId: item.flujoMercadoLibre?.idPublicacion || '',
       mlEnviadoPor: item.flujoMercadoLibre?.enviadoPor || '',
@@ -363,7 +365,10 @@ export default function Inventario() {
       bateria: form.bateria.toUpperCase().trim(),
       cargador: form.cargador.toUpperCase().trim() || 'N/A',
       estado: form.estado,
-      observaciones: form.observaciones.toUpperCase().trim() || 'SIN OBSERVACIONES.',
+       observaciones: form.observaciones.toUpperCase().trim() || 'SIN OBSERVACIONES.',
+       publicado: !!form.publicado,
+       precioPublico: form.precioPublico,
+       descripcionPublica: form.descripcionPublica,
       anio: form.anio || '',
       generacion: form.generacion.toUpperCase().trim(),
       tipoRam: form.tipoRam,
@@ -802,6 +807,23 @@ export default function Inventario() {
                     ))}
                   </div>
                 </SectionHeader>
+
+              <div className="border-t border-slate-200 pt-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs bg-brand-50 text-brand-600"><i className="fa-solid fa-store" /></div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Catálogo público</p>
+                    <p className="text-[10px] text-slate-400">Solo se muestran equipos marcados como publicados.</p>
+                  </div>
+                  <label className="ml-auto flex items-center gap-2 text-xs font-bold text-brand-700 cursor-pointer">
+                    <input type="checkbox" checked={form.publicado} onChange={e => markDirty('publicado', e.target.checked)} className="rounded border-slate-300" /> Publicar equipo
+                  </label>
+                </div>
+                {form.publicado && <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div><label className="form-label">Precio público</label><input type="number" min="0" className="form-input" value={form.precioPublico} onChange={e => markDirty('precioPublico', e.target.value)} placeholder="12500" /></div>
+                  <div className="md:col-span-2"><label className="form-label">Descripción pública</label><textarea className="form-input min-h-[72px]" value={form.descripcionPublica} onChange={e => markDirty('descripcionPublica', e.target.value)} placeholder="Equipo reacondicionado, garantía incluida..." /></div>
+                </div>}
+              </div>
             </div>
           )}
 

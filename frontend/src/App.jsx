@@ -28,6 +28,7 @@ import Usuarios from './pages/Usuarios';
 import CentroDocumentacion from './pages/CentroDocumentacion';
 import Configuracion from './pages/Configuracion';
 import GarantiasMantenimiento from './pages/GarantiasMantenimiento';
+import CatalogoPublico from './pages/CatalogoPublico';
 import AlertasPanel from './pages/AlertasPanel';
 import Tickets from './pages/Tickets';
 import LoadingScreen from './componentes/LoadingScreen';
@@ -87,6 +88,8 @@ export default function App() {
                 <Route path="modelos" element={<GaleriaModelos />} />
               </Route>
               <Route path="consulta" element={<ConsultaPublica />} />
+              <Route path="catalogo" element={<CatalogoPublico />} />
+              <Route path="catalogo/:codigo" element={<CatalogoPublico />} />
               <Route path="ficha/:codigo" element={<FichaEquipo />} />
               <Route path="ficha-v2/:codigo" element={<FichaTecnicaV2 />} />
               <Route path="/galeria/:codigo" element={<Galeria />} />

@@ -24,6 +24,44 @@ router.get('/public/consulta', async (req, res) => {
   }
 });
 
+function productoPublico(item) {
+  return {
+    codigo: item.codigo,
+    categoria: item.categoria,
+    marca: item.marca,
+    modelo: item.modelo,
+    modeloComercial: item.modeloComercial,
+    procesador: item.procesador,
+    ram: item.ram,
+    almacenamiento: item.almacenamiento,
+    tipoDisco: item.tipoDisco,
+    grafica: item.grafica,
+    sistemaOperativo: item.sistemaOperativo,
+    estado: item.estado,
+    precioPublico: item.precioPublico,
+    descripcionPublica: item.descripcionPublica,
+    fotos: item.fotos || {},
+  };
+}
+
+router.get('/public/catalogo', async (_req, res) => {
+  try {
+    const data = await firebaseGet('inventario');
+    const lista = (data ? Object.values(data) : [])
+      .filter(item => item.publicado === true && !item.estado?.includes('VENDIDO'))
+      .map(productoPublico);
+    res.json(lista);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/public/catalogo/:codigo', async (req, res) => {
+  try {
+    const item = await firebaseGet(`inventario/${req.params.codigo}`);
+    if (!item || item.publicado !== true || item.estado?.includes('VENDIDO')) return res.status(404).json({ error: 'Producto no disponible' });
+    res.json(productoPublico(item));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.use(authMiddleware, loadPermisos());
 
 router.get('/', requirePerm('ver_inventario'), async (_req, res) => {
