@@ -1,4 +1,4 @@
-import { badgeEstado, derivarModeloComercial } from '../utils/inventario';
+import { badgeEstado, derivarModeloComercial, fotoPrincipal } from '../utils/inventario';
 
 function Row({ label, value }) {
   if (!value || value === '—') return null;
@@ -25,9 +25,9 @@ export default function LivePreview({ form, tmpl }) {
       </div>
 
       <div className="p-4 space-y-3">
-        {form.fotos?.frente ? (
+        {fotoPrincipal(form.fotos) ? (
           <div className="w-full h-24 rounded-xl overflow-hidden border border-slate-200">
-            <img src={form.fotos.frente} alt="Foto frente" className="w-full h-full object-cover" />
+            <img src={fotoPrincipal(form.fotos)} alt="Foto del equipo" className="w-full h-full object-cover" />
           </div>
         ) : (
           <div className="w-full h-24 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center">

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotify } from './Notification';
 import { api } from '../services/api';
-import { ESTADOS, badgeEstado, formatearFechaRegistro, nombreEquipo } from '../utils/inventario';
+import { ESTADOS, badgeEstado, formatearFechaRegistro, nombreEquipo, fotoPrincipal } from '../utils/inventario';
 
 function Row({ label, value }) {
   return (
@@ -33,7 +33,7 @@ export default function SmartFicha({ item, onClose }) {
   const [guardando, setGuardando] = useState(false);
   const [verHistorial, setVerHistorial] = useState(false);
 
-  const foto = item.fotos?.frente;
+  const foto = fotoPrincipal(item.fotos);
   const titulo = nombreEquipo(item.marca, item.modelo) || item.codigo;
 
   const ram = item.ram && item.ram !== 'N/A' ? `${item.ram}${item.tipoRam && item.tipoRam !== 'NO APLICA' ? ` · ${item.tipoRam}` : ''}` : '';

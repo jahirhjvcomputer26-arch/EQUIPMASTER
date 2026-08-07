@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../services/api';
-import { badgeEstado, derivarModeloComercial, formatearFechaRegistro } from '../utils/inventario';
+import { badgeEstado, derivarModeloComercial, formatearFechaRegistro, fotoPrincipal } from '../utils/inventario';
 import { APP_URL } from '../config.js';
 import { CHECKLIST_ICONS } from '../utils/formTemplates';
 
@@ -51,7 +51,7 @@ export default function FichaTecnicaV2() {
   const estetica = item.condicionEstetica || {};
   const bateria = item.bateriaDetalle || {};
   const pruebas = item.checklistPruebas || {};
-  const fotoFrente = item.fotos?.frente;
+  const fotoFrente = fotoPrincipal(item.fotos);
   const checkedCount = CHECKLIST_ITEMS.filter(t => pruebas[t] === 'OK' || pruebas[t] === true).length;
   const checkPercent = Math.round((checkedCount / CHECKLIST_ITEMS.length) * 100);
 

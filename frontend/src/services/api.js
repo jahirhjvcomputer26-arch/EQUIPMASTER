@@ -50,6 +50,8 @@ export const api = {
   },
   catalogoPublico: () => fetch(`${API}/inventario/public/catalogo`).then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || 'Error al cargar catálogo'); return data; }),
   productoPublico: (codigo) => fetch(`${API}/inventario/public/catalogo/${encodeURIComponent(codigo)}`).then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || 'Producto no disponible'); return data; }),
+  getCatalogoPublicables: () => request('/catalogo-publicacion'),
+  publicarCatalogo: (codigo, body) => request(`/catalogo-publicacion/${encodeURIComponent(codigo)}`, { method: 'PUT', body: JSON.stringify(body) }),
   saveEquipo: (codigo, body) => request(`/inventario/${codigo}`, { method: 'PUT', body: JSON.stringify(body) }),
   eliminarEquipo: (codigo) => request(`/inventario/${codigo}`, { method: 'DELETE' }),
   ventaLocal: (body) => request('/ventas/local', { method: 'POST', body: JSON.stringify(body) }),

@@ -9,9 +9,12 @@ router.use(authMiddleware, loadPermisos());
 
 router.post('/upload', requirePerm('subir_archivos'), async (req, res) => {
   try {
-    const { codigo, categoria, tipo, archivo, esDocumento } = req.body;
-    if (!codigo || !categoria || !archivo) {
-      return res.status(400).json({ error: 'Faltan campos: codigo, categoria, archivo' });
+    const { codigo, categoria, tipo, archivo, esDocumento, nombre } = req.body;
+    if (!codigo || !archivo) {
+      return res.status(400).json({ error: 'Faltan campos: codigo, archivo' });
+    }
+    if (esDocumento && !categoria) {
+      return res.status(400).json({ error: 'Faltan campos: categoria' });
     }
 
     const matches = archivo.match(/^data:(.+);base64,(.+)$/);
@@ -30,14 +33,23 @@ router.post('/upload', requirePerm('subir_archivos'), async (req, res) => {
 
     const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'bin';
     const prefix = esDocumento ? 'documentos' : 'fotos';
-    const filePath = `${prefix}/${codigo.toUpperCase()}/${categoria}.${ext}`;
+    let filePath;
+    let nombreFinal;
+    if (esDocumento) {
+      filePath = `${prefix}/${codigo.toUpperCase()}/${categoria}.${ext}`;
+      nombreFinal = categoria;
+    } else {
+      const base = (nombre || 'foto').replace(/[^A-Za-z0-9._-]/g, '_').replace(/_+/g, '_').replace(/\.[A-Za-z0-9]+$/, '').slice(0, 40) || 'foto';
+      filePath = `${prefix}/${codigo.toUpperCase()}/${Date.now()}-${base}.${ext}`;
+      nombreFinal = `${base}.${ext}`;
+    }
 
     await uploadToStorage(filePath, buffer, mimeType);
     await makePublic(filePath);
 
     const url = getPublicUrl(filePath);
 
-    res.json({ url, path: filePath, size: buffer.length });
+    res.json({ url, path: filePath, size: buffer.length, nombre: nombreFinal });
   } catch (err) {
     console.error('Upload error:', err);
     res.status(500).json({ error: 'Error al subir archivo: ' + err.message });

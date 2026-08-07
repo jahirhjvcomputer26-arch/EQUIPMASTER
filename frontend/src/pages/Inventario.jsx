@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { useInventario } from '../context/InventarioContext';
 import { useNotify } from '../componentes/Notification';
-import { CATEGORIAS, ESTADOS, RAM_OPTIONS, STORAGE_OPTIONS, TECNICOS, GENERACION_OPTIONS, TIPO_RAM_OPTIONS, RESOLUCION_OPTIONS, ANIO_OPTIONS, esEstadoML, generarCodigoSiguiente, buscarSku, buscarPorSku, aprenderSku, derivarModeloComercial, nuevaFechaRegistro } from '../utils/inventario';
+import { CATEGORIAS, ESTADOS, RAM_OPTIONS, STORAGE_OPTIONS, TECNICOS, GENERACION_OPTIONS, TIPO_RAM_OPTIONS, RESOLUCION_OPTIONS, ANIO_OPTIONS, esEstadoML, generarCodigoSiguiente, buscarSku, buscarPorSku, aprenderSku, derivarModeloComercial, nuevaFechaRegistro, fotosList, pathFromFotoUrl } from '../utils/inventario';
 import { getTemplate, CHECKLIST_ICONS } from '../utils/formTemplates';
 import SmartProgressBar from '../componentes/SmartProgressBar';
 import VisualChecklist from '../componentes/VisualChecklist';
@@ -49,7 +49,7 @@ const emptyForm = {
   publicado: false, precioPublico: '', descripcionPublica: '',
   mlFechaEnvio: '', mlPublicacionId: '', mlEnviadoPor: '',
   fichaV2: emptyFichaV2,
-  fotos: {},
+  fotos: [],
 };
 
 function SectionHeader({ icon, title, color, children }) {
@@ -199,29 +199,29 @@ export default function Inventario() {
     reader.readAsDataURL(file);
   });
 
-  const handleFormPhotoUpload = async (categoria, files) => {
+  const handleFormPhotoUpload = async (files) => {
     if (!files?.length) return;
-    try {
-      const base64 = await resizeImage(files[0]);
-      const result = await api.uploadFile({ codigo: form.codigo, categoria, archivo: base64, esDocumento: false });
-      setDirty(true);
-      setForm(prev => ({ ...prev, fotos: { ...prev.fotos, [categoria]: result.url } }));
-      notify('Foto subida', `${categoria} guardada en Storage.`, 'success');
-    } catch (err) { notify('Error', err.message, 'error'); }
+    let ok = 0;
+    for (const file of Array.from(files)) {
+      try {
+        const base64 = await resizeImage(file);
+        const result = await api.uploadFile({ codigo: form.codigo, archivo: base64, esDocumento: false, nombre: file.name });
+        setDirty(true);
+        setForm(prev => ({ ...prev, fotos: [...fotosList(prev.fotos), { url: result.url, path: result.path, nombre: result.nombre || file.name }] }));
+        ok++;
+      } catch (err) { notify('Error', `${file.name}: ${err.message}`, 'error'); }
+    }
+    if (ok) notify('Fotos subidas', `${ok} foto${ok === 1 ? '' : 's'} guardada${ok === 1 ? '' : 's'}.`, 'success');
   };
 
-  const handleFormPhotoDelete = async (categoria) => {
-    const url = form.fotos[categoria];
-    if (url?.includes('storage.googleapis.com') || url?.includes('firebasestorage')) {
-      try {
-        const ext = (url.split('.').pop()?.split('?')[0]) || 'jpg';
-        await api.deleteFile(`fotos/${form.codigo}/${categoria}.${ext}`);
-      } catch {}
-    } else if (url?.startsWith('/archivos/')) {
-      try { await api.deleteFile(url.slice('/archivos/'.length)); } catch {}
+  const handleFormPhotoDelete = async (foto) => {
+    if (!window.confirm('¿Eliminar esta foto?')) return;
+    const path = foto?.path || pathFromFotoUrl(foto?.url);
+    if (path) {
+      try { await api.deleteFile(path); } catch {}
     }
     setDirty(true);
-    setForm(prev => { const f = { ...prev.fotos }; delete f[categoria]; return { ...prev, fotos: f }; });
+    setForm(prev => ({ ...prev, fotos: fotosList(prev.fotos).filter(f => f.url !== foto.url) }));
   };
 
   useEffect(() => {
@@ -280,7 +280,7 @@ export default function Inventario() {
       mlFechaEnvio: item.flujoMercadoLibre?.fechaEnvio || '',
       mlPublicacionId: item.flujoMercadoLibre?.idPublicacion || '',
       mlEnviadoPor: item.flujoMercadoLibre?.enviadoPor || '',
-      fotos: item.fotos || {},
+      fotos: fotosList(item.fotos),
       fichaV2: {
         sistemaOperativo: item.sistemaOperativo || '',
         color: item.color || '',
@@ -379,7 +379,7 @@ export default function Inventario() {
       camaraIR: form.camaraIR,
       wifi: form.wifi,
       bluetooth: form.bluetooth,
-      fotos: Object.keys(form.fotos).length > 0 ? form.fotos : existente?.fotos || {},
+      fotos: fotosList(form.fotos).length > 0 ? fotosList(form.fotos) : existente?.fotos || [],
       fechaRegistro: existente?.fechaRegistro || nuevaFechaRegistro(),
       flujoSalida: existente?.flujoSalida || null,
       flujoVentaML: existente?.flujoVentaML || null,
@@ -446,7 +446,7 @@ export default function Inventario() {
     setEditing(false);
     setSkuManual(false);
     const hoy = new Date().toISOString().split('T')[0];
-    setForm({ ...emptyForm, codigo: nextCodigo, fichaV2: { ...emptyFichaV2, fechaRevision: hoy }, fotos: {} });
+    setForm({ ...emptyForm, codigo: nextCodigo, fichaV2: { ...emptyFichaV2, fechaRevision: hoy }, fotos: [] });
     setStep(mode === 'quick' ? 1 : 1);
   };
 
@@ -722,89 +722,43 @@ export default function Inventario() {
 
               <SectionHeader icon="fa-camera" title="Fotos del Equipo" color="bg-pink-50 text-pink-600">
                   <span className="text-[10px] font-bold text-slate-400">
-                    {Object.keys(form.fotos).length}/9
+                    {fotosList(form.fotos).length} foto(s)
                   </span>
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
                     <button type="button" onClick={() => multiRef.current?.click()} className="text-xs px-3 py-1.5 rounded-lg border border-dashed border-brand-300 text-brand-600 font-bold hover:bg-brand-50 transition flex items-center gap-1.5">
-                      <i className="fa-solid fa-layer-group" /> Cargar varias
+                      <i className="fa-solid fa-images" /> Cargar fotos
+                    </button>
+                    <button type="button" onClick={async () => {
+                      if (navigator.mediaDevices?.getUserMedia) {
+                        try {
+                          const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
+                          tmp.getTracks().forEach(t => t.stop());
+                        } catch {}
+                      }
+                      setCameraKey(true);
+                    }} className="text-xs px-3 py-1.5 rounded-lg border border-dashed border-brand-300 text-brand-600 font-bold hover:bg-brand-50 transition flex items-center gap-1.5">
+                      <i className="fa-solid fa-camera" /> Cámara
                     </button>
                   </div>
                   <input ref={multiRef} type="file" accept="image/*" multiple className="hidden" onChange={e => {
-                    if (!e.target.files?.length) return;
-                    const CATS = [
-                      { key: 'frente', label: 'Frente' },
-                      { key: 'posterior', label: 'Posterior' },
-                      { key: 'laterales', label: 'Laterales' },
-                      { key: 'pantalla', label: 'Pantalla' },
-                      { key: 'teclado', label: 'Teclado' },
-                      { key: 'bios', label: 'BIOS' },
-                      { key: 'crystalDiskInfo', label: 'CrystalDiskInfo' },
-                      { key: 'bateria', label: 'Batería' },
-                      { key: 'etiquetas', label: 'Etiquetas' },
-                    ];
-                    const vacias = CATS.filter(c => !form.fotos[c.key]);
-                    if (!vacias.length) { notify('Sin espacios', 'Todas las categorías ya tienen foto.', 'warning'); return; }
-                    const toUpload = Math.min(e.target.files.length, vacias.length);
-                    (async () => {
-                      let f = { ...form.fotos };
-                      for (let i = 0; i < toUpload; i++) {
-                        notify('Subiendo...', `${i + 1} de ${toUpload}`, 'info');
-                        try {
-                          const base64 = await resizeImage(e.target.files[i]);
-                          const result = await api.uploadFile({ codigo: form.codigo, categoria: vacias[i].key, archivo: base64, esDocumento: false });
-                          f = { ...f, [vacias[i].key]: result.url };
-                          setForm(prev => ({ ...prev, fotos: f }));
-                          setDirty(true);
-                        } catch (err) {
-                          notify('Error', `${vacias[i].label}: ${err.message}`, 'error');
-                        }
-                      }
-                      if (toUpload < e.target.files.length) notify('Incompleto', `Solo hay ${vacias.length} espacios. Se subieron ${toUpload} de ${e.target.files.length}.`, 'info');
-                      else notify('Listo', `${toUpload} fotos asignadas secuencialmente.`, 'success');
-                    })();
+                    handleFormPhotoUpload(e.target.files);
                     e.target.value = '';
                   }} />
-                   <div className="w-full grid grid-cols-3 gap-2 mt-1">
-                    {[
-                      { key: 'frente', label: 'Frente', icon: 'fa-laptop' },
-                      { key: 'posterior', label: 'Posterior', icon: 'fa-rotate-left' },
-                      { key: 'laterales', label: 'Laterales', icon: 'fa-arrows-left-right' },
-                      { key: 'pantalla', label: 'Pantalla', icon: 'fa-desktop' },
-                      { key: 'teclado', label: 'Teclado', icon: 'fa-keyboard' },
-                      { key: 'bios', label: 'BIOS', icon: 'fa-microchip' },
-                      { key: 'crystalDiskInfo', label: 'CrystalDiskInfo', icon: 'fa-hard-drive' },
-                      { key: 'bateria', label: 'Batería', icon: 'fa-battery-three-quarters' },
-                      { key: 'etiquetas', label: 'Etiquetas', icon: 'fa-tag' },
-                    ].map(({ key, label, icon }) => (
-                      <button type="button" key={key} onClick={async () => {
-                        if (navigator.mediaDevices?.getUserMedia) {
-                          try {
-                            const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
-                            tmp.getTracks().forEach(t => t.stop());
-                          } catch {}
-                        }
-                        setCameraKey(key);
-                      }} className={`relative group flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden ${
-                        form.fotos[key]
-                          ? 'border-brand-300 bg-brand-50/50'
-                          : 'border-slate-200 hover:border-brand-300 bg-slate-50'
-                      }`}>
-                        {form.fotos[key] ? (
-                          <>
-                            <img src={form.fotos[key]} alt={label} className="w-full h-14 object-cover rounded-lg" />
-                            <button type="button" onClick={e => { e.stopPropagation(); handleFormPhotoDelete(key); }}
-                              className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] opacity-0 group-hover:opacity-100 transition shadow">
-                              <i className="fa-solid fa-xmark" />
-                            </button>
-                          </>
-                        ) : (
-                          <div className="w-full h-14 flex flex-col items-center justify-center">
-                            <i className={`fa-solid ${icon} text-slate-300 text-sm`} />
-                            <span className="text-[9px] text-slate-400 mt-0.5">{label}</span>
-                          </div>
-                        )}
-                      </button>
+                   <div className="w-full grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2">
+                    {fotosList(form.fotos).map((f, i) => (
+                      <div key={f.url || `f${i}`} className="relative group aspect-[4/3] rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                        <img src={f.url} alt={f.nombre || 'foto'} className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => handleFormPhotoDelete(f)}
+                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition shadow">
+                          <i className="fa-solid fa-xmark" />
+                        </button>
+                      </div>
                     ))}
+                    {fotosList(form.fotos).length === 0 && (
+                      <div className="col-span-full rounded-xl border-2 border-dashed border-slate-200 p-6 text-center text-[11px] text-slate-400">
+                        <i className="fa-solid fa-camera-retro text-slate-300 text-lg mr-1" /> Sube todas las fotos que quieras (daños, etiquetas, pantalla...)
+                      </div>
+                    )}
                   </div>
                 </SectionHeader>
 
@@ -849,7 +803,7 @@ export default function Inventario() {
       {cameraKey && (
         <CameraCapture
           onCapture={file => {
-            handleFormPhotoUpload(cameraKey, [file]);
+            handleFormPhotoUpload([file]);
             setCameraKey(null);
           }}
           onClose={() => setCameraKey(null)}

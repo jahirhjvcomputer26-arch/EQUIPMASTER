@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useInventario } from '../context/InventarioContext';
 import { useNotify } from '../componentes/Notification';
 import { api } from '../services/api';
-import { nombreEquipo, normalizarSerie, TECNICOS } from '../utils/inventario';
+import { nombreEquipo, normalizarSerie, TECNICOS, fotoPrincipal } from '../utils/inventario';
 import ConfirmModal from '../componentes/ConfirmModal';
 import useDocumentTitle from '../utils/useDocumentTitle';
 
@@ -112,7 +112,7 @@ export default function CentroReparaciones() {
     nombre: nombreEquipo(i.marca, i.modelo),
     codigo: i.codigo,
     serie: i.serie,
-    foto: i.fotos?.frente,
+    foto: fotoPrincipal(i.fotos),
     categoria: i.reparacion.categoria,
     prioridad: i.reparacion.prioridad,
     estado: i.reparacion.estado,
@@ -588,8 +588,8 @@ export default function CentroReparaciones() {
                           }}
                           className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 hover:border-brand-400 hover:bg-brand-50 transition text-left"
                         >
-                          {r.fotos?.frente ? (
-                            <img src={r.fotos.frente} alt="" className="w-12 h-12 object-cover rounded-lg" />
+                          {fotoPrincipal(r.fotos) ? (
+                            <img src={fotoPrincipal(r.fotos)} alt="" className="w-12 h-12 object-cover rounded-lg" />
                           ) : (
                             <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400"><i className="fa-solid fa-laptop" /></div>
                           )}
@@ -628,8 +628,8 @@ export default function CentroReparaciones() {
               <div className="space-y-4">
                 {pestana === 'inv' && (
                   <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
-                    {seleccionado.fotos?.frente ? (
-                      <img src={seleccionado.fotos.frente} alt="" className="w-14 h-14 object-cover rounded-lg" />
+                    {fotoPrincipal(seleccionado.fotos) ? (
+                      <img src={fotoPrincipal(seleccionado.fotos)} alt="" className="w-14 h-14 object-cover rounded-lg" />
                     ) : (
                       <div className="w-14 h-14 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400"><i className="fa-solid fa-laptop" /></div>
                     )}

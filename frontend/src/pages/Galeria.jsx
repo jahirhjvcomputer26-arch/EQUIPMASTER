@@ -4,18 +4,7 @@ import { api } from '../services/api';
 import { useNotify } from '../componentes/Notification';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import CameraCapture from '../componentes/CameraCapture';
-
-const CATEGORIAS = [
-  { key: 'frente', label: 'Frente', icon: 'fa-laptop' },
-  { key: 'posterior', label: 'Posterior', icon: 'fa-rotate-left' },
-  { key: 'laterales', label: 'Laterales', icon: 'fa-arrows-left-right' },
-  { key: 'pantalla', label: 'Pantalla', icon: 'fa-desktop' },
-  { key: 'teclado', label: 'Teclado', icon: 'fa-keyboard' },
-  { key: 'bios', label: 'BIOS', icon: 'fa-microchip' },
-  { key: 'crystalDiskInfo', label: 'CrystalDiskInfo', icon: 'fa-hard-drive' },
-  { key: 'bateria', label: 'Batería', icon: 'fa-battery-three-quarters' },
-  { key: 'etiquetas', label: 'Etiquetas', icon: 'fa-tag' },
-];
+import { fotosList, pathFromFotoUrl } from '../utils/inventario';
 
 const MAX_SIZE = 800;
 function resizeImage(file) {
@@ -49,84 +38,60 @@ export default function Galeria() {
   const { notify: toast } = useNotify();
   const multiRef = useRef(null);
   const [item, setItem] = useState(null);
-  const [fotos, setFotos] = useState({});
+  const [fotos, setFotos] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadInfo, setUploadInfo] = useState('');
   const [preview, setPreview] = useState(null);
   const [error, setError] = useState('');
-  const [cameraCat, setCameraCat] = useState(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const loadItem = useCallback(async () => {
     try {
       const data = await api.getEquipo(codigo?.toUpperCase());
       setItem(data);
-      setFotos(data.fotos || {});
+      setFotos(fotosList(data.fotos));
     } catch { setError('Equipo no encontrado'); }
   }, [codigo]);
 
   useEffect(() => { if (codigo) loadItem(); }, [codigo, loadItem]);
 
-  const handleUpload = async (categoria, files) => {
+  const handleUpload = async (files) => {
     if (!files?.length) return;
     setUploading(true);
-    try {
-      const base64 = await resizeImage(files[0]);
-      const result = await api.uploadFile({ codigo: codigo.toUpperCase(), categoria, archivo: base64, esDocumento: false });
-      const newFotos = { ...fotos, [categoria]: result.url };
-      setFotos(newFotos);
-      await api.saveEquipo(codigo.toUpperCase(), { ...item, fotos: newFotos });
-      toast('Foto guardada', `${categoria.toUpperCase()} subida a Storage.`, 'success');
-    } catch (err) {
-      toast('Error', err.message, 'error');
-    }
-    setUploading(false);
-  };
-
-  const handleDelete = async (categoria) => {
-    if (!window.confirm(`¿Eliminar foto de ${categoria}?`)) return;
-    try {
-      const url = fotos[categoria];
-      if (url?.includes('storage.googleapis.com') || url?.includes('firebasestorage')) {
-        try {
-          const ext = (url.split('.').pop()?.split('?')[0]) || 'jpg';
-          await api.deleteFile(`fotos/${codigo.toUpperCase()}/${categoria}.${ext}`);
-        } catch {}
-      } else if (url?.startsWith('/archivos/')) {
-        try { await api.deleteFile(url.slice('/archivos/'.length)); } catch {}
-      }
-      const newFotos = { ...fotos };
-      delete newFotos[categoria];
-      setFotos(newFotos);
-      await api.saveEquipo(codigo.toUpperCase(), { ...item, fotos: newFotos });
-      toast('Foto eliminada', `${categoria.toUpperCase()} eliminada.`, 'success');
-    } catch (err) {
-      toast('Error', err.message, 'error');
-    }
-  };
-
-  const handleMultiUpload = async (files) => {
-    if (!files?.length) return;
-    const vacias = CATEGORIAS.filter(c => !fotos[c.key]);
-    if (!vacias.length) { toast('Sin espacios', 'Todas las categorías ya tienen foto. Elimina alguna primero.', 'warning'); return; }
-    setUploading(true);
-    const toUpload = Math.min(files.length, vacias.length);
-    let current = { ...fotos };
-    for (let i = 0; i < toUpload; i++) {
-      setUploadInfo(`Subiendo ${i + 1} de ${toUpload}...`);
+    let ok = 0;
+    const lista = Array.from(files);
+    for (let i = 0; i < lista.length; i++) {
+      setUploadInfo(`Subiendo ${i + 1} de ${lista.length}...`);
       try {
-        const base64 = await resizeImage(files[i]);
-        const result = await api.uploadFile({ codigo: codigo.toUpperCase(), categoria: vacias[i].key, archivo: base64, esDocumento: false });
-        current = { ...current, [vacias[i].key]: result.url };
-        setFotos(current);
-        await api.saveEquipo(codigo.toUpperCase(), { ...item, fotos: current });
+        const base64 = await resizeImage(lista[i]);
+        const result = await api.uploadFile({ codigo: codigo.toUpperCase(), archivo: base64, esDocumento: false, nombre: lista[i].name });
+        const newFotos = [...fotosList(fotos), { url: result.url, path: result.path, nombre: result.nombre || lista[i].name }];
+        setFotos(newFotos);
+        await api.saveEquipo(codigo.toUpperCase(), { ...item, fotos: newFotos });
+        ok++;
       } catch (err) {
-        toast('Error', `${vacias[i].label}: ${err.message}`, 'error');
+        toast('Error', `${lista[i].name}: ${err.message}`, 'error');
       }
     }
     setUploadInfo('');
     setUploading(false);
-    if (toUpload < files.length) toast('Algunas no se subieron', `Solo hay ${vacias.length} categorías vacías. Se subieron ${toUpload} de ${files.length} fotos.`, 'info');
-    else toast('Fotos subidas', `${toUpload} fotos asignadas secuencialmente.`, 'success');
+    if (ok) toast('Fotos subidas', `${ok} foto${ok === 1 ? '' : 's'} guardada${ok === 1 ? '' : 's'}.`, 'success');
+  };
+
+  const handleDelete = async (foto) => {
+    if (!window.confirm('¿Eliminar esta foto?')) return;
+    try {
+      const path = foto?.path || pathFromFotoUrl(foto?.url);
+      if (path) {
+        try { await api.deleteFile(path); } catch {}
+      }
+      const newFotos = fotosList(fotos).filter(f => f.url !== foto.url);
+      setFotos(newFotos);
+      await api.saveEquipo(codigo.toUpperCase(), { ...item, fotos: newFotos });
+      toast('Foto eliminada', 'Eliminada de la galería.', 'success');
+    } catch (err) {
+      toast('Error', err.message, 'error');
+    }
   };
 
   if (error) return (
@@ -150,74 +115,62 @@ export default function Galeria() {
           <h2 className="font-display text-2xl font-bold text-slate-900">
             <i className="fa-solid fa-camera text-brand-500 mr-2" />Galería Fotográfica
           </h2>
-          <p className="text-slate-500 text-sm">{item.marca} {item.modelo} · {item.codigo}</p>
+          <p className="text-slate-500 text-sm">{item.marca} {item.modelo} · {item.codigo} · {fotos.length} foto(s)</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => multiRef.current?.click()} className="px-4 py-2 border border-dashed border-brand-300 text-brand-600 rounded-xl text-sm font-bold hover:bg-brand-50 transition flex items-center gap-2">
-            <i className="fa-solid fa-layer-group" /> Cargar varias
+          <button onClick={() => multiRef.current?.click()} disabled={uploading} className="px-4 py-2 border border-dashed border-brand-300 text-brand-600 rounded-xl text-sm font-bold hover:bg-brand-50 transition flex items-center gap-2 disabled:opacity-50">
+            <i className="fa-solid fa-images" /> Cargar fotos
+          </button>
+          <button onClick={async () => {
+            if (navigator.mediaDevices?.getUserMedia) {
+              try {
+                const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
+                tmp.getTracks().forEach(t => t.stop());
+              } catch {}
+            }
+            setCameraOpen(true);
+          }} disabled={uploading} className="px-4 py-2 border border-dashed border-brand-300 text-brand-600 rounded-xl text-sm font-bold hover:bg-brand-50 transition flex items-center gap-2 disabled:opacity-50">
+            <i className="fa-solid fa-camera" /> Cámara
           </button>
           <button onClick={() => navigate(-1)} className="px-4 py-2 border border-slate-300 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50">
             <i className="fa-solid fa-arrow-left mr-1" /> Volver
           </button>
         </div>
-        <input ref={multiRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { handleMultiUpload(e.target.files); e.target.value = ''; }} />
+        <input ref={multiRef} type="file" accept="image/*" multiple className="hidden" onChange={e => { handleUpload(e.target.files); e.target.value = ''; }} />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-        {CATEGORIAS.map(cat => (
-          <div key={cat.key} className="panel overflow-hidden hover:shadow-lg transition-all duration-300 animate-slide-up group">
-            <div className="relative aspect-video bg-slate-100 flex items-center justify-center overflow-hidden">
-              {fotos[cat.key] ? (
-                <>
-                  <img src={fotos[cat.key]} alt={cat.label} className="w-full h-full object-cover" loading="lazy" />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
-                    <button onClick={() => setPreview({ url: fotos[cat.key], label: cat.label })}
-                      className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-brand-600 hover:scale-110 transition shadow-lg">
-                      <i className="fa-solid fa-expand" />
-                    </button>
-                    <button onClick={() => handleDelete(cat.key)}
-                      className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-red-500 hover:scale-110 transition shadow-lg">
-                      <i className="fa-solid fa-trash" />
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <button onClick={async () => {
-                  if (!navigator.mediaDevices?.getUserMedia) { setCameraCat(cat.key); return; }
-                  try {
-                    const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
-                    tmp.getTracks().forEach(t => t.stop());
-                  } catch {}
-                  setCameraCat(cat.key);
-                }} disabled={uploading} className="flex flex-col items-center gap-2 cursor-pointer w-full h-full justify-center hover:bg-slate-200/50 transition">
-                  <div className="w-12 h-12 rounded-full bg-brand-50 text-brand-400 flex items-center justify-center">
-                    <i className="fa-solid fa-camera text-lg" />
-                  </div>
-                  <span className="text-xs text-slate-400 font-medium">Sin foto</span>
-                </button>
-              )}
-            </div>
-            <div className="px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <i className={`fa-solid ${cat.icon} text-brand-500 text-sm`} />
-                <span className="text-sm font-bold text-slate-700">{cat.label}</span>
+      {fotos.length === 0 ? (
+        <div className="panel p-12 text-center rounded-2xl border-2 border-dashed border-slate-200">
+          <i className="fa-solid fa-camera-retro text-4xl text-slate-300 mb-4 block" />
+          <p className="text-slate-400 text-sm">Este equipo aún no tiene fotos. Sube las que quieras (daños, etiquetas, pantalla...).</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+          {fotos.map((f, i) => (
+            <div key={f.url || `f${i}`} className="panel overflow-hidden hover:shadow-lg transition-all duration-300 animate-slide-up group">
+              <div className="relative aspect-video bg-slate-100 flex items-center justify-center overflow-hidden">
+                <img src={f.url} alt={f.nombre || 'foto'} className="w-full h-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
+                  <button onClick={() => setPreview({ url: f.url, label: f.nombre || `Foto ${i + 1}` })}
+                    className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-brand-600 hover:scale-110 transition shadow-lg">
+                    <i className="fa-solid fa-expand" />
+                  </button>
+                  <button onClick={() => handleDelete(f)}
+                    className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-red-500 hover:scale-110 transition shadow-lg">
+                    <i className="fa-solid fa-trash" />
+                  </button>
+                </div>
               </div>
-              {fotos[cat.key] && (
-                <button onClick={async () => {
-                  if (!navigator.mediaDevices?.getUserMedia) { setCameraCat(cat.key); return; }
-                  try {
-                    const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
-                    tmp.getTracks().forEach(t => t.stop());
-                  } catch {}
-                  setCameraCat(cat.key);
-                }} className="cursor-pointer px-3 py-1 rounded-lg bg-brand-50 text-brand-600 text-xs font-bold hover:bg-brand-100 transition">
-                  <i className="fa-solid fa-refresh mr-1" /> Cambiar
-                </button>
-              )}
+              <div className="px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <i className="fa-solid fa-image text-brand-500 text-sm" />
+                  <span className="text-sm font-bold text-slate-700">{f.nombre || `Foto ${i + 1}`}</span>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {preview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-fade-in" onClick={() => setPreview(null)}>
@@ -240,13 +193,13 @@ export default function Galeria() {
         </div>
       )}
 
-      {cameraCat && (
+      {cameraOpen && (
         <CameraCapture
           onCapture={file => {
-            handleUpload(cameraCat, [file]);
-            setCameraCat(null);
+            handleUpload([file]);
+            setCameraOpen(false);
           }}
-          onClose={() => setCameraCat(null)}
+          onClose={() => setCameraOpen(false)}
         />
       )}
     </section>

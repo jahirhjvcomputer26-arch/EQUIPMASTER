@@ -613,6 +613,33 @@ export function nombreEquipo(marca, modelo) {
   return `${m} ${mo}`;
 }
 
+export function fotosList(fotos) {
+  if (!fotos) return [];
+  if (Array.isArray(fotos)) return fotos.filter(f => f && f.url);
+  return Object.entries(fotos)
+    .filter(([, v]) => v)
+    .map(([k, v]) => (typeof v === 'string' ? { url: v, nombre: k, path: null } : { ...v, nombre: v.nombre || k }));
+}
+
+export function fotoPrincipal(fotos) {
+  const list = fotosList(fotos);
+  if (list.length === 0) return null;
+  if (list.some(f => f.nombre === 'frente')) {
+    const frente = list.find(f => f.nombre === 'frente');
+    if (frente) return frente.url;
+  }
+  return list[0].url;
+}
+
+export function pathFromFotoUrl(url) {
+  if (!url) return null;
+  const m = url.match(/storage\.googleapis\.com\/[^/]+\/(.+)$/);
+  if (m) return decodeURIComponent(m[1].split('?')[0]);
+  const f = url.match(/\/o\/([^?]+)/);
+  if (f) return decodeURIComponent(f[1]);
+  return null;
+}
+
 export function derivarModeloComercial(marca, modelo) {
   if (!modelo) return '';
   const m = modelo.toUpperCase().trim();

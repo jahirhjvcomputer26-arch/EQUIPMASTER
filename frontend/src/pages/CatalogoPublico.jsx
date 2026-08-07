@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import useDocumentTitle from '../utils/useDocumentTitle';
+import { fotoPrincipal } from '../utils/inventario';
 
 function Foto({ producto, grande = false }) {
-  const src = producto.fotos?.frente || Object.values(producto.fotos || {})[0];
+  const src = fotoPrincipal(producto.fotos);
   return src ? <img src={src} alt={`${producto.marca} ${producto.modelo}`} className={`${grande ? 'w-full h-72' : 'w-full h-44'} object-cover`} /> : <div className={`${grande ? 'h-72' : 'h-44'} flex items-center justify-center bg-slate-100 text-slate-300`}><i className="fa-solid fa-laptop text-5xl" /></div>;
 }
 

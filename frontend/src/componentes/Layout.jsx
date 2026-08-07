@@ -17,8 +17,9 @@ const menuGroups = [
     { to: '/', icon: 'fa-chart-pie', label: 'Dashboard', end: true },
   ]},
   { label: 'Movimientos', items: [
-    { to: '/ventas', icon: 'fa-store', label: 'Venta Local', perm: 'ver_ventas' },
-    { to: '/mercadolibre', icon: 'fa-warehouse', label: 'Venta ML', perm: 'ver_ventas' },
+      { to: '/ventas', icon: 'fa-store', label: 'Venta Local', perm: 'ver_ventas' },
+      { to: '/mercadolibre', icon: 'fa-warehouse', label: 'Venta ML', perm: 'ver_ventas' },
+      { to: '/publicar-catalogo', icon: 'fa-bullhorn', label: 'Publicar catálogo', perm: 'publicar_catalogo' },
     { to: '/devoluciones', icon: 'fa-rotate-left', label: 'Devoluciones', perm: 'ver_ventas' },
     { to: '/prestamos', icon: 'fa-hand-holding', label: 'Préstamos', perm: 'ver_prestamos' },
     { to: 'http://192.168.100.198:5175', icon: 'fa-battery-three-quarters', label: 'Cargadores', external: true, perm: 'ver_inventario' },
