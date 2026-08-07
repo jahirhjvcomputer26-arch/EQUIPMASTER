@@ -762,22 +762,6 @@ export default function Inventario() {
                   </div>
                 </SectionHeader>
 
-              <div className="border-t border-slate-200 pt-5">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs bg-brand-50 text-brand-600"><i className="fa-solid fa-store" /></div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Catálogo público</p>
-                    <p className="text-[10px] text-slate-400">Solo se muestran equipos marcados como publicados.</p>
-                  </div>
-                  <label className="ml-auto flex items-center gap-2 text-xs font-bold text-brand-700 cursor-pointer">
-                    <input type="checkbox" checked={form.publicado} onChange={e => markDirty('publicado', e.target.checked)} className="rounded border-slate-300" /> Publicar equipo
-                  </label>
-                </div>
-                {form.publicado && <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div><label className="form-label">Precio público</label><input type="number" min="0" className="form-input" value={form.precioPublico} onChange={e => markDirty('precioPublico', e.target.value)} placeholder="12500" /></div>
-                  <div className="md:col-span-2"><label className="form-label">Descripción pública</label><textarea className="form-input min-h-[72px]" value={form.descripcionPublica} onChange={e => markDirty('descripcionPublica', e.target.value)} placeholder="Equipo reacondicionado, garantía incluida..." /></div>
-                </div>}
-              </div>
             </div>
           )}
 
