@@ -18,12 +18,13 @@ function fotosLocales(fotos) {
 router.get('/', async (_req, res) => {
   try {
     const data = await firebaseGet('inventario');
+    const modelos = await firebaseGet('modelosFotos') || {};
     const lista = (data ? Object.values(data) : [])
       .filter(i => i.estado?.includes('🔵 OK') && !i.estado?.includes('VENDIDO'))
       .map(i => ({
         codigo: i.codigo, marca: i.marca, modelo: i.modelo, serie: i.serie,
         ram: i.ram, almacenamiento: i.almacenamiento, procesador: i.procesador,
-        fotos: fotosLocales(i.fotos), publicado: i.publicado === true,
+        fotos: { ...fotosLocales(Object.fromEntries(Object.entries(modelos[`${(i.marca || '').toUpperCase().trim()} ${(i.modelo || '').toUpperCase().trim()}`.replace(/\s+/g, ' ').replace(/[^A-Z0-9.]+/g, '_').replace(/^_+|_+$/g, '') || 'SIN_NOMBRE']?.fotos || {}).map(([id, foto]) => [id, foto.url]))), ...fotosLocales(i.fotos) }, publicado: i.publicado === true,
         precioPublico: i.precioPublico || '', descripcionPublica: i.descripcionPublica || '',
       }));
     res.json(lista);

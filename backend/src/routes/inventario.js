@@ -24,12 +24,23 @@ router.get('/public/consulta', async (req, res) => {
   }
 });
 
-function productoPublico(item) {
-  const fotos = Object.fromEntries(Object.entries(item.fotos || {}).map(([key, value]) => {
+function normalizarFotos(fotos) {
+  return Object.fromEntries(Object.entries(fotos || {}).map(([key, value]) => {
     const raw = String(value || '');
     const match = raw.match(/storage\.googleapis\.com\/[^/]+\/(.+)$/);
     return [key, match ? `/archivos/${match[1]}` : value];
   }));
+}
+
+function claveModelo(item) {
+  return `${(item.marca || '').toUpperCase().trim()} ${(item.modelo || '').toUpperCase().trim()}`.replace(/\s+/g, ' ').replace(/[^A-Z0-9.]+/g, '_').replace(/^_+|_+$/g, '') || 'SIN_NOMBRE';
+}
+
+function productoPublico(item, modelos = {}) {
+  const propias = normalizarFotos(item.fotos);
+  const grupo = modelos[claveModelo(item)]?.fotos || {};
+  const delModelo = normalizarFotos(Object.fromEntries(Object.entries(grupo).map(([id, foto]) => [id, foto.url])));
+  const fotos = { ...delModelo, ...propias };
   return {
     codigo: item.codigo,
     categoria: item.categoria,
@@ -52,9 +63,10 @@ function productoPublico(item) {
 router.get('/public/catalogo', async (_req, res) => {
   try {
     const data = await firebaseGet('inventario');
+    const modelos = await firebaseGet('modelosFotos') || {};
     const lista = (data ? Object.values(data) : [])
       .filter(item => item.publicado === true && !item.estado?.includes('VENDIDO'))
-      .map(productoPublico);
+      .map(item => productoPublico(item, modelos));
     res.json(lista);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -63,7 +75,8 @@ router.get('/public/catalogo/:codigo', async (req, res) => {
   try {
     const item = await firebaseGet(`inventario/${req.params.codigo}`);
     if (!item || item.publicado !== true || item.estado?.includes('VENDIDO')) return res.status(404).json({ error: 'Producto no disponible' });
-    res.json(productoPublico(item));
+    const modelos = await firebaseGet('modelosFotos') || {};
+    res.json(productoPublico(item, modelos));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
