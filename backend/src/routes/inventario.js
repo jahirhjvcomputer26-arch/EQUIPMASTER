@@ -25,6 +25,11 @@ router.get('/public/consulta', async (req, res) => {
 });
 
 function productoPublico(item) {
+  const fotos = Object.fromEntries(Object.entries(item.fotos || {}).map(([key, value]) => {
+    const raw = String(value || '');
+    const match = raw.match(/storage\.googleapis\.com\/[^/]+\/(.+)$/);
+    return [key, match ? `/archivos/${match[1]}` : value];
+  }));
   return {
     codigo: item.codigo,
     categoria: item.categoria,
@@ -40,7 +45,7 @@ function productoPublico(item) {
     estado: item.estado,
     precioPublico: item.precioPublico,
     descripcionPublica: item.descripcionPublica,
-    fotos: item.fotos || {},
+    fotos,
   };
 }
 

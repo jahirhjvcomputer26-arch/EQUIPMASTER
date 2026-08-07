@@ -7,6 +7,14 @@ import { registrarActividad } from './actividad.js';
 const router = Router();
 router.use(authMiddleware, loadPermisos(), requirePerm('publicar_catalogo'));
 
+function fotosLocales(fotos) {
+  return Object.fromEntries(Object.entries(fotos || {}).map(([key, value]) => {
+    const raw = String(value || '');
+    const match = raw.match(/storage\.googleapis\.com\/[^/]+\/(.+)$/);
+    return [key, match ? `/archivos/${match[1]}` : value];
+  }));
+}
+
 router.get('/', async (_req, res) => {
   try {
     const data = await firebaseGet('inventario');
@@ -15,7 +23,7 @@ router.get('/', async (_req, res) => {
       .map(i => ({
         codigo: i.codigo, marca: i.marca, modelo: i.modelo, serie: i.serie,
         ram: i.ram, almacenamiento: i.almacenamiento, procesador: i.procesador,
-        fotos: i.fotos || {}, publicado: i.publicado === true,
+        fotos: fotosLocales(i.fotos), publicado: i.publicado === true,
         precioPublico: i.precioPublico || '', descripcionPublica: i.descripcionPublica || '',
       }));
     res.json(lista);
