@@ -92,6 +92,7 @@ export function AuthProvider({ children }) {
 
   const can = (perm) => {
     if (!user) return false;
+    if (user.rol === 'superadmin' || Number(user.nivel) >= 100) return true;
     if (user.permisos?.all) return true;
     return !!user.permisos?.[perm];
   };

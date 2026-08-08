@@ -182,6 +182,7 @@ const TABLES = {
   modelosFotos: { table: 'ModelosFotos', idCol: 'Id', mode: 'json' },
   garantias: { table: 'Garantias', idCol: 'Id', mode: 'json' },
   mantenimientos: { table: 'Mantenimientos', idCol: 'Id', mode: 'json' },
+  solicitudesVenta: { table: 'SolicitudesVenta', idCol: 'Id', mode: 'json' },
   configuracion: { table: 'Configuracion', idCol: 'Clave', mode: 'config' },
 };
 

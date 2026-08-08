@@ -237,4 +237,9 @@ CREATE TABLE dbo.Mantenimientos (
     Id NVARCHAR(64) NOT NULL PRIMARY KEY,
     Datos NVARCHAR(MAX) NOT NULL
 );
+IF OBJECT_ID(N'dbo.SolicitudesVenta', N'U') IS NULL
+CREATE TABLE dbo.SolicitudesVenta (
+    Id NVARCHAR(64) NOT NULL PRIMARY KEY,
+    Datos NVARCHAR(MAX) NOT NULL
+);
 GO

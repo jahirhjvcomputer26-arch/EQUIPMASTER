@@ -30,6 +30,7 @@ import Configuracion from './pages/Configuracion';
 import GarantiasMantenimiento from './pages/GarantiasMantenimiento';
 import CatalogoPublico from './pages/CatalogoPublico';
 import PublicarCatalogo from './pages/PublicarCatalogo';
+import SolicitudesVenta from './pages/SolicitudesVenta';
 import AlertasPanel from './pages/AlertasPanel';
 import Tickets from './pages/Tickets';
 import LoadingScreen from './componentes/LoadingScreen';
@@ -84,6 +85,7 @@ export default function App() {
                  <Route path="configuracion" element={<Guard perm="config_sistema"><Configuracion /></Guard>} />
                  <Route path="garantias" element={<Guard perm="ver_garantias"><GarantiasMantenimiento /></Guard>} />
                  <Route path="publicar-catalogo" element={<Guard perm="publicar_catalogo"><PublicarCatalogo /></Guard>} />
+                 <Route path="solicitudes-venta" element={<Guard perm="gestionar_solicitudes"><SolicitudesVenta /></Guard>} />
                 <Route path="tickets" element={<Guard perm="ver_tickets"><Tickets /></Guard>} />
                 <Route path="etiquetas" element={<Guard perm="generar_qr"><Etiquetas /></Guard>} />
                 <Route path="etiquetas/:codigo" element={<Guard perm="generar_qr"><Etiquetas /></Guard>} />

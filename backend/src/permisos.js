@@ -42,6 +42,7 @@ export const PERMISOS_CATALOGO = [
   { key: 'subir_archivos', label: 'Subir / Eliminar Archivos', grupo: 'Sistema', desc: 'Subir fotografías y documentos' },
   { key: 'gestionar_modelos', label: 'Fotos por Modelo', grupo: 'Inventario', desc: 'Subir y eliminar fotografías del catálogo de modelos (marca/modelo)' },
   { key: 'publicar_catalogo', label: 'Publicar en Catálogo', grupo: 'Ventas', desc: 'Publicar equipos OK con precio y descripción pública sin editar la ficha interna' },
+  { key: 'gestionar_solicitudes', label: 'Gestionar Solicitudes de Compra', grupo: 'Ventas', desc: 'Consultar y actualizar solicitudes del catálogo público' },
   { key: 'ver_garantias', label: 'Ver Garantías y Mantenimientos', grupo: 'Mantenimiento', desc: 'Consultar garantías y mantenimientos' },
   { key: 'gestionar_garantias', label: 'Gestionar Garantías y Mantenimientos', grupo: 'Mantenimiento', desc: 'Registrar y actualizar garantías y mantenimientos' },
 ];
@@ -67,7 +68,7 @@ export const ROLES_DEFECTO = {
       admin_usuarios: true, ver_auditoria: true,
       subir_archivos: true, gestionar_modelos: true,
       ver_garantias: true, gestionar_garantias: true,
-      publicar_catalogo: true,
+      publicar_catalogo: true, gestionar_solicitudes: true,
     },
   },
   supervisor: {
@@ -90,7 +91,7 @@ export const ROLES_DEFECTO = {
     permisos: {
       ver_inventario: true, ver_fichas: true, escanear_qr: true, generar_qr: true,
       ver_ventas: true, registrar_ventas: true, editar_ventas: true,
-      ver_reportes: true, exportar_excel: true, publicar_catalogo: true,
+      ver_reportes: true, exportar_excel: true, publicar_catalogo: true, gestionar_solicitudes: true,
       ver_tickets: true, registrar_tickets: true,
     },
   },
@@ -141,6 +142,7 @@ export function resolverPermisos(record, roles) {
 }
 
 export function tienePermiso(req, ...permisos) {
+  if (esSuperAdmin(req.userRecord)) return true;
   const p = req.permisos || {};
   return permisos.some(k => p.all || p[k]);
 }

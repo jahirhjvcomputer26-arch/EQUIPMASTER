@@ -338,7 +338,7 @@ export default function BaseDatos() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className={"min-w-[980px] 2xl:min-w-[1250px] w-full text-left text-sm table-responsive table-fixed " + (compact ? 'table-compact' : '')}>
+               <table className={"min-w-[1100px] 2xl:min-w-[1400px] w-full text-left text-sm table-responsive table-fixed " + (compact ? 'table-compact' : '')}>
                 <thead className="bg-slate-50 text-slate-600">
                   <tr>
                     <th className="px-3 py-4 w-10">
@@ -351,7 +351,7 @@ export default function BaseDatos() {
                     <Th k="estado" className="w-40">Estado</Th>
                     <Th k="tecnico" className="w-40">Técnico</Th>
                     <th className="hidden 2xl:table-cell px-4 py-4 text-xs font-bold uppercase w-56">Flujo / Venta</th>
-                    <th className="px-4 py-4 text-xs font-bold uppercase text-center w-28">Acciones</th>
+                     <th className="sticky right-0 z-20 px-4 py-4 text-xs font-bold uppercase text-center min-w-32 w-32 bg-slate-50 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -376,7 +376,7 @@ export default function BaseDatos() {
                       {item.flujoMercadoLibre && !item.flujoVentaML && <p>En ML desde {item.flujoMercadoLibre.fechaEnvio}</p>}
                       {item.flujoDevolucion && <p className="text-orange-600">Devolución: {item.flujoDevolucion.motivo}</p>}
                     </td>
-                    <td className="px-4 py-4 text-center" data-label="">
+                     <td className="sticky right-0 z-10 px-4 py-4 text-center min-w-32 w-32 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700" data-label="">
                       <div className="flex items-center justify-center gap-2">
                         <Link to={`/inventario?editar=${item.codigo}`} title="Editar equipo" className="text-brand-600 hover:text-brand-800 font-bold text-xs transition-colors">
                           <i className="fa-solid fa-pen-to-square" />

@@ -56,6 +56,7 @@ function productoPublico(item, modelos = {}) {
     estado: item.estado,
     precioPublico: item.precioPublico,
     descripcionPublica: item.descripcionPublica,
+    detallesPublicos: item.detallesPublicos,
     fotos,
   };
 }

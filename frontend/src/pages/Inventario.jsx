@@ -46,7 +46,7 @@ const emptyForm = {
   anio: '', procesador: '', generacion: '', ram: '16 GB', tipoRam: 'DDR4', almacenamiento: '512 GB', tipoDisco: 'M.2 NVME', grafica: 'INTEGRADA',
   resolucion: '', pantallaTactil: false, retroiluminacion: false, lectorHuellas: false, camaraIR: false, wifi: true, bluetooth: true,
   tecnico: '', bateria: '', cargador: '', estado: '🔵 OK', observaciones: '',
-  publicado: false, precioPublico: '', descripcionPublica: '',
+  publicado: false, precioPublico: '', descripcionPublica: '', detallesPublicos: '',
   mlFechaEnvio: '', mlPublicacionId: '', mlEnviadoPor: '',
   fichaV2: emptyFichaV2,
   fotos: [],
@@ -72,7 +72,7 @@ export default function Inventario() {
   useDocumentTitle('Entrada de equipos');
   const { inventario, refresh } = useInventario();
   const { notify } = useNotify();
-  const [params] = useSearchParams();
+  const [params, setSearchParams] = useSearchParams();
   const [mode, setMode] = useState(() => localStorage.getItem('em_capture_mode') || 'full');
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(emptyForm);
@@ -241,9 +241,14 @@ export default function Inventario() {
       if (item) {
         lastEditCodigo.current = codigo;
         cargarEdicion(item);
+        return;
       }
     }
-    if (!codigo) lastEditCodigo.current = null;
+    if (!codigo) {
+      const saliendoDeEdicion = lastEditCodigo.current !== null;
+      lastEditCodigo.current = null;
+      if (saliendoDeEdicion) cancelar();
+    }
   }, [params, inventario]);
 
   useEffect(() => {
@@ -276,7 +281,7 @@ export default function Inventario() {
       wifi: item.wifi !== false, bluetooth: item.bluetooth !== false,
       tecnico: item.tecnico, bateria: item.bateria, cargador: item.cargador || '',
       estado: item.estado, observaciones: item.observaciones || '',
-      publicado: item.publicado === true, precioPublico: item.precioPublico || '', descripcionPublica: item.descripcionPublica || '',
+      publicado: item.publicado === true, precioPublico: item.precioPublico || '', descripcionPublica: item.descripcionPublica || '', detallesPublicos: item.detallesPublicos || '',
       mlFechaEnvio: item.flujoMercadoLibre?.fechaEnvio || '',
       mlPublicacionId: item.flujoMercadoLibre?.idPublicacion || '',
       mlEnviadoPor: item.flujoMercadoLibre?.enviadoPor || '',
@@ -369,6 +374,7 @@ export default function Inventario() {
        publicado: !!form.publicado,
        precioPublico: form.precioPublico,
        descripcionPublica: form.descripcionPublica,
+       detallesPublicos: form.detallesPublicos,
       anio: form.anio || '',
       generacion: form.generacion.toUpperCase().trim(),
       tipoRam: form.tipoRam,
@@ -439,6 +445,7 @@ export default function Inventario() {
 
   const cancelar = (ultimoCodigo = null) => {
     lastEditCodigo.current = null;
+    if (params.get('editar')) setSearchParams({}, { replace: true });
     const nextCodigo = ultimoCodigo
       ? `INV-${parseInt(ultimoCodigo.replace('INV-', ''), 10) + 1}`
       : generarCodigoSiguiente(inventario);

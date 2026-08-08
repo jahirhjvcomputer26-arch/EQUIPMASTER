@@ -25,7 +25,7 @@ router.get('/', async (_req, res) => {
         codigo: i.codigo, marca: i.marca, modelo: i.modelo, serie: i.serie,
         ram: i.ram, almacenamiento: i.almacenamiento, procesador: i.procesador,
         fotos: { ...fotosLocales(Object.fromEntries(Object.entries(modelos[`${(i.marca || '').toUpperCase().trim()} ${(i.modelo || '').toUpperCase().trim()}`.replace(/\s+/g, ' ').replace(/[^A-Z0-9.]+/g, '_').replace(/^_+|_+$/g, '') || 'SIN_NOMBRE']?.fotos || {}).map(([id, foto]) => [id, foto.url]))), ...fotosLocales(i.fotos) }, publicado: i.publicado === true,
-        precioPublico: i.precioPublico || '', descripcionPublica: i.descripcionPublica || '',
+        precioPublico: i.precioPublico || '', descripcionPublica: i.descripcionPublica || '', detallesPublicos: i.detallesPublicos || '',
       }));
     res.json(lista);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -43,6 +43,7 @@ router.put('/:codigo', async (req, res) => {
       publicado,
       precioPublico: publicado ? String(req.body.precioPublico || '').trim() : item.precioPublico || '',
       descripcionPublica: publicado ? String(req.body.descripcionPublica || '').trim() : item.descripcionPublica || '',
+      detallesPublicos: publicado ? String(req.body.detallesPublicos || '').trim() : item.detallesPublicos || '',
     };
     await firebaseSet(`inventario/${codigo}`, actualizado);
     registrarActividad(req.user?.nombre, publicado ? 'PRODUCTO_PUBLICADO' : 'PRODUCTO_OCULTO', `${codigo} en catálogo`, { registro: `inventario/${codigo}` });
