@@ -3,6 +3,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import { loadPermisos, requirePerm, tienePermiso } from '../permisos.js';
 import { firebaseDelete, firebaseGet, firebaseSet } from '../firebase.js';
 import { registrarActividad } from './actividad.js';
+import { sqlCreateInventory } from '../db.js';
 
 const router = Router();
 
@@ -121,6 +122,16 @@ router.get('/:codigo', requirePerm('ver_inventario'), async (req, res) => {
 
 router.put('/:codigo', async (req, res) => {
   try {
+    const modo = req.body.modo;
+    const body = { ...req.body };
+    delete body.modo;
+    req.body = body;
+    if (modo === 'crear' && process.env.DB_SERVER && !process.env.USE_FIREBASE) {
+      if (!tienePermiso(req, 'crear_equipos')) return res.status(403).json({ error: 'Acceso denegado: necesitas permiso de crear equipos' });
+      const codigoNuevo = await sqlCreateInventory(req.body);
+      registrarActividad(req.user?.nombre, 'EQUIPO_REGISTRADO', `${codigoNuevo} · ${req.body.marca || ''} ${req.body.modelo || ''}`, { registro: `inventario/${codigoNuevo}`, antes: null, despues: { ...req.body, codigo: codigoNuevo } });
+      return res.json({ message: 'Equipo guardado', codigo: codigoNuevo });
+    }
     let codigo = req.params.codigo;
     const existente = await firebaseGet(`inventario/${codigo}`);
     const esNuevo = !existente;

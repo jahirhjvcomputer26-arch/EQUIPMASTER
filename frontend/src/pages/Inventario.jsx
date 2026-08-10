@@ -356,7 +356,8 @@ export default function Inventario() {
         }
       }
     const payload = {
-      codigo: form.codigo.toUpperCase().trim(),
+       codigo: form.codigo.toUpperCase().trim(),
+       modo: editing ? 'editar' : 'crear',
       categoria: form.categoria,
       marca: form.marca.toUpperCase().trim(),
       modelo: form.modelo.toUpperCase().trim(),

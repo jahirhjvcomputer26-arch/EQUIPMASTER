@@ -102,6 +102,15 @@ CREATE TABLE dbo.Inventario (
     FechaRegistro NVARCHAR(64) NULL,
     Extra NVARCHAR(MAX) NULL
 );
+IF OBJECT_ID(N'dbo.InventarioCodigoSeq', N'U') IS NULL
+CREATE TABLE dbo.InventarioCodigoSeq (
+    Id TINYINT NOT NULL PRIMARY KEY,
+    Ultimo INT NOT NULL
+);
+IF NOT EXISTS (SELECT 1 FROM dbo.InventarioCodigoSeq WHERE Id = 1)
+INSERT INTO dbo.InventarioCodigoSeq (Id, Ultimo)
+SELECT 1, ISNULL(MAX(TRY_CONVERT(INT, SUBSTRING(Codigo, 5, 20))), 1000)
+FROM dbo.Inventario WHERE Codigo LIKE 'INV-%';
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Inventario_Marca' AND object_id = OBJECT_ID(N'dbo.Inventario'))
 CREATE INDEX IX_Inventario_Marca ON dbo.Inventario(Marca);
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Inventario_Estado' AND object_id = OBJECT_ID(N'dbo.Inventario'))

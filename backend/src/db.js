@@ -67,9 +67,7 @@ async function getPool() {
   }
 }
 
-async function run(query, params = {}) {
-  const p = await getPool();
-  const req = p.request();
+function bindParams(req, params) {
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined) continue;
     if (v === null) { req.input(k, mssql.NVarChar(4000), null); continue; }
@@ -80,6 +78,12 @@ async function run(query, params = {}) {
       else req.input(k, mssql.BigInt, v);
     } else req.input(k, mssql.NVarChar(mssql.MAX), v);
   }
+  return req;
+}
+
+async function run(query, params = {}) {
+  const p = await getPool();
+  const req = bindParams(p.request(), params);
   const res = await req.query(query);
   return res.recordset || [];
 }
@@ -351,6 +355,26 @@ export async function sqlSet(path, data) {
   for (const [key, val] of Object.entries(data || {})) {
     if (val === null || val === undefined) await deleteRow(cfg, key);
     else await upsert(cfg, key, val);
+  }
+}
+
+export async function sqlCreateInventory(data) {
+  const pool = await getPool();
+  const tx = new mssql.Transaction(pool);
+  await tx.begin();
+  try {
+    const seq = await tx.request().query('UPDATE dbo.InventarioCodigoSeq SET Ultimo = Ultimo + 1 OUTPUT INSERTED.Ultimo WHERE Id = 1');
+    const codigo = `INV-${seq.recordset[0].Ultimo}`;
+    const row = objToRow(TABLES.inventario, { ...data, codigo });
+    row.Codigo = codigo;
+    const columns = Object.keys(row);
+    const req = bindParams(tx.request(), row);
+    await req.query(`INSERT INTO dbo.Inventario ([${columns.join('], [')}]) VALUES (${columns.map(c => `@${c}`).join(', ')})`);
+    await tx.commit();
+    return codigo;
+  } catch (err) {
+    try { await tx.rollback(); } catch {}
+    throw err;
   }
 }
 
