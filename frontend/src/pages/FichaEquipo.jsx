@@ -16,10 +16,6 @@ export default function FichaEquipo() {
       .catch(() => setError('Equipo no encontrado'));
   }, [codigo]);
 
-  useEffect(() => {
-    if (item) setTimeout(() => window.print(), 800);
-  }, [item]);
-
   if (error) return (
     <div className="min-h-screen flex items-center justify-center text-slate-500">
       <p>{error}</p>
