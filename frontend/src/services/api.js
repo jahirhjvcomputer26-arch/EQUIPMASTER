@@ -53,7 +53,7 @@ export const api = {
   getCatalogoPublicables: () => request('/catalogo-publicacion'),
   publicarCatalogo: (codigo, body) => request(`/catalogo-publicacion/${encodeURIComponent(codigo)}`, { method: 'PUT', body: JSON.stringify(body) }),
   getSolicitudesVenta: () => request('/solicitudes-venta'),
-  actualizarSolicitudVenta: (id, estado) => request(`/solicitudes-venta/${id}`, { method: 'PUT', body: JSON.stringify({ estado }) }),
+  actualizarSolicitudVenta: (id, body) => request(`/solicitudes-venta/${id}`, { method: 'PUT', body: JSON.stringify(typeof body === 'string' ? { estado: body } : body) }),
   crearSolicitudVenta: (body) => fetch(`${API}/solicitudes-venta`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || 'No se pudo enviar la solicitud'); return data; }),
   saveEquipo: (codigo, body) => request(`/inventario/${codigo}`, { method: 'PUT', body: JSON.stringify(body) }),
   eliminarEquipo: (codigo) => request(`/inventario/${codigo}`, { method: 'DELETE' }),

@@ -148,6 +148,8 @@ Copy-Item (Join-Path $PSScriptRoot 'probar-restauracion.ps1') "$BASE\probar-rest
 schtasks /Create /TN "EquipMaster Respaldo" /TR "powershell -NoProfile -ExecutionPolicy Bypass -File `"$bakScript`"" /SC DAILY /ST 02:30 /RU SYSTEM /RL HIGHEST /F | Out-Null
 OK 'Respaldo diario programado (02:30): SQL .bak + VERIFYONLY + copia de archivos.'
 OK "Prueba manual de restauración disponible en $BASE\probar-restauracion.ps1"
+schtasks /Create /TN "EquipMaster Verificar Respaldo" /TR "powershell -NoProfile -ExecutionPolicy Bypass -File `"$BASE\probar-restauracion.ps1`"" /SC MONTHLY /D 1 /ST 04:00 /RU SYSTEM /RL HIGHEST /F | Out-Null
+OK 'Prueba completa de restauración programada cada día 1 a las 04:00.'
 
 # ---------- 8) Arrancar y verificar ----------
 if ($existing) { Restart-Service -Name $serviceName -ErrorAction SilentlyContinue }
