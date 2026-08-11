@@ -43,6 +43,7 @@ export const PERMISOS_CATALOGO = [
   { key: 'gestionar_modelos', label: 'Fotos por Modelo', grupo: 'Inventario', desc: 'Subir y eliminar fotografías del catálogo de modelos (marca/modelo)' },
   { key: 'publicar_catalogo', label: 'Publicar en Catálogo', grupo: 'Ventas', desc: 'Publicar equipos OK con precio y descripción pública sin editar la ficha interna' },
   { key: 'gestionar_solicitudes', label: 'Gestionar Solicitudes de Compra', grupo: 'Ventas', desc: 'Consultar y actualizar solicitudes del catálogo público' },
+  { key: 'ver_marketing', label: 'Panel de Marketing', grupo: 'Ventas', desc: 'Consultar equipos OK y sus especificaciones comerciales' },
   { key: 'ver_garantias', label: 'Ver Garantías y Mantenimientos', grupo: 'Mantenimiento', desc: 'Consultar garantías y mantenimientos' },
   { key: 'gestionar_garantias', label: 'Gestionar Garantías y Mantenimientos', grupo: 'Mantenimiento', desc: 'Registrar y actualizar garantías y mantenimientos' },
 ];
@@ -68,7 +69,7 @@ export const ROLES_DEFECTO = {
       admin_usuarios: true, ver_auditoria: true,
       subir_archivos: true, gestionar_modelos: true,
       ver_garantias: true, gestionar_garantias: true,
-      publicar_catalogo: true, gestionar_solicitudes: true,
+      publicar_catalogo: true, gestionar_solicitudes: true, ver_marketing: true,
     },
   },
   supervisor: {
@@ -91,7 +92,7 @@ export const ROLES_DEFECTO = {
     permisos: {
       ver_inventario: true, ver_fichas: true, escanear_qr: true, generar_qr: true,
       ver_ventas: true, registrar_ventas: true, editar_ventas: true,
-      ver_reportes: true, exportar_excel: true, publicar_catalogo: true, gestionar_solicitudes: true,
+      ver_reportes: true, exportar_excel: true, publicar_catalogo: true, gestionar_solicitudes: true, ver_marketing: true,
       ver_tickets: true, registrar_tickets: true,
     },
   },

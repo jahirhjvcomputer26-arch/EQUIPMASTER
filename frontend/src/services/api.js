@@ -55,6 +55,7 @@ export const api = {
   getSolicitudesVenta: () => request('/solicitudes-venta'),
   actualizarSolicitudVenta: (id, body) => request(`/solicitudes-venta/${id}`, { method: 'PUT', body: JSON.stringify(typeof body === 'string' ? { estado: body } : body) }),
   crearSolicitudVenta: (body) => fetch(`${API}/solicitudes-venta`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || 'No se pudo enviar la solicitud'); return data; }),
+  getMarketing: () => request('/marketing'),
   saveEquipo: (codigo, body) => request(`/inventario/${codigo}`, { method: 'PUT', body: JSON.stringify(body) }),
   eliminarEquipo: (codigo) => request(`/inventario/${codigo}`, { method: 'DELETE' }),
   ventaLocal: (body) => request('/ventas/local', { method: 'POST', body: JSON.stringify(body) }),

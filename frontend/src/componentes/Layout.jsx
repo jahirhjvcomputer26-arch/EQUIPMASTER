@@ -21,6 +21,7 @@ const menuGroups = [
       { to: '/mercadolibre', icon: 'fa-warehouse', label: 'Venta ML', perm: 'ver_ventas' },
       { to: '/publicar-catalogo', icon: 'fa-bullhorn', label: 'Publicar catálogo', perm: 'publicar_catalogo' },
       { to: '/solicitudes-venta', icon: 'fa-inbox', label: 'Solicitudes de compra', perm: 'gestionar_solicitudes' },
+      { to: '/marketing', icon: 'fa-bullhorn', label: 'Marketing', perm: 'ver_marketing' },
     { to: '/devoluciones', icon: 'fa-rotate-left', label: 'Devoluciones', perm: 'ver_ventas' },
     { to: '/prestamos', icon: 'fa-hand-holding', label: 'Préstamos', perm: 'ver_prestamos' },
     { to: 'http://192.168.100.198:5175', icon: 'fa-battery-three-quarters', label: 'Cargadores', external: true, perm: 'ver_inventario' },
