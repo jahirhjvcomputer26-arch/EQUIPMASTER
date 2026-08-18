@@ -7,8 +7,8 @@ import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import { setApiUrl } from '../services/api';
 
 const PRESETS = [
-  { label: 'Servidor Principal', url: 'http://192.168.100.198:3001/api' },
-  { label: 'Servidor Secundario', url: 'http://192.168.100.182:3001/api' },
+  { label: 'Servidor Principal', url: 'http://192.168.100.182:3001/api' },
+  { label: 'Servidor Secundario', url: 'http://192.168.100.198:3001/api' },
 ];
 
 export default function SetupScreen() {

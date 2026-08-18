@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL_KEY = 'equipmaster_api_url';
 const TOKEN_KEY = 'equipmaster_token';
-const DEFAULT_URL = 'http://192.168.100.198:3001/api';
+const DEFAULT_URL = 'http://192.168.100.182:3001/api';
 
 export async function getApiUrl() {
   try {
