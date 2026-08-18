@@ -22,9 +22,9 @@ export default function DashboardScreen() {
     try {
       const data = await api.dashboard();
       setStats({
-        total: data.total || data.equipos?.length || 0,
-        disponibles: data.disponibles || data.stock || 0,
-        vendidos: data.vendidos || 0,
+        total: data.totalEntradasHistorico || 0,
+        disponibles: data.equiposVentaStock || 0,
+        vendidos: data.totalVendidos || 0,
       });
     } catch {}
   }
