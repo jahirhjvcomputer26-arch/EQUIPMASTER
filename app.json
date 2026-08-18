@@ -29,6 +29,12 @@
             "usesCleartextTraffic": true
           }
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "EquipMaster necesita acceso a la camara para escanear codigos QR y de barras"
+        }
       ]
     ],
     "extra": {
