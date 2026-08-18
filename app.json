@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "EquipMaster",
+    "slug": "equipmaster-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "equipmaster",
+    "userInterfaceStyle": "automatic",
+    "splash": { "backgroundColor": "#0018B0" },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.jvcomputer.equipmaster" },
+    "android": { "adaptiveIcon": { "backgroundColor": "#0018B0" }, "package": "com.jvcomputer.equipmaster" },
+    "plugins": [
+      "expo-router",
+      ["expo-camera", { "cameraPermission": "EquipMaster necesita la cámara para escanear códigos QR." }]
+    ]
+  }
+}
