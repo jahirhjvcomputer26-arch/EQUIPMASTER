@@ -50,7 +50,7 @@ async function request(endpoint, options = {}) {
 }
 
 export async function login(usuario, password) {
-  const data = await request('/auth/login', {
+  const data = await request('/usuarios/login', {
     method: 'POST',
     body: JSON.stringify({ usuario, password }),
   });
@@ -62,13 +62,13 @@ export async function login(usuario, password) {
 
 export async function logout() {
   try {
-    await request('/auth/logout', { method: 'POST' });
+    await request('/usuarios/logout', { method: 'POST' });
   } catch {}
   await AsyncStorage.removeItem(TOKEN_KEY);
 }
 
 export async function me() {
-  return request('/auth/me');
+  return request('/usuarios/me');
 }
 
 export async function getInventario(params = {}) {
@@ -81,7 +81,7 @@ export async function getEquipo(codigo) {
 }
 
 export async function dashboard() {
-  return request('/dashboard');
+  return request('/reportes/dashboard');
 }
 
 export async function getTickets(params = {}) {
