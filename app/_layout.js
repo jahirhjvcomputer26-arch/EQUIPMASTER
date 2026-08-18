@@ -42,7 +42,7 @@ function RootLayoutNav() {
       }
 
       if (user && inAuthGroup) {
-        router.replace('/(tabs)');
+        router.replace('/(tabs)/dashboard');
         return;
       }
     }

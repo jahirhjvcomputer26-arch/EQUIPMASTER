@@ -21,7 +21,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(usuario.trim(), password);
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/dashboard');
     } catch (e) {
       Alert.alert('Error de acceso', e.message || 'Credenciales incorrectas');
     } finally {
