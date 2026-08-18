@@ -54,13 +54,13 @@ const emptyForm = {
 
 function SectionHeader({ icon, title, color, children }) {
   return (
-    <div className="border-t border-slate-200 pt-5">
-      <div className="flex flex-wrap items-center justify-between mb-3">
+    <div className="border-t border-slate-200 pt-3.5">
+      <div className="flex flex-wrap items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs ${color}`}>
+          <div className={`w-6 h-6 rounded-md flex items-center justify-center text-[11px] ${color}`}>
             <i className={`fa-solid ${icon}`} />
           </div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{title}</p>
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{title}</p>
         </div>
         {children}
       </div>
@@ -346,12 +346,18 @@ export default function Inventario() {
     setGuardando(true);
 
     try {
-      setDirty(false);
       const existente = inventario.find(i => i.codigo === form.codigo);
       if (!editing) {
-        const dup = inventario.find(i => i.serie.toUpperCase().trim() === form.serie.toUpperCase().trim() && i.codigo !== form.codigo);
+        const serieTrim = (form.serie || '').toUpperCase().trim();
+        if (!serieTrim) {
+          notify('Serie requerida', 'El número de serie es obligatorio.', 'error');
+          setGuardando(false);
+          return;
+        }
+        const dup = inventario.find(i => (i.serie || '').toUpperCase().trim() === serieTrim && i.codigo !== form.codigo);
         if (dup) {
           notify('Duplicado', `Ya existe un equipo con la serie ${form.serie} (${dup.codigo} · ${dup.marca} ${dup.modelo}).`, 'error');
+          setGuardando(false);
           return;
         }
       }
@@ -471,8 +477,8 @@ export default function Inventario() {
     <section className="space-y-4 pb-20">
       <div className="flex flex-wrap items-center justify-between gap-3 animate-slide-up">
         <div>
-          <h2 className="font-display text-2xl font-bold text-slate-900">{editing ? '✏️ Modificando Ficha' : 'Entrada de equipos'}</h2>
-          <p className="text-slate-500 text-sm flex items-center gap-2">
+          <h2 className="font-display text-xl font-bold text-slate-900">{editing ? '✏️ Modificando Ficha' : 'Entrada de equipos'}</h2>
+          <p className="text-slate-500 text-xs flex items-center gap-2">
             <span className="font-semibold text-brand-600">{mode === 'quick' ? 'Captura Rápida' : 'Captura Completa'}</span>
             {form.categoria && <span className="text-slate-400">· {tmpl.label}</span>}
           </p>
@@ -513,12 +519,12 @@ export default function Inventario() {
 
       <SmartProgressBar stepIndex={currentStepIndex} totalSteps={totalSteps} stepLabels={mode === 'quick' ? ['Identificación', 'Estado y Técnico'] : stepLabels} stepIcons={mode === 'quick' ? [stepIcons[0], stepIcons[2]] : stepIcons} />
 
-      <div className="flex gap-5 items-start">
+      <div className="flex gap-4 items-start">
         <form onSubmit={e => e.preventDefault()} onKeyDown={e => { if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); } if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleSubmit(e); } }} className="flex-1 min-w-0 panel overflow-hidden animate-fade-in">
 
           {step === 1 && (
-            <div className="p-6 md:p-8 space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="form-section space-y-3.5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div><label className="form-label">Código (Auto) *</label><input className="form-input font-mono font-bold" value={form.codigo} readOnly /></div>
                 <div><label className="form-label">Categoría *</label>
                   <select className="form-input" value={form.categoria} onChange={e => markDirty('categoria', e.target.value)} required>
@@ -530,11 +536,11 @@ export default function Inventario() {
                     {ANIO_OPTIONS.map(a => <option key={a}>{a}</option>)}
                   </select></div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div><label className="form-label">Marca *</label><input className="form-input uppercase" value={form.marca} onChange={e => markDirty('marca', e.target.value)} required placeholder="HP, LENOVO, DELL..." /></div>
                 <div><label className="form-label">Modelo *</label><input className="form-input uppercase" value={form.modelo} onChange={e => markDirty('modelo', e.target.value)} required placeholder="PROBOOK 450 G10..." /></div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div><label className="form-label">Número de serie *</label><input className="form-input font-mono uppercase" value={form.serie} onChange={e => markDirty('serie', e.target.value)} required placeholder="S/N grabado en el equipo" /></div>
                 <div><label className="form-label">SKU interno</label><input className="form-input font-mono uppercase" value={form.sku} onChange={e => { setSkuManual(true); markDirty('sku', e.target.value); }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); autoFillSku(e.target.value); } }} onBlur={e => autoFillSku(e.target.value)} placeholder="Escribí el SKU y se auto-rellena (Enter)" /></div>
               </div>
@@ -542,7 +548,7 @@ export default function Inventario() {
           )}
 
           {step === 2 && (
-            <div className="p-6 md:p-8 space-y-5">
+            <div className="form-section space-y-3.5">
               {(() => {
                 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || /^\d+\.\d+\.\d+\.\d+$/.test(window.location.hostname);
                 return isLocal ? (
@@ -577,7 +583,7 @@ export default function Inventario() {
                   </div>
                 );
               })()}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {tmpl.step2.includes('procesador') && <div className="md:col-span-2"><label className="form-label">Procesador *</label><input className="form-input uppercase" value={form.procesador} onChange={e => markDirty('procesador', e.target.value)} required placeholder="INTEL CORE I5-12400F..." /></div>}
                 {tmpl.step2.includes('generacion') && <div><label className="form-label">Generación</label>
                   <select className="form-input" value={form.generacion} onChange={e => markDirty('generacion', e.target.value)}>
@@ -585,7 +591,7 @@ export default function Inventario() {
                       {generaciones.map(g => <option key={g}>{g}</option>)}
                   </select></div>}
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {tmpl.step2.includes('ram') && <div><label className="form-label">RAM *</label>
                     <select className="form-input" value={form.ram} onChange={e => markDirty('ram', e.target.value)}>{ramOptions.map(r => <option key={r}>{r}</option>)}</select></div>}
                 {tmpl.step2.includes('tipoRam') && <div><label className="form-label">Tipo RAM</label>
@@ -594,7 +600,7 @@ export default function Inventario() {
                     <select className="form-input" value={form.almacenamiento} onChange={e => markDirty('almacenamiento', e.target.value)}>{capacidades.map(s => <option key={s}>{s}</option>)}</select></div>}
                 {tmpl.step2.includes('tipoDisco') && <div><label className="form-label">Tipo disco *</label><input className="form-input uppercase" value={form.tipoDisco} onChange={e => markDirty('tipoDisco', e.target.value)} required placeholder="M.2 NVME, SSD SATA..." /></div>}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {tmpl.step2.includes('grafica') && (
                   <div><label className="form-label">Gráfica</label><input className="form-input uppercase" value={form.grafica} onChange={e => markDirty('grafica', e.target.value)} placeholder="GTX 1650, INTEGRADA..." /></div>
                 )}
@@ -635,8 +641,8 @@ export default function Inventario() {
           )}
 
           {step === 3 && (
-            <div className="p-6 md:p-8 space-y-5">
-              <div className={`grid grid-cols-1 gap-4 ${tmpl.step3.includes('bateria') && tmpl.step3.includes('cargador') ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+            <div className="form-section space-y-3.5">
+              <div className={`grid grid-cols-1 gap-3 ${tmpl.step3.includes('bateria') && tmpl.step3.includes('cargador') ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
                 <div><label className="form-label">Técnico *</label>
                   <select className="form-input" value={form.tecnico} onChange={e => markDirty('tecnico', e.target.value)} required>
                     <option value="">Selecciona...</option>{tecnicos.map(t => <option key={t}>{t}</option>)}
@@ -649,7 +655,7 @@ export default function Inventario() {
                   </select></div>
               </div>
               {esEstadoML(form.estado) && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div><label className="form-label text-emerald-800">Fecha envío ML *</label><input type="date" className="form-input" value={form.mlFechaEnvio} onChange={e => markDirty('mlFechaEnvio', e.target.value)} required /></div>
                   <div><label className="form-label text-emerald-800">ID Publicación</label><input className="form-input uppercase" value={form.mlPublicacionId} onChange={e => markDirty('mlPublicacionId', e.target.value)} /></div>
                   <div><label className="form-label text-emerald-800">Enviado por *</label><select className="form-input" value={form.mlEnviadoPor} onChange={e => markDirty('mlEnviadoPor', e.target.value)} required>
@@ -658,13 +664,13 @@ export default function Inventario() {
                   </select></div>
                 </div>
               )}
-              <div><label className="form-label">Observaciones</label><textarea className="form-input uppercase min-h-[80px]" value={form.observaciones} onChange={e => markDirty('observaciones', e.target.value)} placeholder="Detalles adicionales del equipo" /></div>
+              <div><label className="form-label">Observaciones</label><textarea className="form-input uppercase min-h-[72px]" value={form.observaciones} onChange={e => markDirty('observaciones', e.target.value)} placeholder="Detalles adicionales del equipo" /></div>
             </div>
           )}
 
           {step === 4 && (
-            <div className="p-6 md:p-8 space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="form-section space-y-3.5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div><label className="form-label">Sistema Operativo</label>
                   <input className="form-input uppercase" value={form.fichaV2.sistemaOperativo} onChange={e => markFichaV2('sistemaOperativo', e.target.value)} placeholder="WINDOWS 11 PRO" /></div>
                 <div><label className="form-label">Color</label>
@@ -672,7 +678,7 @@ export default function Inventario() {
                 <div><label className="form-label">Pantalla</label>
                   <input className="form-input uppercase" value={form.fichaV2.pantalla} onChange={e => markFichaV2('pantalla', e.target.value)} placeholder='15.6" FHD IPS' /></div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div><label className="form-label">Modelo Comercial</label>
                   <input className="form-input uppercase" value={form.fichaV2.modeloComercial} onChange={e => markFichaV2('modeloComercial', e.target.value)} placeholder="THINKPAD X1 CARBON G10" /></div>
                 <div><label className="form-label">Fecha de Revisión</label>
@@ -684,7 +690,7 @@ export default function Inventario() {
                   <span className="text-[10px] font-bold text-slate-400">
                     {tmpl.ficha.condicion.filter(c => form.fichaV2.condicionEstetica[c]).length}/{tmpl.ficha.condicion.length} evaluadas
                   </span>
-                   <div className="w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-1">
+                   <div className="w-full grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 mt-1">
                     {tmpl.ficha.condicion.map(parte => (
                       <div key={parte}>
                         <label className="form-label">{CONDICION_LABELS[parte] || parte}</label>
@@ -699,7 +705,7 @@ export default function Inventario() {
 
               {tmpl.ficha.bateria.length > 0 && (
                 <SectionHeader icon="fa-battery-three-quarters" title="Batería (Detalle)" color="bg-green-50 text-green-600">
-                   <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 mt-1">
+                   <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-3 mt-1">
                     <div><label className="form-label">Porcentaje</label>
                       <select className="form-input" value={form.fichaV2.bateriaDetalle.porcentaje} onChange={e => markFichaV2('bateriaDetalle.porcentaje', e.target.value)}>
                         <option value="">—</option>

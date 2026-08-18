@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { useNotify } from '../componentes/Notification';
 import useDocumentTitle from '../utils/useDocumentTitle';
 
@@ -30,6 +31,7 @@ export default function CentroDocumentacion() {
   useDocumentTitle('Centro de Documentos');
   const { codigo } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { notify: toast } = useNotify();
   const [item, setItem] = useState(null);
   const [docs, setDocs] = useState({});
@@ -41,11 +43,11 @@ export default function CentroDocumentacion() {
   const loadItem = useCallback(async () => {
     if (!codigo) return;
     try {
-      const data = await api.getEquipo(codigo.toUpperCase());
+      const data = user ? await api.getEquipo(codigo.toUpperCase()) : await api.getEquipoPublico(codigo.toUpperCase());
       setItem(data);
       setDocs(data.documentos || {});
     } catch { setError('Equipo no encontrado'); }
-  }, [codigo]);
+  }, [codigo, user]);
 
   useEffect(() => { loadItem(); }, [loadItem]);
 
@@ -134,11 +136,13 @@ export default function CentroDocumentacion() {
               <i className={`fa-solid ${DOC_CATEGORIES.find(c => c.key === activeCategory)?.icon} text-brand-500 mr-2`} />
               {DOC_CATEGORIES.find(c => c.key === activeCategory)?.label}
             </h3>
-            <label className="btn-brand px-4 py-2 rounded-xl text-white text-xs font-bold cursor-pointer">
-              <i className="fa-solid fa-upload mr-1" /> Subir
-              <input type="file" className="hidden" accept={DOC_CATEGORIES.find(c => c.key === activeCategory)?.accept}
-                onChange={e => { handleUpload(activeCategory, e.target.files); e.target.value = ''; }} disabled={uploading} />
-            </label>
+            {user && (
+              <label className="btn-brand px-4 py-2 rounded-xl text-white text-xs font-bold cursor-pointer">
+                <i className="fa-solid fa-upload mr-1" /> Subir
+                <input type="file" className="hidden" accept={DOC_CATEGORIES.find(c => c.key === activeCategory)?.accept}
+                  onChange={e => { handleUpload(activeCategory, e.target.files); e.target.value = ''; }} disabled={uploading} />
+              </label>
+            )}
           </div>
 
           {docs[activeCategory]?.length > 0 ? (
@@ -153,9 +157,11 @@ export default function CentroDocumentacion() {
                   <button onClick={() => setPreviewDoc({ ...doc, categoria: activeCategory })} className="p-2 rounded-lg hover:bg-white text-slate-400 hover:text-brand-600 transition">
                     <i className="fa-solid fa-eye" />
                   </button>
-                  <button onClick={() => handleDelete(activeCategory, idx)} className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition">
-                    <i className="fa-solid fa-trash" />
-                  </button>
+                  {user && (
+                    <button onClick={() => handleDelete(activeCategory, idx)} className="p-2 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition">
+                      <i className="fa-solid fa-trash" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

@@ -384,7 +384,7 @@ export default function Reparaciones() {
           )}
         </>
       ) : (
-        <form onSubmit={handleSubmit} onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleSubmit(e); } }} className="panel p-6 md:p-8 space-y-6 animate-fade-in">
+        <form onSubmit={handleSubmit} onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleSubmit(e); } }} className="panel form-section space-y-4 animate-fade-in">
           <h3 className="font-display font-bold text-lg text-slate-900">
             {editing ? '✏️ Editar Orden' : '📋 Nueva Orden de Reparación'}
           </h3>

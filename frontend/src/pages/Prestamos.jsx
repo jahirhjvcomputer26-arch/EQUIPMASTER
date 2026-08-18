@@ -57,11 +57,7 @@ export default function Prestamos() {
     try {
       if (editando) {
         const body = { serie, modelo, procesador, responsable, area, fechaSalida, notas, activo: true };
-        await fetch(`/api/prestamos/${editando}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('equipmaster_token')}` },
-          body: JSON.stringify(body),
-        });
+        await api.actualizarPrestamo(editando, body);
         notify('Préstamo actualizado', 'Datos modificados correctamente.', 'success');
       } else {
         await api.crearPrestamo({ serie, modelo, procesador, responsable, area, fechaSalida, notas });
@@ -88,11 +84,7 @@ export default function Prestamos() {
     try {
       const hoy = new Date().toISOString().split('T')[0];
       const renovaciones = (p.renovaciones || 0) + 1;
-      await fetch(`/api/prestamos/${p.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('equipmaster_token')}` },
-        body: JSON.stringify({ fechaSalida: hoy, renovaciones }),
-      });
+      await api.actualizarPrestamo(p.id, { fechaSalida: hoy, renovaciones });
       notify('Préstamo renovado', `Fecha reiniciada a hoy (${renovaciones}x renovado)`, 'success');
       recargar();
     } catch (err) {
@@ -127,7 +119,7 @@ export default function Prestamos() {
         <p className="text-slate-500 text-sm">Registra salidas temporales — Área <strong>Marketing</strong></p>
       </div>
 
-      <form onSubmit={handleSubmit} onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleSubmit(e); } }} className="panel p-6 md:p-8 space-y-5 max-w-3xl animate-slide-up" style={{ animationDelay: '50ms' }}>
+      <form onSubmit={handleSubmit} onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleSubmit(e); } }} className="panel form-section space-y-3.5 max-w-4xl animate-slide-up" style={{ animationDelay: '50ms' }}>
         {editando && <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-sm font-bold"><i className="fa-solid fa-pen mr-1" /> Editando préstamo</div>}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div><label className="form-label">Número de serie *</label>

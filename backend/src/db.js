@@ -187,6 +187,7 @@ const TABLES = {
   garantias: { table: 'Garantias', idCol: 'Id', mode: 'json' },
   mantenimientos: { table: 'Mantenimientos', idCol: 'Id', mode: 'json' },
   solicitudesVenta: { table: 'SolicitudesVenta', idCol: 'Id', mode: 'json' },
+  jvbotMemory: { table: 'JvbotMemory', idCol: 'Clave', mode: 'json' },
   configuracion: { table: 'Configuracion', idCol: 'Clave', mode: 'config' },
 };
 

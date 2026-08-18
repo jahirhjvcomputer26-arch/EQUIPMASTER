@@ -6,6 +6,7 @@ import { useNotify } from '../componentes/Notification';
 import { badgeEstado, ESTADOS, fechaRegistroTs } from '../utils/inventario';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import { SkeletonTable } from '../componentes/Skeleton';
+import EmptyState from '../componentes/EmptyState';
 
 function CopyBtn({ text }) {
   const [copied, setCopied] = useState(false);
@@ -228,89 +229,131 @@ export default function BaseDatos() {
   const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const Th = ({ k, children, className = '' }) => (
-    <th className={`px-4 py-4 text-xs font-bold uppercase cursor-pointer select-none hover:text-brand-600 transition-colors ${className}`} onClick={() => toggleSort(k)}>
+    <th className={`px-3 py-2.5 text-xs font-bold uppercase cursor-pointer select-none hover:text-brand-600 transition-colors ${className}`} onClick={() => toggleSort(k)}>
       {children}<SortIcon k={k} />
     </th>
   );
 
+  const resumen = useMemo(() => {
+    let ok = 0, ml = 0, pendientes = 0, tkf = 0, vendidos = 0, sinFotos = 0;
+    inventario.forEach(i => {
+      const est = i.estado || '';
+      if (est.includes('🔵')) ok++;
+      else if (est.includes('🟢')) ml++;
+      else if (est.includes('🟡') || est.includes('🟠')) pendientes++;
+      else if (est.includes('🔴 TKF')) tkf++;
+      else if (est.includes('VENDIDO')) vendidos++;
+      if (!est.includes('VENDIDO') && (!i.fotos || Object.keys(i.fotos).length === 0)) sinFotos++;
+    });
+    return { ok, ml, pendientes, tkf, vendidos, sinFotos, total: inventario.length };
+  }, [inventario]);
+
   if (loading) return (
-    <section className="space-y-6 animate-fade-in">
-      <div className="panel p-6"><h2 className="text-xl font-bold text-slate-900">Inventario General Compartido</h2><p className="text-slate-500 text-sm">Cargando datos...</p></div>
+    <section className="page-stack animate-fade-in">
+      <div className="panel panel-dense"><h2 className="text-lg font-bold text-slate-900">Inventario General Compartido</h2><p className="text-slate-500 text-sm">Cargando datos...</p></div>
       <div className="panel overflow-hidden"><SkeletonTable rows={8} cols={8} /></div>
     </section>
   );
 
   return (
-    <section className="space-y-6 animate-fade-in">
-      <div className="panel p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-slide-up">
+    <section className="page-stack animate-fade-in">
+      <div className="panel panel-dense flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 animate-slide-up">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Inventario General Compartido</h2>
-          <p className="text-slate-500 text-sm">{filtered.length} equipo{filtered.length !== 1 ? 's' : ''} · {inventario.length} totales{(quickFilter || estadoFiltro.length > 0) && <span className="ml-1 font-bold text-brand-600">(filtro activo)</span>}</p>
+          <h2 className="text-lg font-bold text-slate-900">Inventario General Compartido</h2>
+          <p className="text-slate-500 text-xs">{filtered.length} equipo{filtered.length !== 1 ? 's' : ''} · {inventario.length} totales{(quickFilter || estadoFiltro.length > 0) && <span className="ml-1 font-bold text-brand-600">(filtro activo)</span>}</p>
         </div>
-        <div className="flex gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:flex-none">
+        <div className="flex gap-2 w-full lg:w-auto">
+          <div className="relative flex-1 lg:flex-none">
             <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
-            <input className="form-input pl-9 py-2.5 text-sm w-full sm:w-56" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar código, marca, serie..." />
+            <input className="form-input pl-9 w-full sm:w-56" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Buscar código, marca, serie..." />
           </div>
-          <button onClick={exportExcel} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold transition-all hover:scale-[1.02]">
+          <Link to="/inventario" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition">
+            <i className="fa-solid fa-plus" /> Nuevo
+          </Link>
+          <button onClick={exportExcel} className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all">
             <i className="fa-solid fa-file-excel" /> Excel
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 animate-slide-up" style={{ animationDelay: '50ms' }}>
-        <span className="text-[11px] font-bold text-slate-400 uppercase self-center mr-1">Filtros rápidos:</span>
-        {QUICK_FILTERS.map(f => (
-          <button key={f.key} onClick={() => { setQuickFilter(q => q === f.key ? '' : f.key); setPage(1); }}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
-              quickFilter === f.key
-                ? 'bg-brand-500 text-white border-brand-500 shadow scale-105'
-                : f.color
-            }`}>
-            <i className={`fa-solid ${f.icon} text-[10px]`} /> {f.label}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 animate-slide-up" style={{ animationDelay: '30ms' }}>
+        {[
+          { label: 'Total', value: resumen.total, color: 'text-slate-800', bg: 'bg-slate-50', icon: 'fa-boxes-stacked' },
+          { label: 'OK', value: resumen.ok, color: 'text-blue-700', bg: 'bg-blue-50', icon: 'fa-circle-check', filter: '🔵' },
+          { label: 'ML', value: resumen.ml, color: 'text-emerald-700', bg: 'bg-emerald-50', icon: 'fa-truck', filter: '🟢' },
+          { label: 'Pendientes', value: resumen.pendientes, color: 'text-amber-700', bg: 'bg-amber-50', icon: 'fa-clock' },
+          { label: 'TKF', value: resumen.tkf, color: 'text-red-700', bg: 'bg-red-50', icon: 'fa-tag', filter: '🔴 TKF' },
+          { label: 'Sin fotos', value: resumen.sinFotos, color: 'text-orange-700', bg: 'bg-orange-50', icon: 'fa-camera', quick: 'sin_fotos' },
+        ].map(m => (
+          <button key={m.label} type="button"
+            onClick={() => {
+              if (m.quick) { setQuickFilter(q => q === m.quick ? '' : m.quick); setPage(1); return; }
+              if (m.filter) {
+                setEstadoFiltro(prev => prev.includes(m.filter) ? prev.filter(v => v !== m.filter) : [m.filter]);
+                setPage(1);
+              }
+            }}
+            className={`panel px-3 py-2.5 text-left hover:border-brand-200 transition ${m.bg}`}>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+              <i className={`fa-solid ${m.icon} text-[9px]`} />{m.label}
+            </p>
+            <p className={`text-xl font-extrabold leading-tight ${m.color}`}>{m.value}</p>
           </button>
         ))}
-        {quickFilter && (
-          <button onClick={() => { setQuickFilter(''); setPage(1); }}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:text-slate-700 transition">
-            <i className="fa-solid fa-xmark" /> Limpiar
-          </button>
-        )}
       </div>
 
-      <div className="panel px-4 py-3 animate-slide-up" style={{ animationDelay: '60ms' }}>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-bold text-slate-400 uppercase mr-1">Filtrar por estado:</span>
+      <div className="panel panel-dense animate-slide-up" style={{ animationDelay: '50ms' }}>
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase self-center">Rápidos</span>
+          {QUICK_FILTERS.map(f => (
+            <button key={f.key} onClick={() => { setQuickFilter(q => q === f.key ? '' : f.key); setPage(1); }}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all ${
+                quickFilter === f.key
+                  ? 'bg-brand-500 text-white border-brand-500 shadow scale-105'
+                  : f.color
+              }`}>
+              <i className={`fa-solid ${f.icon} text-[10px]`} /> {f.label}
+            </button>
+          ))}
+          {quickFilter && (
+            <button onClick={() => { setQuickFilter(''); setPage(1); }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-500 hover:text-slate-700 transition">
+              <i className="fa-solid fa-xmark" /> Limpiar
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase">Estado</span>
           {ESTADO_FILTERS.map(f => {
             const count = inventario.filter(i => (i.estado || '').includes(f.key)).length;
             const activo = estadoFiltro.includes(f.key);
             return (
               <button key={f.key} onClick={() => { setEstadoFiltro(prev => prev.includes(f.key) ? prev.filter(v => v !== f.key) : [...prev, f.key]); setPage(1); }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${activo ? 'bg-brand-600 text-white border-brand-600 shadow scale-105' : f.color}`}>
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all ${activo ? 'bg-brand-600 text-white border-brand-600 shadow scale-105' : f.color}`}>
                 {f.label}<span className={`px-1.5 rounded-full text-[10px] ${activo ? 'bg-white/20' : 'bg-white/60'}`}>{count}</span>
               </button>
             );
           })}
-          {estadoFiltro.length > 0 && <button onClick={() => { setEstadoFiltro([]); setPage(1); }} className="text-xs font-bold text-slate-400 hover:text-red-500 ml-auto"><i className="fa-solid fa-xmark mr-1" />Limpiar estados</button>}
+          {estadoFiltro.length > 0 && <button onClick={() => { setEstadoFiltro([]); setPage(1); }} className="text-[11px] font-bold text-slate-400 hover:text-red-500 ml-auto"><i className="fa-solid fa-xmark mr-1" />Limpiar estados</button>}
         </div>
       </div>
 
       {selected.length > 0 && (
-        <div className="panel p-4 flex flex-wrap items-center gap-3 animate-fade-in">
-          <span className="text-sm font-bold text-brand-700 bg-brand-50 px-3 py-1 rounded-full">
+        <div className="panel panel-dense flex flex-wrap items-center gap-2 animate-fade-in">
+          <span className="text-xs font-bold text-brand-700 bg-brand-50 px-2.5 py-1 rounded-full">
             {selected.length} seleccionado{selected.length > 1 ? 's' : ''}
           </span>
-          <select value={bulkEstado} onChange={e => setBulkEstado(e.target.value)} className="form-input text-sm py-1.5 w-48">
+          <select value={bulkEstado} onChange={e => setBulkEstado(e.target.value)} className="form-input text-sm py-1.5 w-44">
             <option value="">Cambiar estado a...</option>
             {ESTADOS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
           </select>
-          <button onClick={handleBulkEstado} disabled={!bulkEstado || bulkLoading} className="px-4 py-1.5 rounded-xl bg-brand-600 text-white text-xs font-bold disabled:opacity-40 hover:bg-brand-700 transition">
+          <button onClick={handleBulkEstado} disabled={!bulkEstado || bulkLoading} className="px-3 py-1.5 rounded-xl bg-brand-600 text-white text-xs font-bold disabled:opacity-40 hover:bg-brand-700 transition">
             <i className="fa-solid fa-check mr-1" /> Aplicar
           </button>
-          <button onClick={handleBulkExport} className="px-4 py-1.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
+          <button onClick={handleBulkExport} className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
             <i className="fa-solid fa-download mr-1" /> CSV
           </button>
-          <button onClick={() => setShowBulkModal(true)} className="px-4 py-1.5 rounded-xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition">
+          <button onClick={() => setShowBulkModal(true)} className="px-3 py-1.5 rounded-xl bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition">
             <i className="fa-solid fa-trash mr-1" /> Eliminar
           </button>
           <button onClick={() => setSelected([])} className="ml-auto text-xs font-bold text-slate-400 hover:text-slate-600">
@@ -320,7 +363,8 @@ export default function BaseDatos() {
       )}
 
       <div className="panel overflow-hidden animate-slide-up" style={{ animationDelay: '50ms' }}>
-        <div className="flex justify-end px-6 pt-3 pb-0">
+        <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
+          <p className="section-subtitle">{paginated.length} en esta página</p>
           <button onClick={() => { setCompact(v => { localStorage.setItem('equipmaster_compact_table', !v); return !v; }); }}
             className={"flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition " + (compact ? 'bg-brand-100 text-brand-700' : 'text-slate-400 hover:text-slate-600')}
             title="Modo compacto">
@@ -328,55 +372,56 @@ export default function BaseDatos() {
           </button>
         </div>
         {filtered.length === 0 ? (
-          <div className="p-16 text-center">
-            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-              <i className={`fa-solid text-3xl ${search ? 'fa-search text-slate-300' : 'fa-box-open text-slate-300'}`} />
-            </div>
-            <p className="text-base font-bold text-slate-500">{search ? 'Sin resultados' : 'No hay equipos aún'}</p>
-            <p className="text-sm text-slate-400 mt-1">{search ? 'Intenta con otro término de búsqueda' : 'Los equipos aparecerán aquí cuando sean registrados'}</p>
-          </div>
+          <EmptyState
+            icon={search || quickFilter || estadoFiltro.length ? 'fa-search' : 'fa-box-open'}
+            title={search || quickFilter || estadoFiltro.length ? 'Sin resultados' : 'No hay equipos aún'}
+            description={search || quickFilter || estadoFiltro.length ? 'Prueba otro filtro o limpia la búsqueda.' : 'Registra el primer equipo para llenar la base de datos.'}
+            actionTo={!search && !quickFilter && !estadoFiltro.length ? '/inventario' : undefined}
+            onAction={search || quickFilter || estadoFiltro.length ? () => { setSearch(''); setQuickFilter(''); setEstadoFiltro([]); setPage(1); } : undefined}
+            actionLabel={search || quickFilter || estadoFiltro.length ? 'Limpiar filtros' : '+ Registrar equipo'}
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
                <table className={"min-w-[1100px] 2xl:min-w-[1400px] w-full text-left text-sm table-responsive table-fixed " + (compact ? 'table-compact' : '')}>
                 <thead className="bg-slate-50 text-slate-600">
                   <tr>
-                    <th className="px-3 py-4 w-10">
+                    <th className="px-3 py-2.5 w-10">
                       <input type="checkbox" checked={selected.length === paginated.length && paginated.length > 0} onChange={toggleSelectAll} className="rounded border-slate-300" />
                     </th>
                     <Th k="codigo" className="w-32">Código</Th>
                     <Th k="sku" className="hidden 2xl:table-cell w-32">SKU</Th>
                     <Th k="marca" className="w-64">Equipo</Th>
-                    <th className="px-4 py-4 text-xs font-bold uppercase w-48">Hardware</th>
+                    <th className="px-3 py-2.5 text-xs font-bold uppercase w-48">Hardware</th>
                     <Th k="estado" className="w-40">Estado</Th>
                     <Th k="tecnico" className="w-40">Técnico</Th>
-                    <th className="hidden 2xl:table-cell px-4 py-4 text-xs font-bold uppercase w-56">Flujo / Venta</th>
-                     <th className="sticky right-0 z-20 px-4 py-4 text-xs font-bold uppercase text-center min-w-32 w-32 bg-slate-50 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700">Acciones</th>
+                    <th className="hidden xl:table-cell px-3 py-2.5 text-xs font-bold uppercase w-56">Flujo / Venta</th>
+                     <th className="sticky right-0 z-20 px-3 py-2.5 text-xs font-bold uppercase text-center min-w-32 w-32 bg-slate-50 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                     {paginated.map((item, idx) => (
                     <tr key={item.codigo} className="hover:bg-slate-50 transition-colors table-row-enter align-top" style={{ animationDelay: `${idx * 30}ms` }}>
-                    <td className="px-3 py-4" onClick={e => e.stopPropagation()}>
+                    <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
                       <input type="checkbox" checked={selected.includes(item.codigo)} onChange={() => toggleSelect(item.codigo)} className="rounded border-slate-300" />
                     </td>
-                    <td className="px-6 py-4 font-mono font-bold text-brand-600" data-label="Código">{item.codigo}<CopyBtn text={item.codigo} /></td>
-                    <td className="hidden 2xl:table-cell px-4 py-4 font-mono text-xs text-slate-500" data-label="SKU">{item.sku || '—'}<CopyBtn text={item.sku} /></td>
-                    <td className="px-4 py-4" data-label="Equipo">
+                    <td className="px-4 py-2.5 font-mono font-bold text-brand-600" data-label="Código">{item.codigo}<CopyBtn text={item.codigo} /></td>
+                    <td className="hidden 2xl:table-cell px-3 py-2.5 font-mono text-xs text-slate-500" data-label="SKU">{item.sku || '—'}<CopyBtn text={item.sku} /></td>
+                    <td className="px-3 py-2.5" data-label="Equipo">
                       <span className="font-bold">{item.marca}</span>
                       <p className="text-slate-500 text-xs">{item.modelo} · {item.categoria}</p>
                       <p className="text-slate-400 text-[10px] font-mono">S/N: {item.serie}<CopyBtn text={item.serie} /></p>
                     </td>
-                    <td className="px-4 py-4 text-xs text-slate-600 leading-5" data-label="Hardware">{item.procesador}<br />{item.ram} / {item.almacenamiento}</td>
-                    <td className="px-4 py-4" data-label="Estado"><span className={`px-2.5 py-1 rounded-full text-xs font-bold ${badgeEstado(item.estado)}`}>{item.estado}</span></td>
-                    <td className="px-4 py-4 text-xs text-slate-500" data-label="Técnico">{item.tecnico || '—'}</td>
-                    <td className="hidden 2xl:table-cell px-4 py-4 text-xs text-slate-500" data-label="Flujo">
+                    <td className="px-3 py-2.5 text-xs text-slate-600 leading-5" data-label="Hardware">{item.procesador}<br />{item.ram} / {item.almacenamiento}</td>
+                    <td className="px-3 py-2.5" data-label="Estado"><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${badgeEstado(item.estado)}`}>{item.estado}</span></td>
+                    <td className="px-3 py-2.5 text-xs text-slate-500" data-label="Técnico">{item.tecnico || '—'}</td>
+                    <td className="hidden xl:table-cell px-3 py-2.5 text-xs text-slate-500" data-label="Flujo">
                       {item.flujoSalida && <p>Venta: {item.flujoSalida.cliente} · {item.flujoSalida.precio}</p>}
                       {item.flujoVentaML && <p>ML: {item.flujoVentaML.fechaVenta}</p>}
                       {item.flujoMercadoLibre && !item.flujoVentaML && <p>En ML desde {item.flujoMercadoLibre.fechaEnvio}</p>}
                       {item.flujoDevolucion && <p className="text-orange-600">Devolución: {item.flujoDevolucion.motivo}</p>}
                     </td>
-                     <td className="sticky right-0 z-10 px-4 py-4 text-center min-w-32 w-32 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700" data-label="">
+                     <td className="sticky right-0 z-10 px-3 py-2.5 text-center min-w-32 w-32 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700" data-label="">
                       <div className="flex items-center justify-center gap-2">
                         <Link to={`/inventario?editar=${item.codigo}`} title="Editar equipo" className="text-brand-600 hover:text-brand-800 font-bold text-xs transition-colors">
                           <i className="fa-solid fa-pen-to-square" />
@@ -399,7 +444,7 @@ export default function BaseDatos() {
               </table>
             </div>
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/50">
                 <p className="text-xs text-slate-500">Página {safePage} de {totalPages}</p>
                 <div className="flex gap-2">
                   <button disabled={safePage <= 1} onClick={() => setPage(safePage - 1)} className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white transition">Anterior</button>

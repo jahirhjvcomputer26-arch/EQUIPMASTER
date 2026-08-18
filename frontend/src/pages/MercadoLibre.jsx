@@ -49,7 +49,7 @@ export default function MercadoLibre() {
         <h2 className="font-display text-2xl font-bold text-slate-900">Venta Mercado Libre</h2>
         <p className="text-slate-500 text-sm">Busca por número de serie — solo equipos <strong>🔵 OK</strong> (stock local)</p>
       </div>
-      <form onSubmit={e => { e.preventDefault(); if (preview) setConfirmOpen(true); }} className="panel p-6 md:p-8 space-y-5 max-w-3xl animate-slide-up" style={{ animationDelay: '50ms' }}>
+      <form onSubmit={e => { e.preventDefault(); if (preview) setConfirmOpen(true); }} className="panel form-section space-y-3.5 max-w-4xl animate-slide-up" style={{ animationDelay: '50ms' }}>
         <div className="flex gap-3">
           <div className="flex-1"><label className="form-label">Número de serie *</label>
             <input className="form-input font-mono uppercase" value={serie} onChange={e => setSerie(e.target.value)} placeholder="S/N del equipo" required /></div>

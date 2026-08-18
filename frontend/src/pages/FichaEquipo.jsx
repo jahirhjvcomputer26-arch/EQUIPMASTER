@@ -11,7 +11,7 @@ export default function FichaEquipo() {
 
   useEffect(() => {
     if (!codigo) return;
-    api.getEquipo(codigo.toUpperCase())
+    api.getEquipoPublico(codigo.toUpperCase())
       .then(data => setItem(data))
       .catch(() => setError('Equipo no encontrado'));
   }, [codigo]);

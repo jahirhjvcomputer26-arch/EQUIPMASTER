@@ -8,8 +8,8 @@ export default defineConfig({
     host: true,
     port: 5173,
     proxy: {
-      '/api': process.env.VITE_DEV_API_TARGET || 'http://localhost:3100',
-      '/archivos': process.env.VITE_DEV_API_TARGET || 'http://localhost:3100',
+      '/api': process.env.VITE_DEV_API_TARGET || 'http://localhost:3001',
+      '/archivos': process.env.VITE_DEV_API_TARGET || 'http://localhost:3001',
     },
   },
 });

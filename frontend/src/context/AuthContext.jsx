@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
       const cached = {
         rol: localStorage.getItem('equipmaster_rol') || 'usuario',
         nivel: parseInt(localStorage.getItem(NIVEL_KEY) || '0', 10) || undefined,
-        permisos: normalizarPermisos(JSON.parse(localStorage.getItem(PERMISOS_KEY) || '{}')),
+        permisos: normalizarPermisos((() => { try { return JSON.parse(localStorage.getItem(PERMISOS_KEY) || '{}'); } catch { localStorage.removeItem(PERMISOS_KEY); return {}; } })()),
       };
       setUser({ nombre, clave: '', ...cached });
       api.me().then(data => {

@@ -55,6 +55,16 @@ Los usuarios se guardan en `usuarios/` y el inventario en `inventario/` — igua
 
 Ver en consola: https://console.firebase.google.com → Realtime Database → proyecto **inventarioequip**
 
+## JVBOT
+
+JVBOT está disponible para usuarios con el permiso `ver_inventario` desde el botón flotante del frontend. Sus consultas de inventario usan herramientas controladas sobre la API y no permiten SQL generado por el modelo. El script `Iniciar Backend.bat` activa Ollama local (`llama3.2:latest`) para conversación natural sin enviar datos a terceros. También admite proveedores compatibles mediante `AI_API_KEY`, `AI_BASE_URL` y `AI_MODEL` desde `backend/.env.example`.
+
+La primera fase es de solo lectura: inventario, búsqueda por texto/SKU, stock bajo, agotados, valor estimado y antigüedad. Las acciones de escritura y confirmaciones quedan fuera de esta fase.
+
+La memoria de JVBOT es independiente por usuario y solo guarda instrucciones explícitas, como `recuerda que prefiero respuestas cortas`. No aprende ni altera automáticamente datos del inventario. La memoria se puede borrar con el endpoint autenticado `DELETE /api/jvbot/memory`.
+
+Cuando Ollama o un proveedor compatible está configurado, JVBOT usa tool-calling: el modelo interpreta la intención y selecciona capacidades generales (`searchProducts`, `getInventory`, `getProduct`, `aggregateInventory`, `getInventorySummary` y `getSalesSummary`). No existe una ruta distinta para cada redacción de la pregunta. Si el proveedor tarda o falla, se usa un fallback de solo lectura con respuestas verificables.
+
 ## Nota
 
 El archivo `INVEQUP2.html` **no fue modificado** por esta migración. Ambos sistemas pueden coexistir y comparten los mismos datos en Firebase.

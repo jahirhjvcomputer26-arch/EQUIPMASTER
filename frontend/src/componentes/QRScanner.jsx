@@ -95,13 +95,13 @@ export default function QRScanner() {
         return;
       }
       if (q) {
-        navigate(`/base-de-datos?search=${encodeURIComponent(q)}`);
+        navigate(`/base-datos?search=${encodeURIComponent(q)}`);
         notify('Búsqueda', `Buscando serie: ${q}`, 'success');
         return;
       }
     }
 
-    navigate(`/base-de-datos?search=${encodeURIComponent(code)}`);
+    navigate(`/base-datos?search=${encodeURIComponent(code)}`);
     notify('Búsqueda', `Buscando: ${code}`, 'success');
   };
 

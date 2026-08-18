@@ -14,7 +14,18 @@ router.get('/', async (req, res) => {
     const dump = {};
     for (const p of PATHS) {
       const data = await firebaseGet(p);
-      if (data) dump[p] = data;
+      if (data) {
+        if (p === 'usuarios') {
+          dump[p] = Object.fromEntries(
+            Object.entries(data).map(([k, v]) => {
+              const { password, sesionActiva, ...rest } = v || {};
+              return [k, rest];
+            })
+          );
+        } else {
+          dump[p] = data;
+        }
+      }
     }
     await registrarActividad('backup', null, 'Respaldo completo exportado');
     res.json(dump);

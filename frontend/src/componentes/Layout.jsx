@@ -11,6 +11,7 @@ import SearchModal from './SearchModal';
 import QRScanner from './QRScanner';
 import ScrollToTop from './ScrollToTop';
 import useBrowserNotifications from '../utils/useBrowserNotifications';
+import Jvbot from './Jvbot';
 
 const menuGroups = [
   { label: 'Operación', items: [
@@ -240,8 +241,8 @@ export default function Layout() {
     navigate('/login');
   };
 
-  const asideW = collapsed ? 'w-20' : 'w-68';
-  const mlW = collapsed ? 'lg:ml-20' : 'lg:ml-[17rem]';
+  const asideW = collapsed ? 'w-16' : 'w-60';
+  const mlW = collapsed ? 'lg:ml-16' : 'lg:ml-60';
 
   return (
     <div className="flex min-h-screen">
@@ -251,53 +252,58 @@ export default function Layout() {
       )}
 
       <aside className={`fixed inset-y-0 left-0 z-50 ${asideW} flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} no-print`}>
-        <div className={`p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-center gap-2 ${collapsed ? 'flex-col' : ''}`}>
-          <div className="bg-white border border-slate-200 dark:border-slate-600 rounded-xl p-1.5 shrink-0">
-            <img src="/logo-empresa.png" alt="JV" className="h-8 w-8 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+        <div className={`px-3 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-center gap-2 ${collapsed ? 'flex-col' : ''}`}>
+          <div className="bg-white border border-slate-200 dark:border-slate-600 rounded-lg p-1 shrink-0">
+            <img src="/logo-empresa.png" alt="JV" className="h-7 w-7 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
           </div>
-          {!collapsed && <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-widest text-center">EquipMaster v3.0</p>}
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-extrabold text-brand-900 dark:text-slate-100 truncate leading-tight">EquipMaster</p>
+              <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-widest">v3.0 · JV</p>
+            </div>
+          )}
           <button onClick={() => setCollapsed(c => !c)} title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-            className="absolute -right-3 top-6 w-6 h-6 rounded-full bg-white text-brand-700 border border-slate-200 shadow-md flex items-center justify-center text-xs hover:scale-110 transition hidden lg:flex">
+            className="absolute -right-3 top-5 w-6 h-6 rounded-full bg-white text-brand-700 border border-slate-200 shadow-md flex items-center justify-center text-xs hover:scale-110 transition hidden lg:flex">
             <i className={`fa-solid ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`} />
           </button>
         </div>
 
-        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {!collapsed && (
+        <nav className="flex-1 px-1.5 py-2 space-y-px overflow-y-auto overflow-x-hidden">
+          {!collapsed && can('ver_inventario') && (
             <NavLink to="/inventario"
-              className="flex items-center justify-center gap-2 w-full py-2.5 mb-2 rounded-xl bg-brand-600 text-white text-sm font-extrabold shadow-sm hover:bg-brand-700 transition-all"
+              className="flex items-center justify-center gap-2 w-full py-2 mb-1.5 rounded-lg bg-brand-600 text-white text-xs font-extrabold shadow-sm hover:bg-brand-700 transition-all"
               onClick={() => setSidebarOpen(false)}>
               <i className="fa-solid fa-plus-circle" /> Registrar equipo
             </NavLink>
           )}
-          {collapsed && (
+          {collapsed && can('ver_inventario') && (
             <NavLink to="/inventario" title="Registrar equipo"
-              className="flex items-center justify-center w-full py-2.5 mb-2 rounded-xl bg-brand-600 text-white shadow-sm hover:bg-brand-700 transition-all"
+              className="flex items-center justify-center w-full py-2 mb-1.5 rounded-lg bg-brand-600 text-white shadow-sm hover:bg-brand-700 transition-all"
               onClick={() => setSidebarOpen(false)}>
-              <i className="fa-solid fa-plus-circle text-lg" />
+              <i className="fa-solid fa-plus-circle text-base" />
             </NavLink>
           )}
           {menuGroups
             .map(group => ({ ...group, items: group.items.filter(l => !l.perm || can(l.perm)) }))
             .filter(group => group.items.length > 0)
             .map(group => (
-            <div key={group.label}>
+            <div key={group.label} className="mb-0.5">
               {!collapsed && (
-                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 pt-2.5 pb-1">{group.label}</p>
+                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2.5 pt-2 pb-0.5">{group.label}</p>
               )}
-              {collapsed && <div className="border-t border-slate-100 dark:border-slate-800 my-1.5" />}
+              {collapsed && <div className="border-t border-slate-100 dark:border-slate-800 my-1" />}
               {group.items.map(l => (
                 l.external ? (
                   <a key={l.to} href={l.to} target="_blank" rel="noopener noreferrer" title={l.label}
                     className={`sidebar-nav-btn ${collapsed ? 'justify-center px-0' : ''}`}>
-                    <i className={`fa-solid ${l.icon} ${collapsed ? 'text-lg' : 'w-5 text-center'}`} />
+                    <i className={`fa-solid ${l.icon} ${collapsed ? 'text-base' : 'w-4 text-center text-[13px]'}`} />
                     {!collapsed && <span className="truncate">{l.label}</span>}
                   </a>
                 ) : (
                   <NavLink key={l.to} to={l.to} end={l.end} title={l.label}
                     className={({ isActive }) => `sidebar-nav-btn ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-0' : ''}`}
                     onClick={() => setSidebarOpen(false)}>
-                    <i className={`fa-solid ${l.icon} ${collapsed ? 'text-lg' : 'w-5 text-center'}`} />
+                    <i className={`fa-solid ${l.icon} ${collapsed ? 'text-base' : 'w-4 text-center text-[13px]'}`} />
                     {!collapsed && <span className="truncate">{l.label}</span>}
                   </NavLink>
                 )
@@ -306,22 +312,22 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className={`p-3 border-t border-slate-100 dark:border-slate-800 space-y-2 ${collapsed ? 'flex flex-col items-center' : ''}`}>
+        <div className={`px-2 py-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5 ${collapsed ? 'flex flex-col items-center' : ''}`}>
           <NavLink to="/perfil" title="Mi Cuenta"
             className={({ isActive }) => `sidebar-nav-btn ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-0' : 'text-xs'}`}
             onClick={() => setSidebarOpen(false)}>
-            <i className={`fa-solid fa-user ${collapsed ? 'text-lg' : 'w-5 text-center'}`} />
-            {!collapsed && (user?.nombre || 'Mi Cuenta')}
+            <i className={`fa-solid fa-user ${collapsed ? 'text-base' : 'w-4 text-center'}`} />
+            {!collapsed && <span className="truncate">{user?.nombre || 'Mi Cuenta'}</span>}
           </NavLink>
 
-          <div className={`flex ${collapsed ? 'flex-col' : 'items-center'} gap-2`}>
+          <div className={`flex ${collapsed ? 'flex-col' : 'items-center'} gap-1.5`}>
             <button onClick={toggleDark} title={dark ? 'Modo claro' : 'Modo oscuro'}
-              className={`${collapsed ? 'w-full' : 'flex-1'} py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition flex items-center justify-center gap-1`}>
+              className={`${collapsed ? 'w-full' : 'flex-1'} py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-bold transition flex items-center justify-center gap-1`}>
               <i className={`fa-solid ${dark ? 'fa-sun' : 'fa-moon'}`} />
               {!collapsed && (dark ? 'Claro' : 'Oscuro')}
             </button>
             <button onClick={handleLogout} title="Cerrar sesión"
-              className={`py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition flex items-center justify-center ${collapsed ? 'w-full' : ''}`}>
+              className={`py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-bold transition flex items-center justify-center ${collapsed ? 'w-full' : ''}`}>
               <i className="fa-solid fa-right-from-bracket" />
             </button>
           </div>
@@ -330,16 +336,17 @@ export default function Layout() {
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
       <QRScanner />
       <ScrollToTop />
+      {can('ver_inventario') && <Jvbot />}
 
       <div className={`flex-1 flex flex-col min-w-0 ${mlW} transition-all duration-300`}>
-        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 no-print">
+        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-3 sm:px-4 py-2.5 flex items-center gap-2.5 no-print">
           <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg text-brand-600 lg:hidden">
             <i className="fa-solid fa-bars text-lg" />
           </button>
-          <div className="hidden lg:flex items-center gap-2">
-            <span className={"w-2.5 h-2.5 rounded-full transition-colors " + (connected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} title={connected ? 'Conectado al servidor' : 'Sin conexión al servidor'} />
-            <h1 className="font-display font-bold text-brand-900">EquipMaster</h1>
-            <span className="text-[10px] text-slate-400">JV COMPUTER</span>
+          <div className="hidden lg:flex items-center gap-2 min-w-0">
+            <span className={"w-2 h-2 rounded-full transition-colors shrink-0 " + (connected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500')} title={connected ? 'Conectado al servidor' : 'Sin conexión al servidor'} />
+            <h1 className="font-display font-bold text-brand-900 text-sm">EquipMaster</h1>
+            <span className="text-[10px] text-slate-400 truncate">JV COMPUTER</span>
           </div>
           <div className="flex-1" />
           <div className="relative" ref={notifRef}>
@@ -401,9 +408,9 @@ export default function Layout() {
           </button>
         </header>
 
-        <main ref={mainRef} className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto pb-24 lg:pb-8">
+        <main ref={mainRef} className="flex-1 p-3 sm:p-4 lg:p-5 max-w-[1600px] mx-auto w-full overflow-y-auto pb-24 lg:pb-6">
           {location.pathname !== '/' && (
-            <nav className="flex items-center gap-1.5 text-xs text-slate-400 mb-4">
+            <nav className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-3">
               <NavLink to="/" className="hover:text-brand-600 transition"><i className="fa-solid fa-house text-[10px]" /> Inicio</NavLink>
               <i className="fa-solid fa-chevron-right text-[8px]" />
               <span className="font-bold text-slate-600">

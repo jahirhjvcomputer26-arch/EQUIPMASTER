@@ -71,7 +71,7 @@ export default function Tickets() {
   const { user, can } = useAuth();
   const { notify } = useNotify();
 
-  const esSuperAdmin = !!user?.permisos?.all;
+  const esSuperAdmin = user?.rol === 'superadmin' || (user?.nivel || 0) >= 100;
   const puedeGestionar = can('gestionar_tickets');
   const puedeAtender = can('atender_tickets');
   const puedeCrear = can('registrar_tickets');

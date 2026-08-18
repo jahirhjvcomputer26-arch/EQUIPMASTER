@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { useNotify } from '../componentes/Notification';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import CameraCapture from '../componentes/CameraCapture';
@@ -35,6 +36,7 @@ export default function Galeria() {
   useDocumentTitle('Galería Fotográfica');
   const { codigo } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { notify: toast } = useNotify();
   const multiRef = useRef(null);
   const [item, setItem] = useState(null);
@@ -47,11 +49,11 @@ export default function Galeria() {
 
   const loadItem = useCallback(async () => {
     try {
-      const data = await api.getEquipo(codigo?.toUpperCase());
+      const data = user ? await api.getEquipo(codigo?.toUpperCase()) : await api.getEquipoPublico(codigo?.toUpperCase());
       setItem(data);
       setFotos(fotosList(data.fotos));
     } catch { setError('Equipo no encontrado'); }
-  }, [codigo]);
+  }, [codigo, user]);
 
   useEffect(() => { if (codigo) loadItem(); }, [codigo, loadItem]);
 
@@ -118,20 +120,24 @@ export default function Galeria() {
           <p className="text-slate-500 text-sm">{item.marca} {item.modelo} · {item.codigo} · {fotos.length} foto(s)</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => multiRef.current?.click()} disabled={uploading} className="px-4 py-2 border border-dashed border-brand-300 text-brand-600 rounded-xl text-sm font-bold hover:bg-brand-50 transition flex items-center gap-2 disabled:opacity-50">
-            <i className="fa-solid fa-images" /> Cargar fotos
-          </button>
-          <button onClick={async () => {
-            if (navigator.mediaDevices?.getUserMedia) {
-              try {
-                const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
-                tmp.getTracks().forEach(t => t.stop());
-              } catch {}
-            }
-            setCameraOpen(true);
-          }} disabled={uploading} className="px-4 py-2 border border-dashed border-brand-300 text-brand-600 rounded-xl text-sm font-bold hover:bg-brand-50 transition flex items-center gap-2 disabled:opacity-50">
-            <i className="fa-solid fa-camera" /> Cámara
-          </button>
+          {user && (
+            <>
+              <button onClick={() => multiRef.current?.click()} disabled={uploading} className="px-4 py-2 border border-dashed border-brand-300 text-brand-600 rounded-xl text-sm font-bold hover:bg-brand-50 transition flex items-center gap-2 disabled:opacity-50">
+                <i className="fa-solid fa-images" /> Cargar fotos
+              </button>
+              <button onClick={async () => {
+                if (navigator.mediaDevices?.getUserMedia) {
+                  try {
+                    const tmp = await navigator.mediaDevices.getUserMedia({ video: true });
+                    tmp.getTracks().forEach(t => t.stop());
+                  } catch {}
+                }
+                setCameraOpen(true);
+              }} disabled={uploading} className="px-4 py-2 border border-dashed border-brand-300 text-brand-600 rounded-xl text-sm font-bold hover:bg-brand-50 transition flex items-center gap-2 disabled:opacity-50">
+                <i className="fa-solid fa-camera" /> Cámara
+              </button>
+            </>
+          )}
           <button onClick={() => navigate(-1)} className="px-4 py-2 border border-slate-300 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50">
             <i className="fa-solid fa-arrow-left mr-1" /> Volver
           </button>
@@ -155,10 +161,12 @@ export default function Galeria() {
                     className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-brand-600 hover:scale-110 transition shadow-lg">
                     <i className="fa-solid fa-expand" />
                   </button>
-                  <button onClick={() => handleDelete(f)}
-                    className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-red-500 hover:scale-110 transition shadow-lg">
-                    <i className="fa-solid fa-trash" />
-                  </button>
+                  {user && (
+                    <button onClick={() => handleDelete(f)}
+                      className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-red-500 hover:scale-110 transition shadow-lg">
+                      <i className="fa-solid fa-trash" />
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="px-4 py-3 flex items-center justify-between">

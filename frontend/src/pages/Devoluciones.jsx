@@ -54,7 +54,7 @@ export default function Devoluciones() {
         <h2 className="font-display text-2xl font-bold text-slate-900">Devoluciones</h2>
         <p className="text-slate-500 text-sm">Registra devoluciones de equipos vendidos → vuelven a <strong>🟠 Revisión</strong></p>
       </div>
-      <form onSubmit={e => { e.preventDefault(); if (preview) setConfirmOpen(true); }} className="panel p-6 md:p-8 space-y-5 max-w-3xl animate-slide-up" style={{ animationDelay: '50ms' }}>
+      <form onSubmit={e => { e.preventDefault(); if (preview) setConfirmOpen(true); }} className="panel form-section space-y-3.5 max-w-4xl animate-slide-up" style={{ animationDelay: '50ms' }}>
         <div><label className="form-label">Número de serie *</label>
           <div className="flex gap-3">
             <input className="form-input font-mono uppercase flex-1" value={serie} onChange={e => setSerie(e.target.value)} placeholder="S/N del equipo vendido" required />

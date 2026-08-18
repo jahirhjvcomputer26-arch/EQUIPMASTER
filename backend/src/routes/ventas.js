@@ -10,14 +10,18 @@ router.use(authMiddleware, loadPermisos());
 router.post('/local', requirePerm('registrar_ventas'), async (req, res) => {
   try {
     const { codigo, cliente, precio, metodoPago, fechaSalida, tecnicoEntrega, notasSalida } = req.body;
+    if (!codigo) return res.status(400).json({ error: 'Código del equipo requerido' });
     const item = await firebaseGet(`inventario/${codigo}`);
     if (!item) return res.status(404).json({ error: 'Equipo no encontrado' });
     if (item.estado?.includes('🔴 VENDIDO')) return res.status(400).json({ error: 'Equipo ya vendido' });
 
+    const precioStr = String(precio || '0');
+    const precioNormalizado = precioStr.startsWith('$') ? precioStr : `$${precioStr}`;
+
     item.flujoSalida = {
       estadoAnterior: item.estado,
       cliente: (cliente || '').toUpperCase().trim(),
-      precio: precio?.startsWith('$') ? precio : `$${precio}`,
+      precio: precioNormalizado,
       metodoPago,
       fechaSalida,
       tecnicoEntrega,
@@ -26,7 +30,7 @@ router.post('/local', requirePerm('registrar_ventas'), async (req, res) => {
 
     item.estado = '🔴 VENDIDO / SALIDA';
     await firebaseSet(`inventario/${codigo}`, item);
-    registrarActividad(req.user?.nombre, 'VENTA_LOCAL', `${codigo} · ${cliente} · $${precio}`);
+    registrarActividad(req.user?.nombre, 'VENTA_LOCAL', `${codigo} · ${cliente} · ${precioNormalizado}`);
     res.json({ message: 'Venta local registrada', item });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -35,7 +39,7 @@ router.post('/local', requirePerm('registrar_ventas'), async (req, res) => {
 
 router.post('/mercadolibre', requirePerm('registrar_ventas'), async (req, res) => {
   try {
-    const { serie, fechaVenta, notasVenta } = req.body;
+    const { serie, fechaVenta, notasVenta, precioVenta } = req.body;
     const serieNorm = (serie || '').toUpperCase().trim().replace(/\s+/g, '');
     const inventario = await firebaseGet('inventario');
     const item = Object.values(inventario || {}).find(
@@ -51,6 +55,7 @@ router.post('/mercadolibre', requirePerm('registrar_ventas'), async (req, res) =
     item.flujoVentaML = {
       fechaVenta: fechaVenta || new Date().toISOString().split('T')[0],
       notasVenta: (notasVenta || 'VENTA ML REGISTRADA.').toUpperCase().trim(),
+      precioVenta: precioVenta ? String(precioVenta) : null,
     };
 
     await firebaseSet(`inventario/${item.codigo}`, item);
@@ -75,7 +80,11 @@ router.post('/devolucion', requirePerm('eliminar_ventas'), async (req, res) => {
       fechaDevolucion: fechaDevolucion || new Date().toISOString().split('T')[0],
       motivo: (motivo || 'DEVOLUCIÓN SIN MOTIVO ESPECIFICADO.').toUpperCase().trim(),
       canalPrevio: item.flujoVentaML ? 'MERCADO LIBRE' : (item.flujoSalida?.metodoPago || 'VENTA LOCAL'),
+      ventaLocal_previo: item.flujoSalida || null,
+      ventaML_previo: item.flujoVentaML || null,
     };
+    item.flujoSalida = null;
+    item.flujoVentaML = null;
 
     await firebaseSet(`inventario/${codigo}`, item);
     registrarActividad(req.user?.nombre, 'DEVOLUCION', `${codigo} · ${motivo}`);
@@ -96,7 +105,7 @@ router.put('/local/:codigo', requirePerm('editar_ventas'), async (req, res) => {
     item.flujoSalida = {
       ...item.flujoSalida,
       cliente: (cliente || item.flujoSalida.cliente || '').toUpperCase().trim(),
-      precio: precio?.startsWith('$') ? precio : `$${precio}`,
+      precio: precio ? (String(precio).startsWith('$') ? String(precio) : `$${precio}`) : item.flujoSalida.precio,
       metodoPago: metodoPago || item.flujoSalida.metodoPago,
       fechaSalida: fechaSalida || item.flujoSalida.fechaSalida,
       tecnicoEntrega: tecnicoEntrega || item.flujoSalida.tecnicoEntrega,

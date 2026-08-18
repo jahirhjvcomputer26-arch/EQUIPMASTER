@@ -12,6 +12,7 @@ export function DarkModeProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('equipmaster_dark', dark);
     document.documentElement.classList.toggle('dark', dark);
+    document.documentElement.classList.toggle('light', !dark);
   }, [dark]);
 
   return (

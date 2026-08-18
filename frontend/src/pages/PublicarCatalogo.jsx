@@ -28,7 +28,7 @@ export default function PublicarCatalogo() {
   const guardar = async (item) => {
     try {
       await api.publicarCatalogo(item.codigo, { publicado: !item.publicado, precioPublico: item.precioPublico, descripcionPublica: item.descripcionPublica, detallesPublicos: item.detallesPublicos });
-      notify(item.publicado ? 'Publicado' : 'Oculto', `${item.codigo} actualizado en el catálogo público.`, 'success');
+      notify(!item.publicado ? 'Publicado' : 'Oculto', `${item.codigo} actualizado en el catálogo público.`, 'success');
       cargar();
     } catch (err) { notify('Error', err.message, 'error'); }
   };

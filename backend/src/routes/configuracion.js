@@ -4,7 +4,6 @@ import { loadPermisos, requirePerm } from '../permisos.js';
 import { firebaseGet, firebaseSet } from '../firebase.js';
 
 const router = Router();
-router.use(authMiddleware, loadPermisos());
 
 const DEFAULT_CONFIG = {
   nombreEmpresa: 'JV COMPUTER',
@@ -21,15 +20,6 @@ const DEFAULT_CONFIG = {
   notasPie: 'Gracias por su preferencia',
 };
 
-router.get('/', requirePerm('config_sistema'), async (req, res) => {
-  try {
-    const config = await firebaseGet('configuracion/empresa');
-    res.json({ ...DEFAULT_CONFIG, ...config });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 router.get('/public', async (_req, res) => {
   try {
     const config = await firebaseGet('configuracion/empresa');
@@ -40,6 +30,17 @@ router.get('/public', async (_req, res) => {
       colorPrimario: config.colorPrimario || DEFAULT_CONFIG.colorPrimario,
     } : DEFAULT_CONFIG;
     res.json(pub);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.use(authMiddleware, loadPermisos());
+
+router.get('/', requirePerm('config_sistema'), async (req, res) => {
+  try {
+    const config = await firebaseGet('configuracion/empresa');
+    res.json({ ...DEFAULT_CONFIG, ...config });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

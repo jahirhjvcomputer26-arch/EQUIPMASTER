@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import os from 'os';
 import { authMiddleware } from '../middleware/auth.js';
 import { loadPermisos, requirePerm } from '../permisos.js';
 
@@ -7,7 +8,7 @@ router.use(authMiddleware, loadPermisos());
 
 router.get('/detect', requirePerm('diagnostico_hardware'), async (req, res) => {
   try {
-    const hostname = require('os').hostname().toLowerCase();
+    const hostname = os.hostname().toLowerCase();
     const cloudKeywords = ['render', 'aws', 'google', 'azure', 'heroku', 'railway', 'fly', 'docker', 'kubernetes'];
     if (cloudKeywords.some(k => hostname.includes(k)) || process.env.RENDER) {
       return res.status(400).json({ error: 'La detección de hardware solo funciona en la red local del taller. En producción, ingresa los datos manualmente.' });
@@ -15,7 +16,7 @@ router.get('/detect', requirePerm('diagnostico_hardware'), async (req, res) => {
 
     const si = await import('systeminformation');
 
-    const [cpu, mem, os, diskLayout, bios, baseboard, system] = await Promise.all([
+    const [cpu, mem, osInfo, diskLayout, bios, baseboard, system, memLayout] = await Promise.all([
       si.cpu(),
       si.mem(),
       si.osInfo(),
@@ -23,6 +24,7 @@ router.get('/detect', requirePerm('diagnostico_hardware'), async (req, res) => {
       si.bios(),
       si.baseboard(),
       si.system(),
+      si.memLayout(),
     ]);
 
     const mainDisk = diskLayout.find(d => d.type === 'NVMe' || d.type === 'SSD' || d.type === 'HD') || diskLayout[0];
@@ -39,7 +41,7 @@ router.get('/detect', requirePerm('diagnostico_hardware'), async (req, res) => {
       ? (mainDisk.type === 'NVMe' ? 'M.2 NVME' : mainDisk.type === 'SSD' ? 'SSD SATA' : 'HDD')
       : '';
 
-    const tipoRam = detectRamType(mem);
+    const tipoRam = detectRamType(mem, memLayout);
 
     const gpuInfo = await detectGPU();
 
@@ -55,7 +57,7 @@ router.get('/detect', requirePerm('diagnostico_hardware'), async (req, res) => {
       modelo: (system.model || '').trim().toUpperCase(),
       serie: (system.serial || '').trim(),
       color: '',
-      sistemaOperativo: `${(os.distro || '').toUpperCase()} ${(os.release || '').split('.')[0]}`.trim(),
+      sistemaOperativo: `${(osInfo.distro || '').toUpperCase()} ${(osInfo.release || '').split('.')[0]}`.trim(),
       bateria: '',
       pantalla: '',
     };
@@ -81,11 +83,13 @@ function extractAmdModel(brand) {
   return match ? `SERIE ${match[1]}000` : '';
 }
 
-function detectRamType(mem) {
+function detectRamType(mem, memLayout) {
+  if (memLayout && memLayout.length > 0) {
+    const type = memLayout[0]?.type;
+    if (type && type !== 'Unknown' && type !== '') return type.toUpperCase();
+  }
   const totalGB = Math.round(mem.total / (1024 * 1024 * 1024));
-  if (totalGB >= 128) return 'DDR5';
   if (totalGB >= 64) return 'DDR5';
-  if (totalGB >= 32) return Math.random() > 0.5 ? 'DDR5' : 'DDR4';
   return 'DDR4';
 }
 

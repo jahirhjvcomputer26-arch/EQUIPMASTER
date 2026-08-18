@@ -29,8 +29,10 @@ function dispositivoId() {
 async function request(path, options = {}) {
   const res = await fetch(`${API}${path}`, { ...options, headers: { ...headers(), ...options.headers } });
   if (res.status === 401 && !path.startsWith('/usuarios/login') && !path.startsWith('/usuarios/logout')) cerrarSesionLocal();
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || 'Error en la solicitud');
+  const raw = await res.text();
+  let data = {};
+  try { data = raw ? JSON.parse(raw) : {}; } catch { /* backend may return an HTML error page */ }
+  if (!res.ok) throw new Error(data.error || (raw && res.status >= 500 ? `Error del servidor (${res.status})` : `Solicitud rechazada (${res.status})`));
   return data;
 }
 
@@ -42,6 +44,7 @@ export const api = {
   getInventario: () => request('/inventario'),
   buscarInventario: (params = {}) => request(`/inventario/buscar?${new URLSearchParams(params)}`),
   getEquipo: (codigo) => request(`/inventario/${encodeURIComponent(codigo)}`),
+  getEquipoPublico: (codigo) => fetch(`${API}/inventario/public/equipo/${encodeURIComponent(codigo)}`).then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || 'Equipo no encontrado'); return data; }),
   consultaPublica: async (q) => {
     const res = await fetch(`${API}/inventario/public/consulta?q=${encodeURIComponent(q)}`);
     const data = await res.json().catch(() => ({}));
@@ -56,17 +59,18 @@ export const api = {
   actualizarSolicitudVenta: (id, body) => request(`/solicitudes-venta/${id}`, { method: 'PUT', body: JSON.stringify(typeof body === 'string' ? { estado: body } : body) }),
   crearSolicitudVenta: (body) => fetch(`${API}/solicitudes-venta`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || 'No se pudo enviar la solicitud'); return data; }),
   getMarketing: () => request('/marketing'),
-  saveEquipo: (codigo, body) => request(`/inventario/${codigo}`, { method: 'PUT', body: JSON.stringify(body) }),
-  eliminarEquipo: (codigo) => request(`/inventario/${codigo}`, { method: 'DELETE' }),
+  saveEquipo: (codigo, body) => request(`/inventario/${encodeURIComponent(codigo)}`, { method: 'PUT', body: JSON.stringify(body) }),
+  eliminarEquipo: (codigo) => request(`/inventario/${encodeURIComponent(codigo)}`, { method: 'DELETE' }),
   ventaLocal: (body) => request('/ventas/local', { method: 'POST', body: JSON.stringify(body) }),
   ventaML: (body) => request('/ventas/mercadolibre', { method: 'POST', body: JSON.stringify(body) }),
   devolucion: (body) => request('/ventas/devolucion', { method: 'POST', body: JSON.stringify(body) }),
-  editarVentaLocal: (codigo, body) => request(`/ventas/local/${codigo}`, { method: 'PUT', body: JSON.stringify(body) }),
-  eliminarVentaLocal: (codigo) => request(`/ventas/local/${codigo}`, { method: 'DELETE' }),
+  editarVentaLocal: (codigo, body) => request(`/ventas/local/${encodeURIComponent(codigo)}`, { method: 'PUT', body: JSON.stringify(body) }),
+  eliminarVentaLocal: (codigo) => request(`/ventas/local/${encodeURIComponent(codigo)}`, { method: 'DELETE' }),
   dashboard: () => request('/reportes/dashboard'),
   getPrestamos: () => request('/prestamos'),
   crearPrestamo: (body) => request('/prestamos', { method: 'POST', body: JSON.stringify(body) }),
   devolverPrestamo: (id) => request(`/prestamos/${id}/devolver`, { method: 'POST' }),
+  actualizarPrestamo: (id, body) => request(`/prestamos/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   cambiarPassword: (body) => request('/usuarios/cambiar-password', { method: 'POST', body: JSON.stringify(body) }),
   cambiarNombre: (body) => request('/usuarios/cambiar-nombre', { method: 'PUT', body: JSON.stringify(body) }),
   getActividad: (page = 1) => request(`/actividad?page=${page}&limit=50`),
@@ -99,6 +103,7 @@ export const api = {
   crearUsuario: (body) => request('/usuarios/register', { method: 'POST', body: JSON.stringify(body) }),
   actualizarUsuario: (body) => request('/usuarios/update', { method: 'PUT', body: JSON.stringify(body) }),
   resetPassword: (body) => request('/usuarios/reset-password', { method: 'POST', body: JSON.stringify(body) }),
+  resetSesiones: (body) => request('/usuarios/reset-sesiones', { method: 'POST', body: JSON.stringify(body) }),
   getPermisosRoles: () => request('/usuarios/roles'),
   updateRol: (body) => request('/usuarios/rol', { method: 'PUT', body: JSON.stringify(body) }),
   updateRolPermisos: (rol, body) => request(`/usuarios/roles/${rol}`, { method: 'PUT', body: JSON.stringify(body) }),
@@ -155,6 +160,8 @@ export const api = {
   detectHardware: () => request('/hardware/detect'),
   sendReportEmail: (body) => request('/reportes/email', { method: 'POST', body: JSON.stringify(body) }),
   getNotificaciones: () => request('/notificaciones'),
+  jvbotChat: (message, history = []) => request('/jvbot/chat', { method: 'POST', body: JSON.stringify({ message, history }) }),
+  jvbotClearMemory: () => request('/jvbot/memory', { method: 'DELETE' }),
   crearNotificacion: (body) => request('/notificaciones', { method: 'POST', body: JSON.stringify(body) }),
   marcarLeidaNotificacion: (id) => request(`/notificaciones/${id}`, { method: 'PUT' }),
   downloadExcel: async () => {

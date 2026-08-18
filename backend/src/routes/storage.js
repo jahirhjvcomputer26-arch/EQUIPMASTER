@@ -58,10 +58,16 @@ router.post('/upload', requirePerm('subir_archivos'), async (req, res) => {
 
 router.delete('/delete', requirePerm('subir_archivos'), async (req, res) => {
   try {
-    const { path } = req.query;
-    if (!path) return res.status(400).json({ error: 'Falta path' });
+    const { path: objectPath } = req.query;
+    if (!objectPath) return res.status(400).json({ error: 'Falta path' });
 
-    await deleteFromStorage(path);
+    const allowedPrefixes = ['fotos/', 'documentos/', 'modelosFotos/'];
+    const normalized = objectPath.replace(/\\/g, '/').replace(/^\/+/, '');
+    if (normalized.startsWith('..') || !allowedPrefixes.some(p => normalized.startsWith(p))) {
+      return res.status(403).json({ error: 'Ruta no permitida' });
+    }
+
+    await deleteFromStorage(normalized);
     res.json({ ok: true });
   } catch (err) {
     console.error('Delete error:', err);

@@ -19,7 +19,8 @@ router.get('/public/consulta', async (req, res) => {
       i.sku?.toUpperCase() === q
     );
     if (!found) return res.status(404).json({ error: 'Equipo no encontrado con ese código o serie' });
-    res.json(found);
+    const modelos = await firebaseGet('modelosFotos') || {};
+    res.json(productoPublico(found, modelos));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -77,6 +78,15 @@ router.get('/public/catalogo/:codigo', async (req, res) => {
   try {
     const item = await firebaseGet(`inventario/${req.params.codigo}`);
     if (!item || item.publicado !== true || item.estado?.includes('VENDIDO')) return res.status(404).json({ error: 'Producto no disponible' });
+    const modelos = await firebaseGet('modelosFotos') || {};
+    res.json(productoPublico(item, modelos));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.get('/public/equipo/:codigo', async (req, res) => {
+  try {
+    const item = await firebaseGet(`inventario/${req.params.codigo}`);
+    if (!item) return res.status(404).json({ error: 'Equipo no encontrado' });
     const modelos = await firebaseGet('modelosFotos') || {};
     res.json(productoPublico(item, modelos));
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -173,6 +183,13 @@ router.put('/:codigo', async (req, res) => {
           usuario: req.user?.nombre || 'SISTEMA',
           cambios: camposDetectados.join(', '),
         });
+      }
+
+      const protectedFields = ['flujoSalida', 'flujoVentaML', 'flujoDevolucion', 'flujoMercadoLibre', 'publicado', 'precioPublico', 'descripcionPublica', 'detallesPublicos', 'fechaRegistro', 'sku'];
+      for (const f of protectedFields) {
+        if (req.body[f] === undefined && existente[f] !== undefined) {
+          req.body[f] = existente[f];
+        }
       }
     }
 

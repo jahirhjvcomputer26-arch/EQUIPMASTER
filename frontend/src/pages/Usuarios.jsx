@@ -68,6 +68,7 @@ export default function Usuarios() {
   const [editForm, setEditForm] = useState(null);
   const [resetUser, setResetUser] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmSesiones, setConfirmSesiones] = useState(null);
   const [saving, setSaving] = useState(false);
   const [roleForms, setRoleForms] = useState({});
   const [savingRol, setSavingRol] = useState(null);
@@ -222,6 +223,20 @@ export default function Usuarios() {
     }
   };
 
+  const handleResetSesiones = async (usuario) => {
+    setSaving(true);
+    try {
+      await api.resetSesiones({ usuario });
+      notify('Sesiones cerradas', `Todas las sesiones de ${usuario} fueron cerradas. Ya puede volver a iniciar sesión.`, 'success');
+      setConfirmSesiones(null);
+      cargarTodo();
+    } catch (err) {
+      notify('Error', err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDelete = async (usuario) => {
     setSaving(true);
     try {
@@ -293,6 +308,7 @@ export default function Usuarios() {
                     <th className="text-left px-4 py-3 font-bold text-slate-600 dark:!text-slate-300">Rol</th>
                     <th className="text-left px-4 py-3 font-bold text-slate-600 dark:!text-slate-300 hidden md:table-cell">Permisos</th>
                     <th className="text-left px-4 py-3 font-bold text-slate-600 dark:!text-slate-300 hidden sm:table-cell">Estado</th>
+                    <th className="text-left px-4 py-3 font-bold text-slate-600 dark:!text-slate-300 hidden md:table-cell">Sesiones</th>
                     <th className="text-left px-4 py-3 font-bold text-slate-600 dark:!text-slate-300 hidden lg:table-cell">Creado</th>
                     <th className="text-right px-4 py-3 font-bold text-slate-600 dark:!text-slate-300">Acciones</th>
                   </tr>
@@ -342,6 +358,15 @@ export default function Usuarios() {
                             <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-700">Desactivado</span>
                           )}
                         </td>
+                        <td className="px-4 py-3 hidden md:table-cell">
+                          {u.sesionesActivas > 0 ? (
+                            <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${u.sesionesActivas >= 2 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:!text-slate-300'}`}>
+                              {u.sesionesActivas}/2 sesiones
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400">Sin sesiones</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-slate-500 dark:!text-slate-400 text-xs hidden lg:table-cell">
                           {u.creado ? new Date(u.creado).toLocaleDateString() : '—'}
                         </td>
@@ -356,6 +381,16 @@ export default function Usuarios() {
                                 <i className="fa-solid fa-xmark" />
                               </button>
                             </div>
+                          ) : confirmSesiones === u.usuario ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-xs text-amber-600 dark:!text-amber-400 font-bold">¿Cerrar sesiones?</span>
+                              <button onClick={() => handleResetSesiones(u.usuario)} disabled={saving} className="px-2 py-1 rounded-lg bg-amber-500 text-white text-xs font-bold hover:bg-amber-600 transition">
+                                <i className="fa-solid fa-check" />
+                              </button>
+                              <button onClick={() => setConfirmSesiones(null)} className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:!text-slate-300 text-xs font-bold hover:bg-slate-200 transition">
+                                <i className="fa-solid fa-xmark" />
+                              </button>
+                            </div>
                           ) : (
                             <div className="flex items-center justify-end gap-1">
                               <button onClick={() => abrirEdicion(u)} disabled={bloqueado} className={accionBtn} title={bloqueado ? (self ? 'No puedes editar tu propia cuenta' : 'No puedes modificar a un Super Administrador') : 'Editar'}>
@@ -367,6 +402,9 @@ export default function Usuarios() {
                               <button onClick={() => handleToggleActivo(u)} disabled={bloqueado} className={accionBtn} title={u.activo ? 'Desactivar cuenta' : 'Activar cuenta'}>
                                 <i className={`fa-solid ${u.activo ? 'fa-user-slash' : 'fa-user-check'} ${u.activo ? 'text-amber-600 dark:!text-amber-400' : 'text-emerald-600 dark:!text-emerald-400'}`} />
                               </button>
+                              <button onClick={() => setConfirmSesiones(u.usuario)} disabled={bloqueado} className={accionBtn} title="Cerrar todas las sesiones de este usuario">
+                                <i className="fa-solid fa-arrow-right-from-bracket text-slate-500 dark:!text-slate-400" />
+                              </button>
                               <button onClick={() => setConfirmDelete(u.usuario)} disabled={bloqueado} className={`${accionBtn} bg-red-50 dark:bg-red-900/30 text-red-600 dark:!text-red-400 hover:bg-red-100`} title="Eliminar usuario">
                                 <i className="fa-solid fa-trash" />
                               </button>
@@ -377,7 +415,7 @@ export default function Usuarios() {
                     );
                   })}
                   {usuarios.length === 0 && (
-                    <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-400 text-sm">Sin usuarios registrados</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-400 text-sm">Sin usuarios registrados</td></tr>
                   )}
                 </tbody>
               </table>

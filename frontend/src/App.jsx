@@ -65,10 +65,9 @@ export default function App() {
       <AuthProvider>
         <DarkModeProvider>
         <NotifyProvider>
-          <InventarioProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+              <Route path="/" element={<PrivateRoute><InventarioProvider><Layout /></InventarioProvider></PrivateRoute>}>
                 <Route index element={<Dashboard />} />
                 <Route path="inventario" element={<Guard perm="ver_inventario"><Inventario /></Guard>} />
                 <Route path="ventas" element={<Guard perm="ver_ventas"><Ventas /></Guard>} />
@@ -91,7 +90,7 @@ export default function App() {
                 <Route path="tickets" element={<Guard perm="ver_tickets"><Tickets /></Guard>} />
                 <Route path="etiquetas" element={<Guard perm="generar_qr"><Etiquetas /></Guard>} />
                 <Route path="etiquetas/:codigo" element={<Guard perm="generar_qr"><Etiquetas /></Guard>} />
-                <Route path="modelos" element={<GaleriaModelos />} />
+                <Route path="modelos" element={<Guard perm="ver_inventario"><GaleriaModelos /></Guard>} />
               </Route>
               <Route path="consulta" element={<ConsultaPublica />} />
               <Route path="catalogo" element={<CatalogoPublico />} />
@@ -102,7 +101,6 @@ export default function App() {
               <Route path="/documentos/:codigo" element={<CentroDocumentacion />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </InventarioProvider>
         </NotifyProvider>
         </DarkModeProvider>
       </AuthProvider>

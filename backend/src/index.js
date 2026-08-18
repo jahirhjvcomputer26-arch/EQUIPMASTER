@@ -29,6 +29,7 @@ import { garantiasRouter, mantenimientosRouter } from './routes/seguimiento.js';
 import catalogoPublicacionRouter from './routes/catalogoPublicacion.js';
 import solicitudesVentaRouter from './routes/solicitudesVenta.js';
 import marketingRouter from './routes/marketing.js';
+import jvbotRouter from './routes/jvbot.js';
 import { auditContext } from './middleware/auditContext.js';
 import { initStorage } from './storage.js';
 import { seedPermisos } from './permisos.js';
@@ -44,14 +45,19 @@ app.use(helmet({ contentSecurityPolicy: false }));
 const corsOrigins = (process.env.CORS_ORIGINS || '').split(',').map(v => v.trim()).filter(Boolean);
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || corsOrigins.length === 0 || corsOrigins.includes(origin)) return callback(null, true);
+    if (!origin) return callback(null, true);
+    if (corsOrigins.length === 0) {
+      if (process.env.NODE_ENV === 'production') return callback(new Error('CORS no configurado'));
+      return callback(null, true);
+    }
+    if (corsOrigins.includes(origin)) return callback(null, true);
     return callback(new Error('Origen no permitido'));
   },
   credentials: true,
 }));
 app.use('/api', rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 600,
+  limit: 3000,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   skip: req => req.path === '/health',
@@ -94,6 +100,13 @@ app.use('/api/mantenimientos', mantenimientosRouter);
 app.use('/api/catalogo-publicacion', catalogoPublicacionRouter);
 app.use('/api/solicitudes-venta', solicitudesVentaRouter);
 app.use('/api/marketing', marketingRouter);
+app.use('/api/jvbot', jvbotRouter);
+
+app.use((err, _req, res, _next) => {
+  console.error('API error:', err);
+  if (res.headersSent) return;
+  res.status(err.status || 500).json({ error: err.status && err.status < 500 ? err.message : 'Error interno del servidor' });
+});
 
 initStorage();
 seedPermisos();

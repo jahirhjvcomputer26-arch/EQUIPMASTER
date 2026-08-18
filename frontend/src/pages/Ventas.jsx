@@ -124,7 +124,7 @@ export default function Ventas() {
           </button>
         )}
       </div>
-      <form onSubmit={e => { e.preventDefault(); if (!info.encontrado) return notify('Aviso', 'Busca un equipo antes de vender', 'error'); setConfirmOpen(true); }} onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); buscar(); } }} className="panel p-6 md:p-8 space-y-5 max-w-3xl animate-slide-up" style={{ animationDelay: '50ms' }}>
+      <form onSubmit={e => { e.preventDefault(); if (!info.encontrado) return notify('Aviso', 'Busca un equipo antes de vender', 'error'); setConfirmOpen(true); }} onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); buscar(); } }} className="panel form-section space-y-3.5 max-w-4xl animate-slide-up" style={{ animationDelay: '50ms' }}>
         {editandoVenta && <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-sm font-bold"><i className="fa-solid fa-pen mr-1" /> Modo edición — modificando venta de <span className="font-mono">{editandoVenta}</span></div>}
         <div>
           <label className="form-label">Buscar equipo por número de serie *</label>

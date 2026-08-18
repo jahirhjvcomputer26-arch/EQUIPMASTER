@@ -251,4 +251,9 @@ CREATE TABLE dbo.SolicitudesVenta (
     Id NVARCHAR(64) NOT NULL PRIMARY KEY,
     Datos NVARCHAR(MAX) NOT NULL
 );
+IF OBJECT_ID(N'dbo.JvbotMemory', N'U') IS NULL
+CREATE TABLE dbo.JvbotMemory (
+    Clave NVARCHAR(128) NOT NULL PRIMARY KEY,
+    Datos NVARCHAR(MAX) NOT NULL
+);
 GO

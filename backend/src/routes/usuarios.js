@@ -2,7 +2,7 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import { authMiddleware } from '../middleware/auth.js';
 import { loadPermisos, requirePerm, esSuperAdmin, resolverPermisos, PERMISOS_CATALOGO } from '../permisos.js';
-import { claveUsuario, firebaseGet, firebaseSet, hashPassword, verifyPassword } from '../firebase.js';
+import { claveUsuario, firebaseGet, firebaseSet, firebaseUpdate, hashPassword, verifyPassword } from '../firebase.js';
 import { registrarActividad } from './actividad.js';
 
 const router = Router();
@@ -48,7 +48,7 @@ router.post('/register', authMiddleware, loadPermisos(), requirePerm('admin_usua
     const clave = claveUsuario((usuario || nombre || '').trim());
 
     if (clave.length < 3) return res.status(400).json({ error: 'Usuario mínimo 3 caracteres' });
-    if (!password || password.length < 4) return res.status(400).json({ error: 'Contraseña mínimo 4 caracteres' });
+    if (!password || password.length < 8) return res.status(400).json({ error: 'Contraseña mínimo 8 caracteres' });
     if (password !== confirmPassword) return res.status(400).json({ error: 'Las contraseñas no coinciden' });
 
     const existente = await firebaseGet(`usuarios/${clave}`);
@@ -172,7 +172,7 @@ router.post('/cambiar-password', authMiddleware, async (req, res) => {
   try {
     const { actual, nueva, confirmar } = req.body;
     if (!actual || !nueva || !confirmar) return res.status(400).json({ error: 'Todos los campos son obligatorios' });
-    if (nueva.length < 4) return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 4 caracteres' });
+    if (nueva.length < 8) return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
     if (nueva !== confirmar) return res.status(400).json({ error: 'Las contraseñas no coinciden' });
 
     const registro = await firebaseGet(`usuarios/${req.user.usuario}`);
@@ -274,8 +274,27 @@ router.get('/list', authMiddleware, loadPermisos(), requirePerm('admin_usuarios'
     activo: val.activo !== false,
     permisos: val.permisos || {},
     creado: val.creado,
+    sesionesActivas: sesionesNormalizadas(val.sesionActiva).filter(s => typeof s.hasta === 'number' && s.hasta > Date.now()).length,
   })).map(u => ({ ...u, permEfectivos: resolverPermisos(u, roles) }));
   res.json(users);
+});
+
+router.post('/reset-sesiones', authMiddleware, loadPermisos(), requirePerm('admin_usuarios'), async (req, res) => {
+  try {
+    const { usuario } = req.body;
+    const clave = claveUsuario((usuario || '').trim());
+    const target = await firebaseGet(`usuarios/${clave}`);
+    if (!target) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (esSuperAdmin(target) && !esSuperAdmin(req.userRecord)) {
+      return res.status(403).json({ error: 'No puedes cerrar las sesiones de un Super Administrador' });
+    }
+
+    await firebaseUpdate(`usuarios/${clave}`, { sesionActiva: [] });
+    registrarActividad(req.user?.nombre, 'SESIONES_RESETEADAS', `Sesiones de ${clave} cerradas`);
+    res.json({ message: `Sesiones de ${clave} cerradas. Ya puede volver a iniciar sesión.` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.put('/update', authMiddleware, loadPermisos(), requirePerm('admin_usuarios'), async (req, res) => {
@@ -327,7 +346,7 @@ router.post('/reset-password', authMiddleware, loadPermisos(), requirePerm('admi
   try {
     const { usuario, nueva, confirmar } = req.body;
     const clave = claveUsuario((usuario || '').trim());
-    if (!nueva || nueva.length < 4) return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+    if (!nueva || nueva.length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
     if (nueva !== confirmar) return res.status(400).json({ error: 'Las contraseñas no coinciden' });
 
     const target = await firebaseGet(`usuarios/${clave}`);

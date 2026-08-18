@@ -9,28 +9,33 @@ import { useInventario } from '../context/InventarioContext';
 import { COLORES_ESTADO, ESTADOS_STOCK, TECNICOS, parseFechaRegistro, fechaRegistroTs, formatearFechaRegistro, esMismoDia } from '../utils/inventario';
 import useDocumentTitle from '../utils/useDocumentTitle';
 import { SkeletonCards, SkeletonChart } from '../componentes/Skeleton';
+import EmptyState from '../componentes/EmptyState';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, LineElement, PointElement, Filler, Tooltip, Legend);
 
-function StatCard({ icon, color, label, value, sub }) {
-  return (
-    <div className="panel p-4 flex items-center gap-4">
-      <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg ${color}`}>
+function StatCard({ icon, color, label, value, sub, to }) {
+  const body = (
+    <>
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm shrink-0 ${color}`}>
         <i className={`fa-solid ${icon}`} />
       </div>
-      <div className="min-w-0">
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">{label}</p>
-        <h4 className="text-2xl font-extrabold text-slate-800">{value}</h4>
-        {sub && <p className="text-[10px] text-slate-400 font-medium">{sub}</p>}
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">{label}</p>
+        <h4 className="text-xl font-extrabold text-slate-800 leading-tight">{value}</h4>
+        {sub && <p className="text-[10px] text-slate-400 font-medium truncate">{sub}</p>}
       </div>
-    </div>
+    </>
   );
+  if (to) {
+    return <Link to={to} className="stat-card hover:border-brand-300 transition-all group">{body}<i className="fa-solid fa-chevron-right text-[9px] text-slate-300 group-hover:text-brand-500" /></Link>;
+  }
+  return <div className="stat-card">{body}</div>;
 }
 
 function QuickLink({ to, icon, color, label, count }) {
   return (
-    <Link to={to} className={`panel p-3 flex items-center gap-3 transition-all group`}>
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm ${color}`}>
+    <Link to={to} className="panel px-3 py-2.5 flex items-center gap-2.5 transition-all group hover:border-brand-200">
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs shrink-0 ${color}`}>
         <i className={`fa-solid ${icon}`} />
       </div>
       <div className="min-w-0 flex-1">
@@ -38,6 +43,17 @@ function QuickLink({ to, icon, color, label, count }) {
         {count !== undefined && <p className="text-[10px] text-slate-400">{count} registros</p>}
       </div>
       <i className="fa-solid fa-chevron-right text-[10px] text-slate-300 group-hover:text-brand-500 transition-colors" />
+    </Link>
+  );
+}
+
+function AlertChip({ to, icon, color, label, count }) {
+  if (!count) return null;
+  return (
+    <Link to={to} className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold transition hover:shadow-sm ${color}`}>
+      <i className={`fa-solid ${icon} text-[10px]`} />
+      {label}
+      <span className="px-1.5 py-0.5 rounded-md bg-white/70 text-[10px]">{count}</span>
     </Link>
   );
 }
@@ -291,6 +307,16 @@ export default function Dashboard() {
       .sort((a, b) => b.diasEnInventario - a.diasEnInventario)
       .slice(0, 10);
 
+    let sinFotos = 0, sinSerie = 0, estancados = 0, stockActivo = 0;
+    inventario.forEach(item => {
+      if (item.estado?.includes('🔴 VENDIDO')) return;
+      stockActivo++;
+      if (!item.fotos || Object.keys(item.fotos).length === 0) sinFotos++;
+      if (!item.serie || item.serie === 'N/A' || String(item.serie).trim() === '') sinSerie++;
+      const fTs = fechaRegistroTs(item.fechaRegistro);
+      if (!isNaN(fTs) && Math.floor((Date.now() - fTs) / 86400000) >= 30) estancados++;
+    });
+
     return {
       totalEntradasHistorico: filtrado.length, filtrados: filtrado.length !== inventario.length,
       equiposVentaStock, equiposMercadoLibre, equiposRevisionTriage, mermasTKF,
@@ -303,7 +329,7 @@ export default function Dashboard() {
       porCategoria: { labels: Object.keys(catCount), data: Object.values(catCount) },
       porSO: { labels: Object.keys(soCount).slice(0, 8), data: Object.values(soCount).slice(0, 8) },
       registradosHoy, registradosSemana, recientes: recientes.slice(0, 8),
-      antiguos,
+      antiguos, sinFotos, sinSerie, estancados, stockActivo, vacio: inventario.length === 0,
     };
   }, [inventario, fechaDesde, fechaHasta]);
 
@@ -323,28 +349,28 @@ export default function Dashboard() {
   };
 
   if (loading) return (
-    <section className="space-y-6 animate-fade-in">
-      <div><h2 className="font-display text-2xl font-bold text-slate-900">Dashboard de Control</h2><p className="text-slate-500 text-sm">Cargando métricas...</p></div>
-      <SkeletonCards count={5} /><SkeletonCards count={2} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><SkeletonChart /><SkeletonChart /></div>
+    <section className="page-stack animate-fade-in">
+      <div><h2 className="font-display text-xl font-bold text-slate-900">Dashboard de Control</h2><p className="text-slate-500 text-sm">Cargando métricas...</p></div>
+      <SkeletonCards count={6} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><SkeletonChart /><SkeletonChart /></div>
     </section>
   );
 
   return (
-    <section className="space-y-6 animate-fade-in">
-      <div className="animate-slide-up flex flex-wrap items-center justify-between gap-3">
+    <section className="page-stack animate-fade-in">
+      <div className="animate-slide-up flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="font-display text-2xl font-bold text-slate-900">Dashboard de Control</h2>
-          <p className="text-slate-500 text-sm">Métricas desde SQL Server</p>
+          <h2 className="font-display text-xl font-bold text-slate-900">Dashboard de Control</h2>
+          <p className="text-slate-500 text-xs">Operación en vivo · {stats.stockActivo} activos</p>
         </div>
-        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-xs">
+        <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-xs">
           {PRESETS.map(p => (
             <button key={p.label} onClick={() => { const v = p.fn(); setFechaDesde(v); setFechaHasta(''); }}
-              className={"px-2.5 py-1 rounded-lg text-xs font-bold transition " + (fechaDesde === p.fn() ? 'bg-brand-600 text-white' : 'text-slate-500 hover:bg-slate-100')}>
+              className={"px-2 py-1 rounded-lg text-[11px] font-bold transition " + (fechaDesde === p.fn() ? 'bg-brand-600 text-white' : 'text-slate-500 hover:bg-slate-100')}>
               {p.label}
             </button>
           ))}
-          <span className="w-px h-5 bg-slate-200 mx-1" />
+          <span className="w-px h-4 bg-slate-200 mx-0.5" />
           <label className="flex items-center gap-1 text-[11px] text-slate-400">
             <i className="fa-regular fa-calendar" />
             <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} className="w-28 border border-slate-200 rounded px-1 py-0.5 text-xs text-slate-600" />
@@ -361,53 +387,74 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '50ms' }}>
-        <StatCard icon="fa-boxes-stacked" color="bg-brand-50 text-brand-600" label="Total entradas" value={stats.totalEntradasHistorico} />
-        <StatCard icon="fa-calendar-check" color="bg-indigo-50 text-indigo-600" label="Registrados hoy" value={stats.registradosHoy} sub={`${stats.registradosSemana} esta semana`} />
-        <StatCard icon="fa-circle-check" color="bg-blue-50 text-blue-600" label="Stock local OK" value={stats.equiposVentaStock} sub="Solo 🔵 OK" />
-        <StatCard icon="fa-screwdriver-wrench" color="bg-amber-50 text-amber-600" label="En revisión" value={stats.equiposRevisionTriage + stats.equiposMercadoLibre} sub={`${stats.equiposMercadoLibre} en ML`} />
+      {stats.vacio ? (
+        <div className="panel">
+          <EmptyState
+            icon="fa-boxes-stacked"
+            title="Aún no hay equipos registrados"
+            description="Empieza registrando el primer equipo para ver métricas, alertas y actividad reciente."
+            actionTo="/inventario"
+            actionLabel="+ Registrar equipo"
+            secondaryTo="/base-datos"
+            secondaryLabel="Ir a base de datos"
+          />
+        </div>
+      ) : (
+        <>
+      <div className="metric-grid animate-slide-up" style={{ animationDelay: '50ms' }}>
+        <StatCard icon="fa-boxes-stacked" color="bg-brand-50 text-brand-600" label="Total entradas" value={stats.totalEntradasHistorico} to="/base-datos" />
+        <StatCard icon="fa-calendar-check" color="bg-indigo-50 text-indigo-600" label="Hoy / semana" value={stats.registradosHoy} sub={`${stats.registradosSemana} esta semana`} />
+        <StatCard icon="fa-circle-check" color="bg-blue-50 text-blue-600" label="Stock OK" value={stats.equiposVentaStock} sub="Listos para venta" to="/base-datos" />
+        <StatCard icon="fa-screwdriver-wrench" color="bg-amber-50 text-amber-600" label="Pendientes" value={stats.equiposRevisionTriage} sub={`${stats.equiposMercadoLibre} en ML`} to="/alertas" />
+        <StatCard icon="fa-tag" color="bg-purple-50 text-purple-600" label="Mermas TKF" value={stats.mermasTKF} />
+        <StatCard icon="fa-dollar-sign" color="bg-emerald-50 text-emerald-600" label="Vendidos" value={stats.totalVendidos} sub={`$${stats.totalVendidoEnPesos.toLocaleString('es-MX')} · ${stats.tasaConversion}%`} to="/reportes" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '65ms' }}>
-        <StatCard icon="fa-rotate-left" color="bg-orange-50 text-orange-600" label="Pendientes" value={stats.equiposRevisionTriage} sub="🟡 + 🟠" />
-        <StatCard icon="fa-tag" color="bg-purple-50 text-purple-600" label="Mermas TKF" value={stats.mermasTKF} sub="🔴 TKF" />
-        <StatCard icon="fa-dollar-sign" color="bg-emerald-50 text-emerald-600" label="Vendidos" value={stats.totalVendidos} sub={`$${stats.totalVendidoEnPesos.toLocaleString('es-MX')}`} />
-        <StatCard icon="fa-percent" color="bg-cyan-50 text-cyan-600" label="Tasa conversión" value={`${stats.tasaConversion}%`} sub="ventas / activos" />
-      </div>
+      {(stats.sinFotos > 0 || stats.sinSerie > 0 || stats.estancados > 0 || (puedeVerTickets && ticketsStats.pendientes > 0)) && (
+        <div className="panel panel-dense flex flex-wrap items-center gap-2 animate-slide-up" style={{ animationDelay: '60ms' }}>
+          <span className="section-title mr-1"><i className="fa-solid fa-bolt text-accent-500 mr-1" />Requiere atención</span>
+          <AlertChip to="/base-datos" icon="fa-camera" color="bg-orange-50 text-orange-700 border-orange-200" label="Sin fotos" count={stats.sinFotos} />
+          <AlertChip to="/base-datos" icon="fa-barcode" color="bg-amber-50 text-amber-700 border-amber-200" label="Sin serie" count={stats.sinSerie} />
+          <AlertChip to="/alertas" icon="fa-hourglass-half" color="bg-red-50 text-red-700 border-red-200" label="30+ días" count={stats.estancados} />
+          {puedeVerTickets && <AlertChip to="/tickets" icon="fa-ticket" color="bg-rose-50 text-rose-700 border-rose-200" label="Tickets pendientes" count={ticketsStats.pendientes} />}
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 animate-slide-up" style={{ animationDelay: '80ms' }}>
-        <QuickLink to="/inventario" icon="fa-plus-circle" color="bg-brand-50 text-brand-600" label="Registrar equipo" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 animate-slide-up" style={{ animationDelay: '80ms' }}>
+        <QuickLink to="/inventario" icon="fa-plus-circle" color="bg-brand-50 text-brand-600" label="Registrar" />
         <QuickLink to="/base-datos" icon="fa-database" color="bg-blue-50 text-blue-600" label="Base de datos" count={inventario.length} />
         <QuickLink to="/reparaciones" icon="fa-wrench" color="bg-orange-50 text-orange-600" label="Reparaciones" />
         <QuickLink to="/mercadolibre" icon="fa-truck" color="bg-emerald-50 text-emerald-600" label="Mercado Libre" />
         <QuickLink to="/reportes" icon="fa-chart-bar" color="bg-purple-50 text-purple-600" label="Reportes" />
         {puedeVerTickets && <QuickLink to="/tickets" icon="fa-ticket" color="bg-rose-50 text-rose-600" label="Tickets" count={ticketsStats.total} />}
       </div>
+        </>
+      )}
 
       {puedeVerTickets && !ticketsLoading && tickets.length > 0 && (
-        <div className="panel p-5 animate-slide-up" style={{ animationDelay: '95ms' }}>
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-bold text-slate-700 uppercase flex items-center gap-2">
+        <div className="panel panel-dense animate-slide-up" style={{ animationDelay: '95ms' }}>
+          <div className="flex items-center justify-between mb-2.5">
+            <h4 className="section-title flex items-center gap-2">
               <i className="fa-solid fa-ticket text-rose-500" /> Tickets de Reparación
             </h4>
             <Link to="/tickets" className="text-[11px] font-bold text-brand-600 hover:underline">Ver todos →</Link>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <div className="bg-amber-50 rounded-xl p-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+            <div className="bg-amber-50 rounded-lg px-3 py-2">
               <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Pendientes</p>
-              <p className="text-2xl font-extrabold text-amber-600">{ticketsStats.pendientes}</p>
+              <p className="text-xl font-extrabold text-amber-600">{ticketsStats.pendientes}</p>
             </div>
-            <div className="bg-blue-50 rounded-xl p-3">
+            <div className="bg-blue-50 rounded-lg px-3 py-2">
               <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Asignados</p>
-              <p className="text-2xl font-extrabold text-blue-600">{ticketsStats.asignados}</p>
+              <p className="text-xl font-extrabold text-blue-600">{ticketsStats.asignados}</p>
             </div>
-            <div className="bg-indigo-50 rounded-xl p-3">
+            <div className="bg-indigo-50 rounded-lg px-3 py-2">
               <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">En proceso</p>
-              <p className="text-2xl font-extrabold text-indigo-600">{ticketsStats.enProceso}</p>
+              <p className="text-xl font-extrabold text-indigo-600">{ticketsStats.enProceso}</p>
             </div>
-            <div className="bg-emerald-50 rounded-xl p-3">
+            <div className="bg-emerald-50 rounded-lg px-3 py-2">
               <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Reparados</p>
-              <p className="text-2xl font-extrabold text-emerald-600">{ticketsStats.reparados}</p>
+              <p className="text-xl font-extrabold text-emerald-600">{ticketsStats.reparados}</p>
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -445,10 +492,10 @@ export default function Dashboard() {
         </div>
       )}
 
-      {stats.recientes.length > 0 && (
-        <div className="panel p-5 animate-slide-up" style={{ animationDelay: '100ms' }}>
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-bold text-slate-700 uppercase flex items-center gap-2">
+      {stats.recientes.length > 0 ? (
+        <div className="panel panel-dense animate-slide-up" style={{ animationDelay: '100ms' }}>
+          <div className="flex items-center justify-between mb-2.5">
+            <h4 className="section-title flex items-center gap-2">
               <i className="fa-solid fa-clock text-brand-500" /> Últimos registros (7 días)
             </h4>
             <Link to="/base-datos" className="text-[11px] font-bold text-brand-600 hover:underline">Ver todos →</Link>
@@ -473,21 +520,32 @@ export default function Dashboard() {
             </table>
           </div>
         </div>
+      ) : !stats.vacio && (
+        <div className="panel">
+          <EmptyState
+            compact
+            icon="fa-clock"
+            title="Sin registros recientes"
+            description="Los equipos de los últimos 7 días aparecerán aquí."
+            actionTo="/inventario"
+            actionLabel="Registrar equipo"
+          />
+        </div>
       )}
 
-      <div className="panel p-6 animate-slide-up" style={{ animationDelay: '120ms' }}>
-        <h4 className="text-sm font-bold text-slate-700 uppercase mb-4 flex items-center gap-2">
+      <div className="panel panel-dense animate-slide-up" style={{ animationDelay: '120ms' }}>
+        <h4 className="section-title mb-3 flex items-center gap-2">
           <i className="fa-solid fa-user-gear text-brand-500" /> Rendimiento por Técnico
         </h4>
         {stats.tecStats.length === 0 ? (
-          <p className="text-sm text-slate-400">No hay equipos asignados a técnicos aún</p>
+          <EmptyState compact icon="fa-user-gear" title="Sin técnicos con equipos" description="Asigna técnicos al registrar equipos para ver rendimiento." />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {stats.tecStats.slice(0, 6).map(([nombre, data]) => (
-              <div key={nombre} className="border border-slate-200 rounded-xl p-4 hover:shadow-md transition">
-                <p className="font-bold text-sm text-slate-800 mb-2 truncate">{nombre}</p>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-2xl font-extrabold text-brand-600">{data.total}</span>
+              <div key={nombre} className="border border-slate-200 rounded-xl p-3 hover:shadow-md transition">
+                <p className="font-bold text-sm text-slate-800 mb-1.5 truncate">{nombre}</p>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xl font-extrabold text-brand-600">{data.total}</span>
                   <span className="text-xs text-slate-400">equipos</span>
                 </div>
                 <div className="space-y-1.5">
@@ -516,17 +574,17 @@ export default function Dashboard() {
       </div>
 
       {stats.antiguos.length > 0 && (
-        <div className="panel p-5 animate-slide-up" style={{ animationDelay: '140ms' }}>
-          <h4 className="text-sm font-bold text-slate-700 uppercase mb-3 flex items-center gap-2">
+        <div className="panel panel-dense animate-slide-up" style={{ animationDelay: '140ms' }}>
+          <h4 className="section-title mb-2.5 flex items-center gap-2">
             <i className="fa-solid fa-hourglass-half text-red-500" /> Equipos con más tiempo en stock
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             {stats.antiguos.slice(0, 5).map(item => (
               <Link key={item.codigo} to={`/inventario?editar=${item.codigo}`}
-                className="border border-slate-200 rounded-xl p-3 hover:shadow-md hover:border-brand-300 transition text-center">
+                className="border border-slate-200 rounded-xl p-2.5 hover:shadow-md hover:border-brand-300 transition text-center">
                 <p className="font-mono font-bold text-xs text-brand-600">{item.codigo}</p>
                 <p className="text-[10px] text-slate-500 truncate">{item.marca} {item.modelo}</p>
-                <p className={`text-lg font-extrabold mt-1 ${item.diasEnInventario > 60 ? 'text-red-500' : item.diasEnInventario > 30 ? 'text-orange-500' : 'text-amber-500'}`}>
+                <p className={`text-base font-extrabold mt-0.5 ${item.diasEnInventario > 60 ? 'text-red-500' : item.diasEnInventario > 30 ? 'text-orange-500' : 'text-amber-500'}`}>
                   {item.diasEnInventario}d
                 </p>
               </Link>
@@ -537,42 +595,42 @@ export default function Dashboard() {
 
       <div className="animate-slide-up" style={{ animationDelay: '160ms' }}>
         <button onClick={() => setShowCharts(c => !c)}
-          className="w-full panel p-3 flex items-center justify-between hover:bg-slate-50 transition">
-          <span className="text-sm font-bold text-slate-600 flex items-center gap-2">
+          className="w-full panel px-3 py-2.5 flex items-center justify-between hover:bg-slate-50 transition">
+          <span className="text-xs font-bold text-slate-600 flex items-center gap-2">
             <i className="fa-solid fa-chart-pie text-brand-500" /> Gráficas y estadísticas detalladas
           </span>
           <i className={`fa-solid fa-chevron-${showCharts ? 'up' : 'down'} text-slate-400`} />
         </button>
         {showCharts && (
-          <div className="mt-4 space-y-6 animate-fade-in">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="panel p-6 min-h-[380px] flex flex-col lg:col-span-2">
-                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
+          <div className="mt-3 page-stack animate-fade-in">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div className="panel panel-dense min-h-[300px] flex flex-col lg:col-span-2">
+                <h4 className="section-title mb-2">
                   <i className="fa-solid fa-chart-line text-brand-500 mr-1" /> Entradas por Mes
                 </h4>
-                <div className="flex-1 min-h-[260px] relative">
+                <div className="flex-1 min-h-[220px] relative">
                   <Line data={{
                     labels: stats.mesesLabels,
                     datasets: [{ label: 'Equipos', data: stats.mesesData, borderColor: '#0018B0', backgroundColor: 'rgba(0,24,176,0.08)', fill: true, tension: 0.35, pointRadius: 4, pointBackgroundColor: '#0018B0', pointBorderColor: '#fff', pointBorderWidth: 2, pointHoverRadius: 6, borderWidth: 2.5 }]
                   }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } } } }} />
                 </div>
               </div>
-              <div className="panel p-6 min-h-[380px] flex flex-col">
-                <h4 className="text-sm font-bold text-slate-700 uppercase mb-4">
+              <div className="panel panel-dense min-h-[300px] flex flex-col">
+                <h4 className="section-title mb-2">
                   <i className="fa-solid fa-pie-chart text-emerald-500 mr-1" /> Distribución Global
                 </h4>
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="w-full max-w-[220px]">
+                  <div className="w-full max-w-[200px]">
                     <Doughnut data={doughnutData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }} />
                   </div>
                 </div>
               </div>
-              <div className="panel p-6 min-h-[380px] flex flex-col">
-                <h4 className="text-sm font-bold text-slate-700 uppercase mb-4">
+              <div className="panel panel-dense min-h-[280px] flex flex-col">
+                <h4 className="section-title mb-2">
                   <i className="fa-solid fa-windows text-brand-500 mr-1" /> Sistemas Operativos
                 </h4>
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="w-full max-w-[220px]">
+                  <div className="w-full max-w-[200px]">
                     <Doughnut data={{
                       labels: stats.porSO.labels,
                       datasets: [{
@@ -586,67 +644,67 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="panel p-6">
-              <h4 className="text-sm font-bold text-slate-700 uppercase mb-2">
+            <div className="panel panel-dense">
+              <h4 className="section-title mb-2">
                 <i className="fa-solid fa-bar-chart text-blue-500 mr-1" /> Stock Activo: Modelos por Estado
               </h4>
-              <div className="h-[280px] relative">
+              <div className="h-[240px] relative">
                 <Bar data={barData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } } }} />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="panel p-6 min-h-[320px] flex flex-col">
-                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-building text-brand-500 mr-1" /> Por Marca</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="panel panel-dense min-h-[280px] flex flex-col">
+                <h4 className="section-title mb-2"><i className="fa-solid fa-building text-brand-500 mr-1" /> Por Marca</h4>
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="w-full max-w-[240px]">
+                  <div className="w-full max-w-[220px]">
                     <Doughnut data={{ labels: stats.porMarca.labels, datasets: [{ data: stats.porMarca.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444', '#64748b'], borderWidth: 1.5 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
                   </div>
                 </div>
               </div>
-              <div className="panel p-6 min-h-[320px] flex flex-col">
-                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-microchip text-blue-500 mr-1" /> Por Procesador</h4>
+              <div className="panel panel-dense min-h-[280px] flex flex-col">
+                <h4 className="section-title mb-2"><i className="fa-solid fa-microchip text-blue-500 mr-1" /> Por Procesador</h4>
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="w-full max-w-[240px]">
+                  <div className="w-full max-w-[220px]">
                     <Doughnut data={{ labels: stats.porProcesador.labels, datasets: [{ data: stats.porProcesador.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b', '#ef4444', '#64748b'], borderWidth: 1.5 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
                   </div>
                 </div>
               </div>
-              <div className="panel p-6 min-h-[320px] flex flex-col">
-                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-memory text-purple-500 mr-1" /> Distribución RAM</h4>
-                <div className="flex-1 min-h-[240px] relative">
+              <div className="panel panel-dense min-h-[280px] flex flex-col">
+                <h4 className="section-title mb-2"><i className="fa-solid fa-memory text-purple-500 mr-1" /> Distribución RAM</h4>
+                <div className="flex-1 min-h-[200px] relative">
                   <Bar data={{ labels: stats.porRam.labels, datasets: [{ label: 'Equipos', data: stats.porRam.data, backgroundColor: '#0018B0', borderRadius: 6 }] }} options={{ responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="panel p-6 min-h-[320px] flex flex-col">
-                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-hard-drive text-emerald-500 mr-1" /> Almacenamiento</h4>
-                <div className="flex-1 min-h-[240px] relative">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="panel panel-dense min-h-[280px] flex flex-col">
+                <h4 className="section-title mb-2"><i className="fa-solid fa-hard-drive text-emerald-500 mr-1" /> Almacenamiento</h4>
+                <div className="flex-1 min-h-[200px] relative">
                   <Bar data={{ labels: stats.porAlmacenamiento.labels, datasets: [{ label: 'Equipos', data: stats.porAlmacenamiento.data, backgroundColor: '#10b981', borderRadius: 6 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
                 </div>
               </div>
-              <div className="panel p-6 min-h-[320px] flex flex-col">
-                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-layer-group text-orange-500 mr-1" /> Por Año</h4>
-                <div className="flex-1 min-h-[240px] relative">
+              <div className="panel panel-dense min-h-[280px] flex flex-col">
+                <h4 className="section-title mb-2"><i className="fa-solid fa-layer-group text-orange-500 mr-1" /> Por Año</h4>
+                <div className="flex-1 min-h-[200px] relative">
                   <Bar data={{ labels: stats.porAnio.labels, datasets: [{ label: 'Equipos', data: stats.porAnio.data, backgroundColor: '#f97316', borderRadius: 6 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } }, y: { grid: { display: false } } } }} />
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="panel p-6 min-h-[320px] flex flex-col">
-                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-tags text-orange-500 mr-1" /> Por Categoría</h4>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div className="panel panel-dense min-h-[280px] flex flex-col">
+                <h4 className="section-title mb-2"><i className="fa-solid fa-tags text-orange-500 mr-1" /> Por Categoría</h4>
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="w-full max-w-[240px]">
+                  <div className="w-full max-w-[220px]">
                     <Doughnut data={{ labels: stats.porCategoria.labels, datasets: [{ data: stats.porCategoria.data, backgroundColor: ['#0018B0', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1', '#f59e0b'], borderWidth: 1.5 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }} />
                   </div>
                 </div>
               </div>
-              <div className="panel p-6 min-h-[320px] flex flex-col">
-                <h4 className="text-sm font-bold text-slate-700 uppercase mb-2"><i className="fa-solid fa-hourglass-half text-red-500 mr-1" /> Equipos Más Antiguos</h4>
-                <div className="flex-1 min-h-[240px] relative">
+              <div className="panel panel-dense min-h-[280px] flex flex-col">
+                <h4 className="section-title mb-2"><i className="fa-solid fa-hourglass-half text-red-500 mr-1" /> Equipos Más Antiguos</h4>
+                <div className="flex-1 min-h-[200px] relative">
                   {stats.antiguos.length > 0 ? (
                     <Bar data={{ labels: stats.antiguos.map(i => `${i.codigo}`), datasets: [{ label: 'Días', data: stats.antiguos.map(i => i.diasEnInventario), backgroundColor: stats.antiguos.map(i => i.diasEnInventario > 60 ? '#ef4444' : i.diasEnInventario > 30 ? '#f97316' : '#f59e0b'), borderRadius: 4 }] }} options={{ responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { font: { size: 9 } } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } } }} />
                   ) : <div className="flex items-center justify-center h-full text-slate-400 text-sm">Sin datos</div>}
@@ -657,9 +715,10 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div className="panel p-5 animate-slide-up flex flex-wrap items-center justify-between gap-4" style={{ animationDelay: '300ms' }}>
+      {can('respaldos') && (
+      <div className="panel panel-dense animate-slide-up flex flex-wrap items-center justify-between gap-3" style={{ animationDelay: '300ms' }}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+          <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
             <i className="fa-solid fa-database" />
           </div>
           <div>
@@ -670,10 +729,11 @@ export default function Dashboard() {
         <button onClick={async () => {
           try { await api.downloadBackup(); notify('Respaldo descargado', 'Archivo JSON listo en tu computadora.', 'success'); }
           catch (err) { notify('Error', err.message, 'error'); }
-        }} className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-bold transition-all hover:scale-[1.02]">
+        }} className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all hover:scale-[1.02]">
           <i className="fa-solid fa-download" /> Descargar Respaldo
         </button>
       </div>
+      )}
     </section>
   );
 }

@@ -216,11 +216,13 @@ export async function seedPermisos() {
     if (users) {
       const haySuper = Object.values(users).some(u => u.rol === 'superadmin' || Number(u.nivel) >= 100);
       if (!haySuper) {
-        for (const [clave, u] of Object.entries(users)) {
-          if (u.rol === 'admin') {
-            u.rol = 'superadmin';
-            await firebaseSet(`usuarios/${clave}`, u);
-          }
+        const admins = Object.entries(users)
+          .filter(([, u]) => u.rol === 'admin')
+          .sort(([, a], [, b]) => new Date(a.creado || 0) - new Date(b.creado || 0));
+        if (admins.length > 0) {
+          const [firstKey, firstUser] = admins[0];
+          firstUser.rol = 'superadmin';
+          await firebaseSet(`usuarios/${firstKey}`, firstUser);
         }
       }
     }
