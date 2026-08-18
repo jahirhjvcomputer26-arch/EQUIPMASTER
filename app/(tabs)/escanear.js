@@ -1,196 +1,65 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 
 export default function EscanearScreen() {
   const router = useRouter();
-  const [permission, requestPermission] = useCameraPermissions();
-  const [scanned, setScanned] = useState(false);
-  const scannerRef = useRef(null);
+  const [codigo, setCodigo] = useState('');
 
-  useEffect(() => {
-    if (permission && !permission.granted) {
-      requestPermission();
+  const handleBuscar = () => {
+    if (codigo.trim()) {
+      router.push(`/equipo/${codigo.trim().toUpperCase()}`);
     }
-  }, [permission]);
-
-  function handleBarCodeScanned({ data }) {
-    if (scanned) return;
-    setScanned(true);
-    const codigo = data.trim();
-    if (codigo) {
-      router.push(`/equipo/${encodeURIComponent(codigo)}`);
-    }
-    setTimeout(() => setScanned(false), 2000);
-  }
-
-  if (!permission) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.text}>Solicitando permisos de camara...</Text>
-      </View>
-    );
-  }
-
-  if (!permission.granted) {
-    return (
-      <View style={styles.center}>
-        <MaterialIcons name="camera-alt" size={64} color={COLORS.textSecondary} />
-        <Text style={styles.title}>Permiso de Camara</Text>
-        <Text style={styles.text}>Se necesita acceso a la camara para escanear codigos QR</Text>
-        <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
-          <Text style={styles.permissionBtnText}>Conceder Permiso</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Escanear QR</Text>
+      <View style={styles.iconContainer}>
+        <MaterialIcons name="qr-code-scanner" size={64} color={COLORS.primary} />
       </View>
-      <View style={styles.scannerContainer}>
-        <CameraView
-          ref={scannerRef}
-          style={StyleSheet.absoluteFillObject}
-          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+      <Text style={styles.title}>Buscar Equipo</Text>
+      <Text style={styles.subtitle}>Ingresa el código del equipo para ver su ficha técnica.</Text>
+      <View style={styles.inputContainer}>
+        <MaterialIcons name="search" size={20} color={COLORS.textMuted} />
+        <TextInput
+          style={styles.input}
+          value={codigo}
+          onChangeText={setCodigo}
+          placeholder="INV-001, INV-002..."
+          placeholderTextColor={COLORS.textMuted}
+          autoCapitalize="characters"
+          autoFocus
+          onSubmitEditing={handleBuscar}
+          returnKeyType="search"
         />
-        <View style={styles.overlay}>
-          <View style={styles.cornerTopLeft} />
-          <View style={styles.cornerTopRight} />
-          <View style={styles.cornerBottomLeft} />
-          <View style={styles.cornerBottomRight} />
-        </View>
       </View>
-      <View style={styles.bottom}>
-        <Text style={styles.hint}>Apunta la camara hacia un codigo QR</Text>
-        {scanned && (
-          <TouchableOpacity style={styles.rescanBtn} onPress={() => setScanned(false)}>
-            <MaterialIcons name="refresh" size={18} color={COLORS.primary} />
-            <Text style={styles.rescanText}>Escanear de nuevo</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <TouchableOpacity
+        style={[styles.button, !codigo.trim() && styles.buttonDisabled]}
+        onPress={handleBuscar}
+        disabled={!codigo.trim()}
+      >
+        <MaterialIcons name="search" size={20} color={COLORS.white} />
+        <Text style={styles.buttonText}>Buscar</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.linkButton} onPress={() => router.push('/(tabs)/inventario')}>
+        <Text style={styles.linkText}>O busca en la lista de inventario</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.black,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.bg,
-    padding: SPACING.xl,
-    gap: SPACING.md,
-  },
-  header: {
-    paddingTop: 60,
-    paddingBottom: SPACING.md,
-    paddingHorizontal: SPACING.lg,
-    backgroundColor: COLORS.primary,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.white,
-  },
-  scannerContainer: {
-    flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cornerTopLeft: {
-    position: 'absolute',
-    top: '30%',
-    left: '20%',
-    width: 30,
-    height: 30,
-    borderLeftWidth: 3,
-    borderTopWidth: 3,
-    borderColor: COLORS.white,
-  },
-  cornerTopRight: {
-    position: 'absolute',
-    top: '30%',
-    right: '20%',
-    width: 30,
-    height: 30,
-    borderRightWidth: 3,
-    borderTopWidth: 3,
-    borderColor: COLORS.white,
-  },
-  cornerBottomLeft: {
-    position: 'absolute',
-    bottom: '30%',
-    left: '20%',
-    width: 30,
-    height: 30,
-    borderLeftWidth: 3,
-    borderBottomWidth: 3,
-    borderColor: COLORS.white,
-  },
-  cornerBottomRight: {
-    position: 'absolute',
-    bottom: '30%',
-    right: '20%',
-    width: 30,
-    height: 30,
-    borderRightWidth: 3,
-    borderBottomWidth: 3,
-    borderColor: COLORS.white,
-  },
-  bottom: {
-    padding: SPACING.lg,
-    alignItems: 'center',
-    backgroundColor: COLORS.primary,
-    gap: SPACING.sm,
-  },
-  hint: {
-    color: COLORS.white,
-    fontSize: 14,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  text: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-  },
-  permissionBtn: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
-  },
-  permissionBtnText: {
-    color: COLORS.white,
-    fontWeight: '600',
-  },
-  rescanBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    padding: SPACING.sm,
-  },
-  rescanText: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  container: { flex: 1, backgroundColor: COLORS.bg, padding: SPACING.xl, justifyContent: 'center', alignItems: 'center' },
+  iconContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: COLORS.primary + '10', alignItems: 'center', justifyContent: 'center', marginBottom: SPACING.xl },
+  title: { fontSize: 22, fontWeight: '800', color: COLORS.text, marginBottom: SPACING.sm },
+  subtitle: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', marginBottom: SPACING.xl },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: BORDER_RADIUS.md, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, gap: SPACING.sm, width: '100%', marginBottom: SPACING.lg },
+  input: { flex: 1, fontSize: 18, color: COLORS.text, padding: 0, fontFamily: 'monospace' },
+  button: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary, borderRadius: BORDER_RADIUS.md, paddingVertical: 14, gap: SPACING.sm, width: '100%' },
+  buttonDisabled: { opacity: 0.5 },
+  buttonText: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
+  linkButton: { marginTop: SPACING.lg },
+  linkText: { color: COLORS.primary, fontSize: 14, fontWeight: '600' },
 });

@@ -7,37 +7,9 @@
     "icon": "./assets/icon.png",
     "scheme": "equipmaster",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "backgroundColor": "#0018B0"
-    },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.jvcomputer.equipmaster"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#0018B0"
-      },
-      "package": "com.jvcomputer.equipmaster",
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
-      ]
-    },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "EquipMaster necesita la cámara para escanear códigos QR."
-        }
-      ]
-    ],
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "90ee47ad-83d9-4006-bd06-ce810f22c987"
-      }
-    }
+    "splash": { "backgroundColor": "#0018B0" },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.jvcomputer.equipmaster" },
+    "android": { "adaptiveIcon": { "backgroundColor": "#0018B0" }, "package": "com.jvcomputer.equipmaster" },
+    "plugins": ["expo-router"]
   }
 }
